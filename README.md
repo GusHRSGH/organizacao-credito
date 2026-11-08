@@ -25,7 +25,7 @@ npm run desktop:dev
 npm run desktop:dist
 ```
 
-O instalador NSIS será gerado em `release/`. Também há um workflow manual no GitHub Actions (`Build Windows installer`): ele gera um artefato baixável por 14 dias, dentro das cotas gratuitas do GitHub Actions. O instalador ainda não tem assinatura digital paga; o Windows pode exibir um aviso de editor desconhecido.
+O instalador NSIS será gerado em `release/`. O GitHub Actions (`Build Windows installer`) compila o instalador quando há alterações no aplicativo e também pode ser acionado manualmente; ele gera um artefato baixável por 14 dias, dentro das cotas gratuitas do GitHub Actions. O instalador ainda não tem assinatura digital paga; o Windows pode exibir um aviso de editor desconhecido.
 
 Para o link mágico funcionar no aplicativo desktop, o Supabase deverá permitir o redirect `organizacao-credito://auth/callback` na lista de URLs de autenticação. A configuração só deve ser feita depois da criação do projeto Supabase e de validar o callback no Windows.
 
