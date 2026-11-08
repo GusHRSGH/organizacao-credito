@@ -29,6 +29,13 @@
                 <data android:scheme="organizacaocredito" />
             </intent-filter>
 
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/google_redirect_scheme" />
+            </intent-filter>
+
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
 
         </activity>
