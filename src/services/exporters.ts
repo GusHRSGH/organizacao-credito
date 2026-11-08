@@ -37,3 +37,25 @@ export function downloadText(filename: string, content: string, mime: string) {
 }
 
 export const stamp = (now = new Date()) => now.toISOString().slice(0, 10)
+
+/** Baixa (ou compartilha, no celular) um arquivo que acompanha o app em /public. */
+export async function downloadAsset(path: string, filename: string) {
+  const url = `${import.meta.env.BASE_URL}${path}`
+  if (!Capacitor.isNativePlatform()) {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    return
+  }
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Não consegui abrir o modelo.')
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])
+  const written = await Filesystem.writeFile({ path: filename, data: btoa(binary), directory: Directory.Cache })
+  await Share.share({ title: filename, url: written.uri, dialogTitle: 'Salvar ou enviar o modelo' })
+}
