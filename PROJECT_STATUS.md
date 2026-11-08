@@ -4,6 +4,15 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Atualização 2026-11-08 (versão local)
+
+- O app agora funciona sem login nem internet, usando um banco local (IndexedDB). A nuvem (Supabase) virou fonte opcional, escolhida em "Dados e backup". Google Sheets fica para a próxima etapa.
+- Interface comum às duas fontes: `DataSource` em `src/types.ts`; implementações em `src/services/localSource.ts` e `supabaseSource.ts`.
+- Implementado e testado (10 testes Vitest, dados sintéticos): parcelas em centavos, importação de .xlsx com prévia e sem duplicar, backup/restauração JSON validado, exportação CSV.
+- Telas: Visão geral (comparar dois meses, gráficos, evolução mensal), Faturas e lançamentos (filtros, ordenação, nova fatura), Dados e backup.
+- Corrigidos: `electron-builder@^27` (inexistente, agora ^26) e 7 erros de lint/TypeScript.
+- Ainda não validado: instalador NSIS no Windows, Supabase real, deep link do link mágico.
+
 ## Objetivo
 
 Aplicação web pessoal para organizar despesas e faturas de cartão compartilhado. O usuário traz ideias e requisitos em linguagem natural; a implementação deve priorizar um fluxo simples, dados privados e custo zero.
@@ -63,3 +72,30 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Vercel Hobby destina-se a uso pessoal/não comercial e pausa/limita recursos ao ultrapassar cotas gratuitas.
 - GitHub Free inclui repositórios privados e 2.000 minutos mensais de GitHub Actions.
 - Não prometer disponibilidade contínua nem cotas permanentes. Se um serviço exigir pagamento, interromper e procurar alternativa grátis.
+
+## Atualização 2026-11-08 (visual azul)
+
+- Novo tema azul com alternância claro/escuro (botão no topo, lembra a escolha e usa a preferência do sistema na primeira vez).
+- Ícones SVG animados (`src/components/Icon.tsx`), card de destaque com o total da fatura, gráficos com entrada animada e animações desativadas quando o sistema pede menos movimento.
+- Ícone do app em `public/icon.svg`, `build/icon.ico` e `electron/icon.png`. O Setup.exe gerado pelo GitHub Actions embute o ícone no executável; o zip portátil montado no Linux mostra o ícone na janela, mas o arquivo .exe pode aparecer com o ícone padrão no Explorer.
+
+## Atualização 2026-11-08 (login Google e backup no Drive)
+
+- Ícone do app redesenhado (cartão com gráfico de rosca).
+- Login com Google (OAuth de app para computador, com PKCE, navegador do sistema e redirecionamento para 127.0.0.1) em `electron/google.cjs`. O processo principal guarda os tokens criptografados com `safeStorage`; a interface nunca os vê.
+- Backup e restauração no Google Drive usando só o escopo `drive.appdata` (pasta oculta do app). Backup automático (8 s após alterações, desligável) e botões manuais em Dados e backup. Nunca grava backup vazio por cima do existente.
+- O usuário cria o próprio projeto gratuito no Google Cloud e cola ID e chave do cliente no app (guia dentro do painel). Nada disso vai para o repositório.
+- Verificado: lint, build, simulação do fluxo completo com um Google falso (PKCE, state, criar/atualizar/restaurar backup). **Ainda não testado com uma conta Google real.**
+- Pendente: fonte de dados Google Sheets.
+
+## Atualização 2026-11-08 (tela de entrada)
+
+- Tela de boas-vindas ao abrir o app: "Continuar com Google" ou "Continuar sem login". A escolha de seguir sem login fica lembrada; sair da conta Google em Dados e backup volta para a tela de entrada.
+- Se a chave do Google ainda não foi cadastrada, o botão do Google abre o guia e os campos de ID e chave na própria tela; depois de salvar, o login começa sozinho. Há botão para cancelar a espera do navegador.
+- Ao entrar com Google num computador sem dados, o app oferece restaurar o backup encontrado no Drive.
+- Verificado no navegador com um app desktop simulado (entrar, oferta de restauração, sair, seguir sem login, lembrar escolha). Login real com conta Google continua não testado.
+
+## Atualização 2026-11-08 (chave do Google embutida)
+
+- O app aceita uma chave OAuth do Google embutida (`electron/google-client.json`, ignorada pelo git; modelo em `google-client.example.json`). Com ela, quem abre o app só clica em "Continuar com Google". Sem ela, vale o cadastro manual da chave dentro do app.
+- O workflow do Windows cria esse arquivo a partir dos secrets `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`, se existirem.

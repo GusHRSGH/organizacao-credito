@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, nativeTheme, safeStorage, shell } = require('electron')
+const { registerGoogle } = require('./google.cjs')
 const path = require('node:path')
 
 const protocol = 'organizacao-credito'
@@ -50,7 +51,9 @@ function createWindow() {
     minWidth: 980,
     minHeight: 680,
     title: 'Organização do Crédito',
-    backgroundColor: '#f5f6f2',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a1124' : '#f3f6fd',
+    icon: path.join(__dirname, 'icon.png'),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
@@ -86,6 +89,11 @@ app.whenReady().then(() => {
     const value = pendingAuthCallback
     pendingAuthCallback = undefined
     return value ?? null
+  })
+  const devUrl = process.env.VITE_DEV_SERVER_URL || (!app.isPackaged ? 'http://127.0.0.1:5173' : null)
+  registerGoogle({
+    ipcMain, app, shell, safeStorage,
+    isTrustedSender: (event) => { const url = event.senderFrame?.url ?? ''; return devUrl ? url.startsWith(devUrl) : url.startsWith('file://') },
   })
   createWindow()
   app.on('activate', () => {
