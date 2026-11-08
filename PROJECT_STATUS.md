@@ -4,6 +4,10 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Android (2026-11-08)
+
+- Versão Android via Capacitor (`android/`, `capacitor.config.json`). O APK de teste (debug) é gerado pelo workflow `Build Android APK`. Login com Google e backup no Drive ainda são só do Windows; no celular o app funciona sem login e exporta CSV/JSON pela folha de compartilhar. Ainda não testado em aparelho real.
+
 ## Atualização 2026-11-08 (versão local)
 
 - O app agora funciona sem login nem internet, usando um banco local (IndexedDB). A nuvem (Supabase) virou fonte opcional, escolhida em "Dados e backup". Google Sheets fica para a próxima etapa.
