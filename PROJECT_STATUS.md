@@ -47,15 +47,15 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - O protótipo HTML isolado foi um estudo visual, não é fonte de verdade nem está incluído no repositório.
 - Regras de vencimento/fechamento de fatura não foram decididas.
 
-## Sequência recomendada
+## Próximas etapas
 
-1. Criar um repositório **privado** chamado `organizacao-credito` na conta GitHub `GusHRSGH` e enviar somente estes arquivos fictícios.
-2. Completar a criação do projeto Supabase Free, desativar signup, configurar o e-mail autorizado, aplicar e revisar migrations/RLS; não inserir dados reais ainda.
-3. Resolver dependências, gerar lockfile, executar lint/build e corrigir erros; revisar a lógica SQL com uma instância de teste.
-4. Implementar importação XLSX com seleção de mês, pré-visualização, validação e proteção contra importação duplicada; dados só são gravados após confirmação do usuário.
-5. Implementar exportação CSV e backup/restauração JSON; validar round-trip antes de inserir dados reais.
-6. Criar deploy Vercel Hobby, configurar apenas URL/chave publicável do Supabase e proteger acesso através do login. Usar domínio `.vercel.app`; não habilitar cobrança.
-7. Depois de acesso privado e backup verificados, importar os dados reais da planilha com uma prévia revisada.
+1. Aguardar o GitHub Actions compilar o primeiro instalador Windows e corrigir qualquer falha da pipeline.
+2. Criar o projeto Supabase Free, configurar a allowlist do deep link, aplicar e revisar migrations/RLS; manter desativado o cadastro público.
+3. Resolver dependências, gerar lockfile, executar lint/build e validar a lógica SQL com dados sintéticos.
+4. Implementar importação XLSX com seleção de mês, pré-visualização, validação e proteção contra duplicidade.
+5. Implementar exportação CSV e backup/restauração JSON; validar recuperação antes de usar dados reais.
+6. Configurar eventual publicação Vercel Hobby se o site também for desejado; sem domínio pago ou cobrança.
+7. Só importar dados reais da planilha após acesso privado e backup verificados.
 
 ## Limites de custo conhecidos (verificar de novo antes de lançar)
 
