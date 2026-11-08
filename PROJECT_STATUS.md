@@ -4,6 +4,15 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Atualização 2026-11-08 (versão local)
+
+- O app agora funciona sem login nem internet, usando um banco local (IndexedDB). A nuvem (Supabase) virou fonte opcional, escolhida em "Dados e backup". Google Sheets fica para a próxima etapa.
+- Interface comum às duas fontes: `DataSource` em `src/types.ts`; implementações em `src/services/localSource.ts` e `supabaseSource.ts`.
+- Implementado e testado (10 testes Vitest, dados sintéticos): parcelas em centavos, importação de .xlsx com prévia e sem duplicar, backup/restauração JSON validado, exportação CSV.
+- Telas: Visão geral (comparar dois meses, gráficos, evolução mensal), Faturas e lançamentos (filtros, ordenação, nova fatura), Dados e backup.
+- Corrigidos: `electron-builder@^27` (inexistente, agora ^26) e 7 erros de lint/TypeScript.
+- Ainda não validado: instalador NSIS no Windows, Supabase real, deep link do link mágico.
+
 ## Objetivo
 
 Aplicação web pessoal para organizar despesas e faturas de cartão compartilhado. O usuário traz ideias e requisitos em linguagem natural; a implementação deve priorizar um fluxo simples, dados privados e custo zero.
