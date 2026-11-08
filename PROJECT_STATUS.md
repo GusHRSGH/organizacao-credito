@@ -34,7 +34,8 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 ## Ainda não implementado / verificado
 
 - Repositório GitHub privado: `GusHRSGH/organizacao-credito`. A estrutura e os 24 arquivos do projeto foram enviados ao branch `main` e conferidos na página do repositório.
-- Projeto Supabase/Vercel ainda não vinculado.
+- A conta Supabase tem a organização `Batata` no plano Free e ainda não havia projetos. O formulário para `organizacao-credito` está preparado em São Paulo (`sa-east-1`), Data API ligada, exposição automática de tabelas desligada e RLS automático ligado. A criação está aguardando o usuário definir a senha do banco e acionar o botão final.
+- Projeto Vercel ainda não vinculado.
 - Nenhuma migration foi aplicada a um banco remoto.
 - Não foi possível instalar dependências ou executar lint/build nesta máquina (Node está disponível, npm não).
 - A interface não foi validada num browser com o backend real.
@@ -45,7 +46,7 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 ## Sequência recomendada
 
 1. Criar um repositório **privado** chamado `organizacao-credito` na conta GitHub `GusHRSGH` e enviar somente estes arquivos fictícios.
-2. Conectar Supabase e criar projeto Free, desativar signup, configurar o e-mail autorizado, aplicar e revisar migrations/RLS; não inserir dados reais ainda.
+2. Completar a criação do projeto Supabase Free, desativar signup, configurar o e-mail autorizado, aplicar e revisar migrations/RLS; não inserir dados reais ainda.
 3. Resolver dependências, gerar lockfile, executar lint/build e corrigir erros; revisar a lógica SQL com uma instância de teste.
 4. Implementar importação XLSX com seleção de mês, pré-visualização, validação e proteção contra importação duplicada; dados só são gravados após confirmação do usuário.
 5. Implementar exportação CSV e backup/restauração JSON; validar round-trip antes de inserir dados reais.
