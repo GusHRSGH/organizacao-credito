@@ -11,6 +11,7 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 ## Decisões vigentes
 
 - Frontend: React + TypeScript + Vite.
+- Aplicativo Windows: Electron + electron-builder/NSIS, compartilhando a interface React; build local ou artefato manual via GitHub Actions, sem assinatura paga.
 - Banco/Auth: Supabase PostgreSQL + Supabase Auth, com RLS por usuário.
 - Hosting: Vercel Hobby para uso pessoal, sem domínio pago (`*.vercel.app`).
 - Repositório: GitHub Free privado; Actions dentro das cotas gratuitas.
@@ -30,6 +31,8 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Formulário de compra à vista/parcelada.
 - Migration SQL inicial para perfis, pessoas, categorias, faturas e transações; RLS de propriedade; chaves compostas para impedir relacionamentos cruzados entre usuários; RPC transacional `create_purchase`.
 - Documentos de arquitetura/custo em `STACK.md`.
+- Invólucro Electron com deep link `organizacao-credito://auth/callback`, preload isolado, navegação restrita e CSP.
+- Workflow manual do Windows configurado para publicar o instalador como artefato temporário do GitHub Actions (14 dias).
 
 ## Ainda não implementado / verificado
 
@@ -38,6 +41,7 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Projeto Vercel ainda não vinculado.
 - Nenhuma migration foi aplicada a um banco remoto.
 - Não foi possível instalar dependências ou executar lint/build nesta máquina (Node está disponível, npm não).
+- O `.exe` ainda não foi construído nem validado. Para o link mágico funcionar no desktop, adicionar `organizacao-credito://auth/callback` à URL allowlist do Supabase e validar a abertura do aplicativo pelo link no Windows.
 - A interface não foi validada num browser com o backend real.
 - Importação validada do XLSX, prévia/relatório de erros, exportação completa e backup JSON recuperável ainda faltam.
 - O protótipo HTML isolado foi um estudo visual, não é fonte de verdade nem está incluído no repositório.
@@ -59,4 +63,3 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Vercel Hobby destina-se a uso pessoal/não comercial e pausa/limita recursos ao ultrapassar cotas gratuitas.
 - GitHub Free inclui repositórios privados e 2.000 minutos mensais de GitHub Actions.
 - Não prometer disponibilidade contínua nem cotas permanentes. Se um serviço exigir pagamento, interromper e procurar alternativa grátis.
-
