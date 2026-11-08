@@ -34,5 +34,5 @@ As regras adotadas estão descritas em [STACK.md](STACK.md): sincronização ent
 
 ## Publicação
 
-`vercel.json` e o workflow de CI estão preparados. A publicação aguarda um repositório privado GitHub, projeto Supabase e projeto Vercel, que ainda não estão vinculados a esta workspace.
+`vercel.json` e o workflow de CI estão preparados. O repositório privado é `GusHRSGH/organizacao-credito`. O projeto Supabase e o projeto Vercel ainda não estão vinculados.
 
