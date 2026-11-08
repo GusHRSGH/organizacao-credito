@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import type { Invoice, Transaction } from '../types'
 import { formatDate } from '../lib/format'
 
@@ -17,7 +18,14 @@ export function toCsv(rows: Transaction[], invoices: Invoice[]) {
   return BOM + [header.map(cell).join(';'), ...lines].join('\r\n')
 }
 
+async function shareOnDevice(filename: string, content: string) {
+  const [{ Filesystem, Directory, Encoding }, { Share }] = await Promise.all([import('@capacitor/filesystem'), import('@capacitor/share')])
+  const written = await Filesystem.writeFile({ path: filename, data: content, directory: Directory.Cache, encoding: Encoding.UTF8 })
+  await Share.share({ title: filename, url: written.uri, dialogTitle: 'Salvar ou enviar arquivo' })
+}
+
 export function downloadText(filename: string, content: string, mime: string) {
+  if (Capacitor.isNativePlatform()) { void shareOnDevice(filename, content); return }
   const url = URL.createObjectURL(new Blob([content], { type: `${mime};charset=utf-8` }))
   const link = document.createElement('a')
   link.href = url

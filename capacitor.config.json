@@ -1,0 +1,6 @@
+{
+  "appId": "br.com.gushrs.organizacaocredito",
+  "appName": "Organização do Crédito",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false }
+}
