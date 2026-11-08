@@ -108,6 +108,12 @@ function checkPatch(patch: TransactionPatch) {
   return null
 }
 
+export interface SnapshotInfo { id: string; savedAt: string; reason: 'auto' | 'antes'; invoices: number; transactions: number }
+
+const KEEP = { auto: 7, antes: 5 } as const
+const localDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const hasContent = (data: LocalData) => data.invoices.length > 0 || data.transactions.length > 0
+
 export class LocalSource implements DataSource {
   readonly kind = 'local' as const
   private cache: LocalData | null = null
@@ -121,10 +127,39 @@ export class LocalSource implements DataSource {
     return this.cache
   }
 
+  /** Cópia automática guardada neste aparelho: uma por dia (estado antes da 1ª alteração) e uma antes de restaurar/limpar. Falhar aqui nunca impede o uso. */
+  private async snapshot(data: LocalData, reason: 'auto' | 'antes') {
+    try {
+      if (!hasContent(data)) return
+      const now = new Date()
+      const id = reason === 'auto' ? `auto-${localDay(now)}` : `antes-${now.getTime()}`
+      const all = await this.persistence.listSnapshots()
+      if (reason === 'auto' && all.some((record) => record.id === id)) return
+      await this.persistence.putSnapshot({ id, savedAt: now.toISOString(), reason, data: structuredClone(data) })
+      const same = [...all.filter((record) => record.reason === reason), { id, savedAt: now.toISOString() }].sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+      for (const old of same.slice(KEEP[reason])) await this.persistence.removeSnapshot(old.id)
+    } catch { /* cópia automática é um bônus */ }
+  }
+
+  async listSnapshots(): Promise<SnapshotInfo[]> {
+    return (await this.persistence.listSnapshots())
+      .map((record) => ({ id: record.id, savedAt: record.savedAt, reason: record.reason, invoices: record.data.invoices.length, transactions: record.data.transactions.length }))
+      .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+  }
+
+  async restoreSnapshot(id: string) {
+    const record = (await this.persistence.listSnapshots()).find((item) => item.id === id)
+    if (!record) throw new Error('Esta cópia automática não existe mais.')
+    const data = validateBackup({ app: 'organizacao-credito', version: 1, data: record.data })
+    await this.snapshot(await this.read(), 'antes')
+    return this.mutate((db) => { Object.assign(db, data) })
+  }
+
   /** Altera uma cópia, grava e só então troca o cache: falha de gravação não corrompe nada. */
   private mutate<T>(change: (draft: LocalData) => T): Promise<T> {
     const run = async () => {
       this.cache ??= (await this.persistence.load()) ?? emptyData()
+      await this.snapshot(this.cache, 'auto')
       const draft = structuredClone(this.cache)
       const value = change(draft)
       await this.persistence.save(draft)
@@ -282,12 +317,14 @@ export class LocalSource implements DataSource {
 
   async exportBackup() { return makeBackup(await this.read()) }
 
-  restoreBackup(input: unknown) {
+  async restoreBackup(input: unknown) {
     const data = validateBackup(input)
+    await this.snapshot(await this.read(), 'antes')
     return this.mutate((db) => { Object.assign(db, data) })
   }
 
-  clearAll() {
+  async clearAll() {
+    await this.snapshot(await this.read(), 'antes')
     return this.mutate((db) => { Object.assign(db, emptyData()) })
   }
 }
