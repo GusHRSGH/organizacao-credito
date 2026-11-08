@@ -537,3 +537,18 @@ button:active:not(:disabled), .nav-item:active, .tag:active { transform: scale(.
 .snapshot-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
 .snapshot-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--line, rgba(128,128,128,.25)); border-radius: 10px; font-size: .92rem; }
 @media (max-width: 820px) { .snapshot-list li { flex-direction: column; align-items: flex-start; } }
+
+/* Importação: nada pode empurrar a página para os lados */
+.main, .panel, .import-box { min-width: 0; }
+.import-list { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 820px) {
+  .main { overflow-x: clip; }
+  .import-table, .import-table tbody, .import-table tr, .import-table td { display: block; width: 100%; }
+  .import-table thead { display: none; }
+  .import-table tr { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px 12px; padding: 12px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 12px; }
+  .import-table td { padding: 0; border: 0; text-align: left; }
+  .import-table td:first-child { grid-row: 1 / span 2; align-self: center; width: auto; }
+  .import-table td[data-label]::before { content: attr(data-label); display: block; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .4px; }
+  .import-table td[data-label="Resultado"] { grid-column: 1 / -1; }
+  .import-table td.num { text-align: left; }
+}
