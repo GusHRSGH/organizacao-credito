@@ -10,12 +10,13 @@ import { currentPeriod } from './services/installments'
 import { getSource, getStoredKind, isLocalSource, storeKind } from './services/source'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/Invoices'
+import Billing from './pages/Billing'
 import Settings from './pages/Settings'
 import type { Invoice, SourceKind, Transaction } from './types'
 
 const ENTRY_KEY = 'oc:entry'
-type Page = 'dashboard' | 'invoices' | 'settings'
-const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', settings: 'Dados' }
+type Page = 'dashboard' | 'invoices' | 'billing' | 'settings'
+const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', billing: 'Quem deve quanto', settings: 'Dados' }
 
 export default function App() {
   const [theme, toggleTheme] = useTheme()
@@ -133,7 +134,7 @@ export default function App() {
     <aside className="sidebar">
       <div className="brand"><Logo size={38} /><span>Organização<br />do Crédito</span></div>
       <div className="nav-label">Workspace</div>
-      {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('settings', 'settings', 'Dados e backup')}
+      {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('billing', 'users', 'Quem deve quanto')}{nav('settings', 'settings', 'Dados e backup')}
       <div className="sidebar-note">Responsável é a pessoa a quem o gasto é atribuído.</div>
       <div className="sidebar-footer">
         {kind === 'local' && google.status?.signedIn
@@ -150,6 +151,7 @@ export default function App() {
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} />}
+        {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
         {page === 'settings' && (local ? <Settings kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>

@@ -1,14 +1,15 @@
 import { Icon } from '../components/Icon'
-import { useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import QuickAdd from '../components/QuickAdd'
 import PasteBill from '../components/PasteBill'
+import EditDialog from '../components/EditDialog'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
 import { Metric, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money, pct } from '../lib/format'
 import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
 import { totals } from '../services/stats'
-import type { DataSource, Invoice, Transaction } from '../types'
+import type { DataSource, Invoice, Transaction, TransactionRow } from '../types'
 
 interface Props {
   source: DataSource
@@ -31,6 +32,11 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const [showForm, setShowForm] = useState(false)
   const [newPeriod, setNewPeriod] = useState('')
   const [showPaste, setShowPaste] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [editing, setEditing] = useState<Transaction | null>(null)
+  const [undo, setUndo] = useState<{ rows: TransactionRow[]; text: string } | null>(null)
+  const [bulkPerson, setBulkPerson] = useState('')
+  const [bulkCategory, setBulkCategory] = useState('')
   const descriptionField = useRef<HTMLInputElement>(null)
 
   const rows = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId), [transactions, invoiceId])
@@ -52,11 +58,45 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       return a.occurred_on.localeCompare(b.occurred_on) * sign
     })
   }, [rows, query, status, person, category, sort])
+  const chosen = visible.filter((row) => selected.has(row.id))
   const pendingVisible = visible.filter((row) => row.status === 'pending')
   const visibleSum = visible.reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100
 
   const run = async (action: () => Promise<unknown>, success?: string) => {
     try { await action(); await onChanged(); if (success) notify('notice', success) } catch (cause) { notify('error', messageOf(cause)) }
+  }
+
+  useEffect(() => {
+    if (!undo) return
+    const timer = setTimeout(() => setUndo(null), 9000)
+    return () => clearTimeout(timer)
+  }, [undo])
+
+  const toggleSelect = (id: string) => setSelected((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next })
+  const selectAll = (all: boolean) => setSelected(all ? new Set(visible.map((row) => row.id)) : new Set())
+
+  async function removeWithUndo(ids: string[], text: string) {
+    if (!local) { for (const id of ids) await source.removeTransaction(id); return }
+    const rows = await local.removeTransactions(ids)
+    setSelected(new Set())
+    setUndo({ rows, text })
+  }
+
+  async function undoRemoval() {
+    if (!undo || !local) return
+    const { rows } = undo
+    setUndo(null)
+    await run(() => local.restoreTransactions(rows), 'Exclusão desfeita.')
+  }
+
+  async function applyBulk(action: 'paid' | 'pending' | 'person' | 'category' | 'delete') {
+    const ids = chosen.map((row) => row.id)
+    if (!ids.length) return
+    if (action === 'paid' || action === 'pending') { await run(() => source.setStatusMany(ids, action), action === 'paid' ? 'Marcados como pagos.' : 'Marcados como não pagos.'); return }
+    if (!local) return
+    if (action === 'person') { if (!bulkPerson.trim()) return; await run(() => local.updateMany(ids, { personName: bulkPerson }), 'Responsável atualizado.'); setBulkPerson(''); return }
+    if (action === 'category') { if (!bulkCategory.trim()) return; await run(() => local.updateMany(ids, { categoryName: bulkCategory }), 'Categoria atualizada.'); setBulkCategory(''); return }
+    await run(() => removeWithUndo(ids, `${ids.length} lançamentos excluídos.`))
   }
 
   function toggleSort(key: SortKey) {
@@ -145,10 +185,26 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
     </div>
 
+    {local && chosen.length > 0 && <div className="bulk-bar" role="region" aria-label="Ações em lote">
+      <b>{chosen.length} selecionados · {money(chosen.reduce((sum, row) => sum + Number(row.amount), 0))}</b>
+      <button className="secondary-button" onClick={() => void applyBulk('paid')}>Marcar pagos</button>
+      <button className="secondary-button" onClick={() => void applyBulk('pending')}>Marcar não pagos</button>
+      <span className="bulk-field"><input value={bulkPerson} onChange={(event) => setBulkPerson(event.target.value)} list="bulk-people" placeholder="Novo responsável" /><button className="secondary-button" disabled={!bulkPerson.trim()} onClick={() => void applyBulk('person')}>Aplicar</button></span>
+      <span className="bulk-field"><input value={bulkCategory} onChange={(event) => setBulkCategory(event.target.value)} list="bulk-categories" placeholder="Nova categoria" /><button className="secondary-button" disabled={!bulkCategory.trim()} onClick={() => void applyBulk('category')}>Aplicar</button></span>
+      <button className="secondary-button danger" onClick={() => void applyBulk('delete')}>Excluir</button>
+      <button className="text-button" onClick={() => setSelected(new Set())}>Limpar seleção</button>
+      <datalist id="bulk-people">{people.map((name) => <option key={name} value={name} />)}</datalist>
+      <datalist id="bulk-categories">{categories.map((name) => <option key={name} value={name} />)}</datalist>
+    </div>}
+
     <section className="panel">
       <TransactionTable rows={visible} busy={false} sort={sort} onSort={toggleSort}
         onToggle={(row) => void run(() => source.setTransactionStatus(row.id, row.status === 'paid' ? 'pending' : 'paid'))}
-        onDelete={(row) => { if (window.confirm('Excluir este lançamento?')) void run(() => source.removeTransaction(row.id)) }} />
+        selected={local ? selected : undefined} onSelect={toggleSelect} onSelectAll={selectAll} onEdit={local ? setEditing : undefined}
+        onDelete={(row) => { if (local) void run(() => removeWithUndo([row.id], `Excluído: ${row.description}.`)); else if (window.confirm('Excluir este lançamento?')) void run(() => source.removeTransaction(row.id)) }} />
     </section>
+
+    {editing && local && <EditDialog row={editing} group={editing.installment_group ? transactions.filter((row) => row.installment_group === editing.installment_group) : [editing]} local={local} people={people} categories={categories} onClose={() => setEditing(null)} onSaved={onChanged} notify={notify} />}
+    {undo && <div className="snackbar" role="status"><span>{undo.text}</span><button className="text-button" onClick={() => void undoRemoval()}><Icon name="undo" size={15} />Desfazer</button></div>}
   </>
 }

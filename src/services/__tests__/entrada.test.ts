@@ -31,6 +31,9 @@ describe('parseQuickLine', () => {
     expect(parseQuickLine('pizza 80 05/11', ctx).date).toBe('2026-11-05')
     expect(parseQuickLine('presente 50 20/12', ctx).date).toBe('2025-12-20')
   })
+  it('deixa maiúscula a inicial de pessoa e categoria novas', () => {
+    expect(parseQuickLine('pao 5 @carla #padaria', ctx)).toMatchObject({ person: 'Carla', category: 'Padaria' })
+  })
   it('sem valor deixa amount nulo', () => {
     expect(parseQuickLine('padaria', ctx).amount).toBeNull()
   })

@@ -82,7 +82,7 @@ h1, h2 { font-family: var(--font-display); }
 .logo { display: block; flex: none; border-radius: 22%; }
 
 /* ---------- Shell ---------- */
-.app-shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+.app-shell { display: grid; grid-template-columns: 276px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { background: var(--sidebar); border-right: 1px solid var(--line); padding: 26px 16px; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; transition: background-color .25s ease, border-color .25s ease; }
 .brand { font: 700 16px/1.15 var(--font-display); letter-spacing: -.2px; display: flex; align-items: center; gap: 11px; padding: 0 8px 30px; }
 .nav-label { color: var(--faint); letter-spacing: .3px; font-size: 12px; font-weight: 600; padding: 0 12px 9px; }
@@ -400,3 +400,65 @@ td.desc { white-space: normal; min-width: 180px; }
 .paste-who { color: var(--faint); font-size: 12px; }
 .paste-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) { .paste-defaults { grid-template-columns: 1fr; } .paste-row { grid-template-columns: auto 1fr auto; } .paste-date, .paste-who { display: none; } }
+
+/* Edição, lote, desfazer e cobrança */
+.metric-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+th.check, td.check { width: 38px; padding-right: 0; }
+td.check input, th.check input { width: 17px; height: 17px; accent-color: var(--primary); }
+tbody tr.selected { background: var(--primary-soft); }
+td.actions { text-align: right; white-space: nowrap; }
+.secondary-button.danger { color: var(--bad); border-color: var(--bad-soft); }
+.secondary-button.danger:hover { background: var(--bad-soft); }
+.bulk-bar { position: sticky; top: 10px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--primary); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; box-shadow: var(--shadow-hover); }
+.bulk-field { display: inline-flex; gap: 6px; }
+.bulk-field input { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--surface); color: var(--text); width: 150px; }
+.modal-backdrop { position: fixed; inset: 0; background: #0a112666; display: grid; place-items: center; z-index: 50; padding: 16px; animation: fade .15s ease both; }
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px; width: min(560px, 100%); max-height: 92vh; overflow: auto; box-shadow: 0 24px 70px #0a112640; display: grid; gap: 14px; }
+.modal h2 { margin: 0; font-size: 20px; letter-spacing: -.3px; }
+.modal label { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: var(--faint); }
+.modal input { border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: var(--surface); color: var(--text); font-size: 15px; min-width: 0; }
+.modal input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus); }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface-2); border-radius: 12px; padding: 4px; }
+.segmented button { border: 0; background: transparent; padding: 9px 10px; border-radius: 9px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.segmented button.on { background: var(--surface); color: var(--primary); box-shadow: var(--shadow); }
+.snackbar { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; display: flex; gap: 16px; align-items: center; background: var(--text); color: var(--bg); padding: 12px 16px; border-radius: 12px; box-shadow: 0 12px 36px #0a112655; animation: rise .25s ease both; }
+.snackbar .text-button { color: #9fc0ff; display: inline-flex; gap: 6px; align-items: center; font-weight: 700; }
+.bill-list { display: grid; gap: 12px; }
+.bill-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+.bill-head { display: flex; align-items: center; gap: 14px; }
+.bill-name { display: grid; flex: 1; min-width: 0; }
+.bill-name b { font-size: 17px; }
+.bill-name small { color: var(--faint); font-size: 12px; }
+.bill-due { display: grid; text-align: right; }
+.bill-due span { font-size: 12px; color: var(--faint); }
+.bill-due b { font-size: 22px; letter-spacing: -.5px; }
+.bill-due b.warn { color: var(--warn); }
+.bill-due b.ok { color: var(--good); }
+.bill-progress { height: 8px; border-radius: 99px; background: var(--surface-2); margin: 14px 0; overflow: hidden; }
+.bill-progress i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--primary), #5fd0c8); transition: width .5s ease; }
+.bill-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bill-rows { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1px solid var(--line); }
+.bill-rows li { display: flex; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; align-items: center; }
+.bill-rows li.done { opacity: .5; text-decoration: line-through; }
+.bill-rows .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+@media (max-width: 700px) { .modal-grid, .metric-grid.three { grid-template-columns: 1fr; } .bulk-field input { width: 120px; } }
+
+/* Visual mais amplo: fontes, alvos de clique e respiro maiores */
+body { font-size: 15px; }
+.nav-item { font-size: 15px; padding: 13px 14px; }
+.page-heading h1 { font-size: 34px; }
+.page-heading p { font-size: 15px; }
+td { font-size: 14.5px; padding: 15px 10px; }
+th { font-size: 13px; padding: 0 10px 12px; }
+.tag { font-size: 13px; padding: 5px 11px; }
+.metric-card, .panel { padding: 24px; }
+.metric-label { font-size: 13px; }
+.primary-button, .secondary-button { min-height: 44px; padding-left: 18px; padding-right: 18px; font-size: 14.5px; }
+.toolbar input, .toolbar select, .select-group select, .heading-actions select, .entry-form input, .entry-form select, .inline-form input { font-size: 14.5px; padding: 12px 14px; }
+.icon-button { width: 38px; height: 38px; }
+.quick-row input { font-size: 16px; padding: 14px 16px; }
+.chip { font-size: 13px; padding: 5px 12px; }
+.hint, .quick-help, .panel-sub { font-size: 13px; }

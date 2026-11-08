@@ -4,6 +4,20 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Roteiro acordado (2026-11-08)
+
+Decisões do dono para a evolução do app:
+- Cada pessoa tem o seu próprio banco, separado dos outros, na nuvem Supabase (RLS por usuário). Login com Google e com link mágico. Cadastro aberto a qualquer pessoa (a decisão vai contra a regra antiga de signup desabilitado; revisar limites gratuitos, privacidade/LGPD e abuso antes de abrir). Modo local sem login continua existindo e coexiste com a nuvem.
+- Distribuição: versão web gratuita (instalável) e APK Android; Windows continua com instalador. Tarefa gratuita para evitar a pausa do Supabase por inatividade.
+- Pendências: nuvem e contas (Supabase precisa de RPCs/regras para editar, lote e desfazer), versão web, termos e política de privacidade, excluir conta e exportar dados, gastos recorrentes, metas e limites, gerenciar pessoas e categorias, busca com filtros salvos, versão Android com login.
+- O dono precisa configurar o projeto Supabase e o login Google lá; a chave secreta nunca vai para o código.
+
+## Edição e cobrança (2026-11-08)
+
+- Editar um lançamento ou a compra parcelada inteira, excluir com Desfazer, seleção em lote (pagar, trocar responsável/categoria, excluir). Implementado só no banco local (`LocalSource`); a fonte Supabase ainda não tem essas operações.
+- Página "Quem deve quanto" (`Billing`, `src/lib/billing.ts`): total, pago e pendente por responsável, mensagem de cobrança para o WhatsApp, marcar tudo como pago.
+- Visual mais amplo: fontes, botões e espaçamentos maiores. 29 testes Vitest passando; fluxo verificado no navegador.
+
 ## Entrada rápida (2026-11-08)
 
 - Linha rápida em Faturas (`QuickAdd`, atalho Ctrl+N) com leitura de valor, parcelas, data, @responsável e #categoria (`src/lib/quickEntry.ts`); sugestão de responsável/categoria pelo histórico (`suggest.ts`); formulário completo agora continua aberto e lembra data, responsável, categoria e parcelas; colar fatura do banco com prévia (`PasteBill`, `pasteImport.ts`, só banco local). 19 testes Vitest passando; fluxo verificado no navegador.

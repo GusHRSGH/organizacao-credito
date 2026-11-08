@@ -12,6 +12,8 @@ export interface QuickParsed {
   category: string | null
 }
 
+const capital = (word: string) => word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
+
 export const plain = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR').trim()
 
 /** Converte "1.234,56", "150,9" ou "150.90" em número; devolve null se não parecer dinheiro. */
@@ -72,8 +74,8 @@ export function parseQuickLine(text: string, ctx: QuickContext): QuickParsed {
       const iso = dateFromDayMonth(Number(day[1]), Number(day[2]), day[3] ? Number(day[3]) : null, ctx.today)
       if (iso) { out.date = iso; kept[index] = null; return }
     }
-    if (token.startsWith('@') && token.length > 1) { out.person = matchKnown(token.slice(1), ctx.people, true) ?? token.slice(1); kept[index] = null; return }
-    if (token.startsWith('#') && token.length > 1) { out.category = matchKnown(token.slice(1), ctx.categories, false) ?? token.slice(1); kept[index] = null; return }
+    if (token.startsWith('@') && token.length > 1) { out.person = matchKnown(token.slice(1), ctx.people, true) ?? capital(token.slice(1)); kept[index] = null; return }
+    if (token.startsWith('#') && token.length > 1) { out.category = matchKnown(token.slice(1), ctx.categories, false) ?? capital(token.slice(1)); kept[index] = null; return }
     if (parseMoney(token) !== null) amountIndex = index
   })
 
