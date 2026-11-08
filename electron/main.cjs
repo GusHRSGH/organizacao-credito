@@ -1,4 +1,5 @@
-const { app, BrowserWindow, nativeTheme, shell } = require('electron')
+const { app, BrowserWindow, nativeTheme, safeStorage, shell } = require('electron')
+const { registerGoogle } = require('./google.cjs')
 const path = require('node:path')
 
 const protocol = 'organizacao-credito'
@@ -88,6 +89,11 @@ app.whenReady().then(() => {
     const value = pendingAuthCallback
     pendingAuthCallback = undefined
     return value ?? null
+  })
+  const devUrl = process.env.VITE_DEV_SERVER_URL || (!app.isPackaged ? 'http://127.0.0.1:5173' : null)
+  registerGoogle({
+    ipcMain, app, shell, safeStorage,
+    isTrustedSender: (event) => { const url = event.senderFrame?.url ?? ''; return devUrl ? url.startsWith(devUrl) : url.startsWith('file://') },
   })
   createWindow()
   app.on('activate', () => {

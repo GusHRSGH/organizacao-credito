@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { hasSupabaseConfig, supabase } from './lib/supabase'
 import { messageOf } from './lib/format'
+import { useGoogleAccount } from './hooks/useGoogleAccount'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { Icon, Logo, type IconName } from './components/Icon'
 import { useTheme } from './lib/theme'
@@ -31,6 +32,12 @@ export default function App() {
 
   const active = kind === 'local' || !!session
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
+  const localSource = isLocalSource(source) ? source : null
+  const google = useGoogleAccount({
+    makeBackupText: localSource && loaded ? async () => (invoices.length || transactions.length ? JSON.stringify(await localSource.exportBackup()) : null) : null,
+    dataKey: transactions,
+    notify,
+  })
 
   const refresh = useCallback(async () => {
     const [inv, rows] = await Promise.all([source.listInvoices(), source.listAllTransactions()])
@@ -88,7 +95,11 @@ export default function App() {
       <div className="nav-label">Workspace</div>
       {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('settings', 'settings', 'Dados e backup')}
       <div className="sidebar-note">Responsável é a pessoa a quem o gasto é atribuído.</div>
-      <div className="sidebar-footer"><span className="avatar">{kind === 'local' ? <Icon name="database" size={15} /> : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? 'Neste computador' : 'Nuvem'} · {counts.invoices} faturas</small></span></div>
+      <div className="sidebar-footer">
+        {kind === 'local' && google.status?.signedIn
+          ? <>{google.status.picture ? <img className="avatar-img" src={google.status.picture} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{(google.status.email ?? '?')[0].toUpperCase()}</span>}<span>{google.status.name ?? google.status.email}<br /><small>Google conectado · {counts.invoices} faturas</small></span></>
+          : <><span className="avatar">{kind === 'local' ? <Icon name="database" size={15} /> : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? 'Neste computador' : 'Nuvem'} · {counts.invoices} faturas</small></span></>}
+      </div>
     </aside>
     <main className="main">
       <header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div>
@@ -98,7 +109,7 @@ export default function App() {
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
-        {page === 'settings' && (local ? <Settings kind={kind} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
+        {page === 'settings' && (local ? <Settings kind={kind} google={google} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={google} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
   </div>

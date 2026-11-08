@@ -78,3 +78,12 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Novo tema azul com alternância claro/escuro (botão no topo, lembra a escolha e usa a preferência do sistema na primeira vez).
 - Ícones SVG animados (`src/components/Icon.tsx`), card de destaque com o total da fatura, gráficos com entrada animada e animações desativadas quando o sistema pede menos movimento.
 - Ícone do app em `public/icon.svg`, `build/icon.ico` e `electron/icon.png`. O Setup.exe gerado pelo GitHub Actions embute o ícone no executável; o zip portátil montado no Linux mostra o ícone na janela, mas o arquivo .exe pode aparecer com o ícone padrão no Explorer.
+
+## Atualização 2026-11-08 (login Google e backup no Drive)
+
+- Ícone do app redesenhado (cartão com gráfico de rosca).
+- Login com Google (OAuth de app para computador, com PKCE, navegador do sistema e redirecionamento para 127.0.0.1) em `electron/google.cjs`. O processo principal guarda os tokens criptografados com `safeStorage`; a interface nunca os vê.
+- Backup e restauração no Google Drive usando só o escopo `drive.appdata` (pasta oculta do app). Backup automático (8 s após alterações, desligável) e botões manuais em Dados e backup. Nunca grava backup vazio por cima do existente.
+- O usuário cria o próprio projeto gratuito no Google Cloud e cola ID e chave do cliente no app (guia dentro do painel). Nada disso vai para o repositório.
+- Verificado: lint, build, simulação do fluxo completo com um Google falso (PKCE, state, criar/atualizar/restaurar backup). **Ainda não testado com uma conta Google real.**
+- Pendente: fonte de dados Google Sheets.
