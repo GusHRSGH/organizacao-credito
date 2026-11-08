@@ -52,7 +52,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
       </div>
     </div>
   </li>)}</ul>
-  return <><div className="table-scroll"><table><thead><tr>
+  return <><div className="table-scroll tx-table"><table><thead><tr>
     {selected && <th className="check"><input type="checkbox" aria-label="Selecionar todos" checked={rows.length > 0 && rows.every((row) => selected.has(row.id))} onChange={(event) => onSelectAll?.(event.target.checked)} /></th>}{head('date', 'Data')}<th>Descrição</th>{head('person', 'Responsável')}<th>Categoria</th><th>Parcela</th><th>Status</th>{head('amount', 'Valor', 'num')}<th />
   </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={selected?.has(row.id) ? 'selected' : ''}>
     {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
