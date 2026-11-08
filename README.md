@@ -16,6 +16,19 @@ copy .env.example .env
 npm run dev
 ```
 
+### Aplicativo Windows (.exe)
+
+O projeto também pode ser empacotado como aplicativo desktop com Electron, sem custo de licença. No Windows, após instalar as dependências:
+
+```sh
+npm run desktop:dev
+npm run desktop:dist
+```
+
+O instalador NSIS será gerado em `release/`. Também há um workflow manual no GitHub Actions (`Build Windows installer`): ele gera um artefato baixável por 14 dias, dentro das cotas gratuitas do GitHub Actions. O instalador ainda não tem assinatura digital paga; o Windows pode exibir um aviso de editor desconhecido.
+
+Para o link mágico funcionar no aplicativo desktop, o Supabase deverá permitir o redirect `organizacao-credito://auth/callback` na lista de URLs de autenticação. A configuração só deve ser feita depois da criação do projeto Supabase e de validar o callback no Windows.
+
 Sem credenciais Supabase, a página apresenta instruções de configuração. Para ativar login e banco, preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no `.env`, aplique as migrations e cadastre a URL exata da aplicação em Supabase Auth. Novos cadastros estão desabilitados por padrão; crie seu usuário inicial pelo painel Supabase e só permita novos usuários deliberadamente. Nunca use uma chave `service_role` no frontend.
 
 ## Implementado nesta base
@@ -35,4 +48,3 @@ As regras adotadas estão descritas em [STACK.md](STACK.md): sincronização ent
 ## Publicação
 
 `vercel.json` e o workflow de CI estão preparados. O repositório privado é `GusHRSGH/organizacao-credito`. O projeto Supabase e o projeto Vercel ainda não estão vinculados.
-
