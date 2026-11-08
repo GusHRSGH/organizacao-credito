@@ -1,4 +1,6 @@
+import GoogleAccountPanel from '../components/GoogleAccount'
 import { Icon } from '../components/Icon'
+import type { GoogleAccount } from '../hooks/useGoogleAccount'
 import { useRef, useState } from 'react'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
@@ -10,6 +12,7 @@ import { hasSupabaseConfig } from '../lib/supabase'
 
 interface Props {
   kind: SourceKind
+  google: GoogleAccount
   local: LocalSource
   invoices: Invoice[]
   transactions: Transaction[]
@@ -18,7 +21,7 @@ interface Props {
   notify: (kind: 'notice' | 'error', text: string) => void
 }
 
-export default function Settings({ kind, local, invoices, transactions, onKind, onChanged, notify }: Props) {
+export default function Settings({ kind, google, local, invoices, transactions, onKind, onChanged, notify }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -99,6 +102,8 @@ export default function Settings({ kind, local, invoices, transactions, onKind, 
       </div>
       <p className="hint">A integração com Google Sheets entra numa próxima etapa.</p>
     </Panel>
+
+    <GoogleAccountPanel google={google} local={isLocal ? local : null} onChanged={onChanged} notify={notify} />
 
     <Panel title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
       <div className="button-row">

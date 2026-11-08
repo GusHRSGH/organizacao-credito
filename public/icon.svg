@@ -1,28 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5b9bff"/>
-      <stop offset="0.55" stop-color="#2358e6"/>
-      <stop offset="1" stop-color="#0f2a8f"/>
+    <linearGradient id="bg" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#6aa8ff"/>
+      <stop offset="0.5" stop-color="#2a5cf0"/>
+      <stop offset="1" stop-color="#0a1a6e"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.25" cy="0.15" r="0.9">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.38"/>
-      <stop offset="0.6" stop-color="#fff" stop-opacity="0"/>
+    <radialGradient id="glow" cx="0.2" cy="0.1" r="0.85">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.45"/>
+      <stop offset="0.65" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#dbe8ff"/>
+      <stop offset="1" stop-color="#d3e3ff"/>
     </linearGradient>
+    <linearGradient id="back" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a9ccff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#5f8fff" stop-opacity="0.75"/>
+    </linearGradient>
+    <linearGradient id="a1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8bff"/><stop offset="1" stop-color="#1f4fd8"/></linearGradient>
+    <linearGradient id="a2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3fd6ee"/><stop offset="1" stop-color="#12a5cf"/></linearGradient>
+    <linearGradient id="a3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a86ff"/><stop offset="1" stop-color="#6a4ff0"/></linearGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#06134a" flood-opacity="0.45"/></filter>
+    <clipPath id="clip"><rect x="12" y="12" width="232" height="232" rx="58"/></clipPath>
   </defs>
   <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#bg)"/>
   <rect x="12" y="12" width="232" height="232" rx="58" fill="url(#glow)"/>
-  <g transform="rotate(-9 128 128)">
-    <rect x="46" y="74" width="164" height="112" rx="20" fill="#0a1f6b" opacity="0.35" transform="translate(0 8)"/>
-    <rect x="46" y="74" width="164" height="112" rx="20" fill="url(#card)"/>
-    <rect x="46" y="98" width="164" height="22" fill="#1f4fd8"/>
-    <rect x="64" y="136" width="28" height="22" rx="6" fill="#9fc0ff"/>
-    <rect x="126" y="150" width="14" height="14" rx="4" fill="#2f6bff"/>
-    <rect x="146" y="140" width="14" height="24" rx="4" fill="#2f6bff"/>
-    <rect x="166" y="128" width="14" height="36" rx="4" fill="#1237a8"/>
+  <g clip-path="url(#clip)">
+    <circle cx="236" cy="236" r="96" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="26"/>
+  </g>
+  <rect x="13.5" y="13.5" width="229" height="229" rx="56.5" fill="none" stroke="#fff" stroke-opacity="0.28" stroke-width="1.5"/>
+  <g transform="rotate(9 128 128) translate(6 -4)">
+    <rect x="42" y="66" width="176" height="116" rx="24" fill="url(#back)"/>
+  </g>
+  <g transform="rotate(-8 128 128)" filter="url(#sh)">
+    <rect x="38" y="76" width="180" height="118" rx="24" fill="url(#card)"/>
+    <rect x="58" y="96" width="32" height="24" rx="7" fill="#9fc0ff"/>
+    <rect x="58" y="96" width="32" height="24" rx="7" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.5"/>
+    <rect x="58" y="154" width="62" height="9" rx="4.5" fill="#b9cdf3"/>
+    <rect x="58" y="171" width="38" height="9" rx="4.5" fill="#cfdcf7"/>
+    <g transform="translate(168 135) rotate(-90)" fill="none" stroke-width="15" stroke-linecap="round">
+      <circle r="29" stroke="#e3ecff" stroke-width="15"/>
+      <circle r="29" stroke="url(#a1)" pathLength="100" stroke-dasharray="46 54" stroke-dashoffset="0"/>
+      <circle r="29" stroke="url(#a2)" pathLength="100" stroke-dasharray="26 74" stroke-dashoffset="-50"/>
+      <circle r="29" stroke="url(#a3)" pathLength="100" stroke-dasharray="12 88" stroke-dashoffset="-80"/>
+    </g>
   </g>
 </svg>
