@@ -16,6 +16,37 @@ export function GoogleLogo({ size = 18 }: { size?: number }) {
 
 const when = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'nunca')
 
+
+export function GoogleSetup({ google, onSaved, onCancel, openGuide = true }: { google: GoogleAccount; onSaved?: () => void; onCancel?: () => void; openGuide?: boolean }) {
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const { busy } = google
+
+  async function save() {
+    if (await google.saveCredentials(clientId, clientSecret)) { setClientSecret(''); onSaved?.() }
+  }
+
+  return <>
+    <details className="guide" open={openGuide}>
+      <summary>Como criar a chave gratuita do Google (uma vez só, uns 10 minutos)</summary>
+      <ol>
+        <li>Acesse <b>console.cloud.google.com</b>, entre com sua conta e crie um projeto (qualquer nome).</li>
+        <li>Em <b>APIs e serviços › Biblioteca</b>, procure <b>Google Drive API</b> e clique em <b>Ativar</b>.</li>
+        <li>Em <b>Google Auth Platform</b>, configure a tela de permissão: nome do app, seu e-mail, público <b>Externo</b>.</li>
+        <li>Em <b>Acesso a dados</b>, adicione o escopo <b>.../auth/drive.appdata</b>. Ele só dá acesso a uma pasta oculta do próprio app.</li>
+        <li>Em <b>Público-alvo</b>, clique em <b>Publicar app</b>. Sem isso a sessão expira a cada 7 dias. Não precisa de verificação do Google para este escopo.</li>
+        <li>Em <b>Clientes › Criar cliente</b>, escolha <b>App para computador</b>. Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> e cole abaixo.</li>
+      </ol>
+    </details>
+    <form className="google-form" onSubmit={(event) => { event.preventDefault(); void save() }}>
+      <label>ID do cliente<input value={clientId} onChange={(event) => setClientId(event.target.value)} placeholder="123456-abc.apps.googleusercontent.com" autoComplete="off" spellCheck={false} required /></label>
+      <label>Chave secreta do cliente<input type="password" value={clientSecret} onChange={(event) => setClientSecret(event.target.value)} placeholder="GOCSPX-…" autoComplete="off" required /></label>
+      <div className="button-row"><button className="primary-button" disabled={busy}>Salvar chave</button>{onCancel && <button type="button" className="text-button" onClick={onCancel}>Cancelar</button>}</div>
+    </form>
+    <p className="hint">A chave fica guardada só neste computador, criptografada pelo Windows. Ela não vai para o GitHub nem para o Drive.</p>
+  </>
+}
+
 interface Props {
   google: GoogleAccount
   local: LocalSource | null
@@ -25,8 +56,6 @@ interface Props {
 
 export default function GoogleAccountPanel({ google, local, onChanged, notify }: Props) {
   const { status, available, busy } = google
-  const [clientId, setClientId] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
   const [editing, setEditing] = useState(false)
 
   async function restore() {
@@ -42,11 +71,6 @@ export default function GoogleAccountPanel({ google, local, onChanged, notify }:
     } catch (cause) { notify('error', cause instanceof SyntaxError ? 'O backup no Drive está corrompido.' : messageOf(cause)) }
   }
 
-  async function saveCredentials() {
-    await google.saveCredentials(clientId, clientSecret)
-    setClientSecret(''); setEditing(false)
-  }
-
   if (!available) {
     return <Panel title="Conta Google" subtitle="Login e backup no seu Google Drive">
       <p className="empty">Disponível no aplicativo para Windows. No navegador, use o backup em arquivo.</p>
@@ -58,23 +82,7 @@ export default function GoogleAccountPanel({ google, local, onChanged, notify }:
 
   return <Panel title="Conta Google" subtitle="Entre com sua conta e mantenha uma cópia dos dados no seu Google Drive. É gratuito.">
     {needsSetup ? <>
-      <details className="guide" open={!status.configured}>
-        <summary>Como criar a chave gratuita do Google (uma vez só, uns 10 minutos)</summary>
-        <ol>
-          <li>Acesse <b>console.cloud.google.com</b>, entre com sua conta e crie um projeto (qualquer nome).</li>
-          <li>Em <b>APIs e serviços › Biblioteca</b>, procure <b>Google Drive API</b> e clique em <b>Ativar</b>.</li>
-          <li>Em <b>Google Auth Platform</b>, configure a tela de permissão: nome do app, seu e-mail, público <b>Externo</b>.</li>
-          <li>Em <b>Acesso a dados</b>, adicione o escopo <b>.../auth/drive.appdata</b>. Ele só dá acesso a uma pasta oculta do próprio app.</li>
-          <li>Em <b>Público-alvo</b>, clique em <b>Publicar app</b>. Sem isso a sessão expira a cada 7 dias. Não precisa de verificação do Google para este escopo.</li>
-          <li>Em <b>Clientes › Criar cliente</b>, escolha <b>App para computador</b>. Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> e cole abaixo.</li>
-        </ol>
-      </details>
-      <form className="google-form" onSubmit={(event) => { event.preventDefault(); void saveCredentials() }}>
-        <label>ID do cliente<input value={clientId} onChange={(event) => setClientId(event.target.value)} placeholder="123456-abc.apps.googleusercontent.com" autoComplete="off" spellCheck={false} required /></label>
-        <label>Chave secreta do cliente<input type="password" value={clientSecret} onChange={(event) => setClientSecret(event.target.value)} placeholder="GOCSPX-…" autoComplete="off" required /></label>
-        <div className="button-row"><button className="primary-button" disabled={busy}>Salvar chave</button>{editing && <button type="button" className="text-button" onClick={() => setEditing(false)}>Cancelar</button>}</div>
-      </form>
-      <p className="hint">A chave fica guardada só neste computador, criptografada pelo Windows. Ela não vai para o GitHub nem para o Drive.</p>
+      <GoogleSetup google={google} openGuide={!status.configured} onCancel={editing ? () => setEditing(false) : undefined} onSaved={() => setEditing(false)} />
     </> : !status.signedIn ? <>
       <div className="button-row">
         <button className="google-button" disabled={busy} onClick={() => void google.signIn()}><GoogleLogo />{busy ? 'Aguardando o navegador…' : 'Entrar com Google'}</button>

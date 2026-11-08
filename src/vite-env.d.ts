@@ -15,6 +15,7 @@ interface Window {
     saveCredentials: (clientId: string, clientSecret: string) => Promise<GoogleStatus>
     forgetCredentials: () => Promise<GoogleStatus>
     signIn: () => Promise<GoogleStatus>
+    cancelSignIn: () => Promise<GoogleStatus>
     signOut: () => Promise<GoogleStatus>
     backup: (text: string) => Promise<GoogleStatus>
     latest: () => Promise<{ modifiedTime: string; size: number } | null>
