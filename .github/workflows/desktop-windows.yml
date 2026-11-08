@@ -1,6 +1,15 @@
 name: Build Windows installer
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'index.html'
+      - '.github/workflows/desktop-windows.yml'
   workflow_dispatch:
 
 permissions:
