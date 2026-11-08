@@ -1,5 +1,9 @@
 import { Icon } from '../components/Icon'
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
+import QuickAdd from '../components/QuickAdd'
+import PasteBill from '../components/PasteBill'
+import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
+import type { LocalSource } from '../services/localSource'
 import { Metric, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money, pct } from '../lib/format'
 import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
@@ -14,9 +18,11 @@ interface Props {
   onInvoice: (id: string) => void
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
+  local: LocalSource | null
+  quickSignal: number
 }
 
-export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify }: Props) {
+export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, quickSignal }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [person, setPerson] = useState('')
@@ -24,10 +30,14 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const [sort, setSort] = useState<Sort>({ key: 'date', dir: 'desc' })
   const [showForm, setShowForm] = useState(false)
   const [newPeriod, setNewPeriod] = useState('')
+  const [showPaste, setShowPaste] = useState(false)
+  const descriptionField = useRef<HTMLInputElement>(null)
 
   const rows = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId), [transactions, invoiceId])
   const people = useMemo(() => [...new Set(transactions.map((row) => row.person?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
   const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
+  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
+  const descriptions = useMemo(() => knownDescriptions(transactions), [transactions])
   const summary = totals(rows)
 
   const visible = useMemo(() => {
@@ -63,8 +73,21 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
         invoiceId: String(data.get('invoice') ?? invoiceId), occurredOn: String(data.get('date')), description: String(data.get('description')),
         amount: Number(data.get('amount')), personName: String(data.get('person')), categoryName: String(data.get('category')), installmentCount: count,
       })
-      form.reset(); setShowForm(false)
+      const keep = { date: String(data.get('date')), person: String(data.get('person')), category: String(data.get('category')), installments: String(count) }
+      form.reset()
+      for (const [name, value] of Object.entries({ date: keep.date, person: keep.person, category: keep.category, installments: keep.installments })) { const field = form.elements.namedItem(name); if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = value }
+      descriptionField.current?.focus()
     }, count > 1 ? `Compra registrada em ${count} parcelas.` : 'Lançamento salvo.')
+  }
+
+  function fillFromHistory(event: { currentTarget: HTMLInputElement }) {
+    const form = event.currentTarget.form
+    const hint = suggestFor(event.currentTarget.value, suggestions)
+    if (!form || !hint) return
+    for (const [name, value] of [['person', hint.person], ['category', hint.category]] as const) {
+      const field = form.elements.namedItem(name)
+      if (field instanceof HTMLInputElement && !field.value && value) field.value = value
+    }
   }
 
   async function addInvoice() {
@@ -82,12 +105,16 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     <PageHeading title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
-      <button className="primary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Novo lançamento</button>
+      {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
+      <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
     </PageHeading>
 
-    {showForm && <Panel title="Nova compra" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
+    <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
+    {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
+
+    {showForm && <Panel title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
       <form className="entry-form" onSubmit={(event) => void saveEntry(event)}>
-        <label>Descrição<input name="description" maxLength={160} required /></label>
+        <label>Descrição<input ref={descriptionField} name="description" maxLength={160} required list="descriptions-list" autoComplete="off" onBlur={fillFromHistory} /></label>
         <label>Valor total (R$)<input name="amount" type="number" min="0.01" step="0.01" required /></label>
         <label>Data da compra<input name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></label>
         <label>Responsável<input name="person" maxLength={80} list="people-list" required placeholder="Quem vai pagar" /></label>
@@ -95,6 +122,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
         <label>Parcelas<select name="installments">{Array.from({ length: 48 }, (_, i) => <option key={i + 1} value={i + 1}>{i === 0 ? 'À vista' : `${i + 1} parcelas`}</option>)}</select></label>
         {source.kind === 'local' && invoices.length > 0 && <label>1ª parcela na fatura<select name="invoice" defaultValue={invoiceId}>{invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>)}</select></label>}
         <button className="primary-button">Salvar compra</button>
+        <datalist id="descriptions-list">{descriptions.map((name) => <option key={name} value={name} />)}</datalist>
         <datalist id="people-list">{people.map((name) => <option key={name} value={name} />)}</datalist>
         <datalist id="categories-list">{categories.map((name) => <option key={name} value={name} />)}</datalist>
       </form>

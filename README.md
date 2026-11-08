@@ -21,6 +21,8 @@ Aplicativo para Windows, gratuito, com dados guardados no próprio computador.
 ### O que faz
 
 - **Visão geral** com o total da fatura, quanto já foi pago, comparação com outro mês e gráficos por responsável e por categoria.
+- **Lançamento rápido**: digite uma linha como `mercado 150,90 3x @ana #casa ontem` e dê Enter (atalho Ctrl+N). O app sugere responsável e categoria pelo seu histórico e lembra os últimos usados.
+- **Colar da fatura do banco**: cole as linhas copiadas do app ou site do banco, confira a prévia e importe de uma vez, sem duplicar.
 - **Faturas e lançamentos**: cadastro de compras à vista e parceladas (o total é dividido em parcelas mensais iguais e os centavos que sobram vão para a última), filtros e controle de pago ou pendente.
 - **Importação da planilha .xlsx** com prévia antes de gravar. Reimportar é seguro, pois lançamentos idênticos são ignorados.
 - **Exportação** em CSV (abre no Excel) e **backup** completo em JSON.
@@ -70,6 +72,8 @@ npm run desktop:dist   # instalador NSIS em release/ (no Windows)
 ### What it does
 
 - **Overview** with the invoice total, how much is already paid, a comparison against another month, and charts by person and by category.
+- **Quick entry**: type a line like `mercado 150,90 3x @ana #casa ontem` and press Enter (shortcut Ctrl+N). The app suggests person and category from your history and remembers the last ones used.
+- **Paste from your bank statement**: paste the lines copied from your bank's app or site, review the preview, and import in one go without duplicates.
 - **Invoices and transactions**: one-off and installment purchases (the total is split into equal monthly installments, with leftover cents going to the last one), filters, and paid or pending tracking.
 - **Spreadsheet import (.xlsx)** with a preview before anything is saved. Re-importing is safe, since identical transactions are skipped.
 - **Export** to CSV (opens in Excel) and a full **JSON backup**.
