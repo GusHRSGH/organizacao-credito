@@ -1,4 +1,4 @@
-# Contexto para continuar no Claude
+# Regras e contexto do projeto
 
 Leia `README.md`, `PROJECT_STATUS.md` e `STACK.md` antes de alterar este projeto. `PROJECT_STATUS.md` descreve o estado mais recente conhecido; atualize-o quando decisões, código, conexões, validação ou deploy mudarem.
 
