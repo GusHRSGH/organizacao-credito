@@ -24,3 +24,9 @@ export default function SecurityPanel({ notify }: { notify: (kind: 'notice' | 'e
         <span className="hint">{on ? 'Ativado: pede para desbloquear ao abrir e depois de 20 segundos fora do app.' : 'Pede digital, rosto ou o PIN do aparelho ao abrir o app.'}</span></div>}
   </Panel>
 }
+
+/** Botão para procurar uma versão nova do app agora. */
+export function UpdatePanel({ onCheck }: { onCheck: () => void }) {
+  if (!isNative) return null
+  return <Panel title="Atualização do app" subtitle="O app procura versões novas sozinho a cada poucas horas."><div className="button-row"><button className="secondary-button" onClick={onCheck}><Icon name="download" size={16} />Procurar atualização agora</button></div></Panel>
+}

@@ -9,6 +9,7 @@ import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
+import UpdateBanner from './components/UpdateBanner'
 import { currentPeriod } from './services/installments'
 import { getSource, getStoredKind, isLocalSource, storeKind } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -40,6 +41,7 @@ export default function App() {
   const [quickSignal, setQuickSignal] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [updateSignal, setUpdateSignal] = useState(0)
 
   const active = kind === 'local' || !!session
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
@@ -181,13 +183,14 @@ export default function App() {
       <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div></div>
         <div className="topbar-actions">{kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
+      <UpdateBanner manualSignal={updateSignal} />
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
-        {page === 'settings' && (local ? <Settings kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
+        {page === 'settings' && (local ? <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
     {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
