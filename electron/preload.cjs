@@ -9,3 +9,15 @@ contextBridge.exposeInMainWorld('desktopAuth', {
     return () => ipcRenderer.removeListener('auth:callback', listener)
   },
 })
+
+contextBridge.exposeInMainWorld('desktopGoogle', {
+  status: () => ipcRenderer.invoke('google:status'),
+  saveCredentials: (clientId, clientSecret) => ipcRenderer.invoke('google:save-credentials', clientId, clientSecret),
+  forgetCredentials: () => ipcRenderer.invoke('google:forget-credentials'),
+  signIn: () => ipcRenderer.invoke('google:sign-in'),
+  cancelSignIn: () => ipcRenderer.invoke('google:cancel-sign-in'),
+  signOut: () => ipcRenderer.invoke('google:sign-out'),
+  backup: (text) => ipcRenderer.invoke('google:backup', text),
+  latest: () => ipcRenderer.invoke('google:latest'),
+  restore: () => ipcRenderer.invoke('google:restore'),
+})
