@@ -4,6 +4,7 @@ import { messageOf } from './lib/format'
 import { useGoogleAccount } from './hooks/useGoogleAccount'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { Icon, Logo, type IconName } from './components/Icon'
+import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
 import { currentPeriod } from './services/installments'
 import { getSource, getStoredKind, isLocalSource, storeKind } from './services/source'
@@ -12,11 +13,14 @@ import Invoices from './pages/Invoices'
 import Settings from './pages/Settings'
 import type { Invoice, SourceKind, Transaction } from './types'
 
+const ENTRY_KEY = 'oc:entry'
 type Page = 'dashboard' | 'invoices' | 'settings'
 const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', settings: 'Dados' }
 
 export default function App() {
   const [theme, toggleTheme] = useTheme()
+  const [guest, setGuest] = useState(() => { try { return localStorage.getItem(ENTRY_KEY) === 'guest' } catch { return false } })
+  const [offer, setOffer] = useState<{ modifiedTime: string } | null>(null)
   const [kind, setKind] = useState<SourceKind>(getStoredKind)
   const source = getSource(kind)
   const { session, ready, error: authError } = useSupabaseAuth(kind === 'supabase')
@@ -38,6 +42,30 @@ export default function App() {
     dataKey: transactions,
     notify,
   })
+  const signedIn = !!google.status?.signedIn
+  const empty = loaded && invoices.length === 0 && transactions.length === 0
+
+  useEffect(() => {
+    if (!signedIn || !empty || !localSource) { setOffer(null); return }
+    let cancelled = false
+    void google.latest().then((info) => { if (!cancelled && info) setOffer({ modifiedTime: info.modifiedTime }) }).catch(() => undefined)
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedIn, empty])
+
+  const continueAsGuest = () => { try { localStorage.setItem(ENTRY_KEY, 'guest') } catch { /* ignora */ } setGuest(true) }
+  const signOutGoogle = async () => { try { localStorage.removeItem(ENTRY_KEY) } catch { /* ignora */ } setGuest(false); await google.signOut() }
+
+  async function restoreOffer() {
+    if (!localSource) return
+    try {
+      const parsed: unknown = JSON.parse(await google.restoreText())
+      await localSource.restoreBackup(parsed)
+      await refresh()
+      setOffer(null)
+      notify('notice', 'Backup do Google Drive restaurado.')
+    } catch (cause) { notify('error', messageOf(cause)) }
+  }
 
   const refresh = useCallback(async () => {
     const [inv, rows] = await Promise.all([source.listInvoices(), source.listAllTransactions()])
@@ -79,6 +107,8 @@ export default function App() {
     else setAuthNotice('Enviamos um link de acesso para seu e-mail.')
   }
 
+  if (kind === 'local' && google.ready && !signedIn && !guest) return <Welcome google={google} theme={theme} onToggleTheme={toggleTheme} onGuest={continueAsGuest} alert={alert} onDismissAlert={() => setAlert(null)} />
+  if (kind === 'local' && !google.ready) return <main className="center-screen" />
   if (kind === 'supabase' && !ready) return <main className="center-screen">Carregando…</main>
   if (kind === 'supabase' && !hasSupabaseConfig) return <main className="center-screen"><section className="auth-card"><h1>Nuvem não configurada</h1><p>Este build não tem credenciais do Supabase.</p><button className="primary-button" onClick={() => changeKind('local')}>Usar banco local</button></section></main>
   if (kind === 'supabase' && !session) return <main className="center-screen"><section className="auth-card"><Logo size={52} /><h1>Organização do Crédito</h1><p>Acesse sua área privada. Enviaremos um link de entrada para seu e-mail.</p>
@@ -87,6 +117,7 @@ export default function App() {
     <button className="text-button" onClick={() => changeKind('local')}>Voltar ao banco local</button></section></main>
 
   const local = isLocalSource(source) ? source : null
+  const googleUi = { ...google, signOut: signOutGoogle }
   const nav = (id: Page, icon: IconName, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
 
   return <div className="app-shell">
@@ -106,10 +137,11 @@ export default function App() {
         <div className="topbar-actions">{kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
+      {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
-        {page === 'settings' && (local ? <Settings kind={kind} google={google} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={google} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
+        {page === 'settings' && (local ? <Settings kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
   </div>

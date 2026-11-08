@@ -34,6 +34,7 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
   const remove = (file) => { try { fs.unlinkSync(file) } catch { /* já não existe */ } }
 
   let memoryToken = null
+  let cancelLogin = null
 
   const credentials = () => readSealed(credentialsFile())
   const session = () => readSealed(sessionFile())
@@ -97,6 +98,7 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
         else resolve({ code: received, redirectUri: `http://127.0.0.1:${port}` })
       })
       const timer = setTimeout(() => { server.close(); reject(new Error('Tempo esgotado. Tente entrar de novo.')) }, LOGIN_TIMEOUT_MS)
+      cancelLogin = () => { clearTimeout(timer); server.close(); reject(new Error('Login cancelado.')) }
       server.on('error', (error) => { clearTimeout(timer); reject(error) })
       server.listen(0, '127.0.0.1', () => {
         const redirect = `http://127.0.0.1:${server.address().port}`
@@ -105,6 +107,7 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
       })
     })
 
+    cancelLogin = null
     const tokens = await postForm('https://oauth2.googleapis.com/token', { client_id: creds.clientId, client_secret: creds.clientSecret, code, code_verifier: verifier, redirect_uri: redirectUri, grant_type: 'authorization_code' })
     if (!tokens.refresh_token) throw new Error('O Google não devolveu a permissão de acesso contínuo. Remova o app em myaccount.google.com/permissions e tente de novo.')
     if (!String(tokens.scope || '').includes('drive.appdata')) throw new Error('Para guardar o backup, marque a permissão do Google Drive na tela de acesso.')
@@ -195,7 +198,8 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
     return status()
   })
   handle('google:forget-credentials', () => { remove(credentialsFile()); return signOut() })
-  handle('google:sign-in', () => signIn())
+  handle('google:sign-in', async () => { try { return await signIn() } finally { cancelLogin = null } })
+  handle('google:cancel-sign-in', () => { cancelLogin?.(); return status() })
   handle('google:sign-out', () => signOut())
   handle('google:backup', (text) => backup(text))
   handle('google:latest', () => latest())

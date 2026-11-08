@@ -7,12 +7,15 @@ const AUTO_DELAY_MS = 8000
 export interface GoogleAccount {
   available: boolean
   status: GoogleStatus | null
+  /** true depois de saber se há (ou não) uma conta conectada */
+  ready: boolean
   busy: boolean
   autoBackup: boolean
   setAutoBackup: (value: boolean) => void
-  saveCredentials: (clientId: string, clientSecret: string) => Promise<void>
+  saveCredentials: (clientId: string, clientSecret: string) => Promise<boolean>
   forgetCredentials: () => Promise<void>
-  signIn: () => Promise<void>
+  signIn: () => Promise<boolean>
+  cancelSignIn: () => Promise<void>
   signOut: () => Promise<void>
   backupNow: () => Promise<void>
   latest: () => Promise<{ modifiedTime: string; size: number } | null>
@@ -37,11 +40,12 @@ export function useGoogleAccount({ makeBackupText, dataKey, notify }: Options): 
   const api = window.desktopGoogle
   const [status, setStatus] = useState<GoogleStatus | null>(null)
   const [busy, setBusy] = useState(false)
+  const [ready, setReady] = useState(!window.desktopGoogle)
   const [autoBackup, setAuto] = useState(readAuto)
   const makeRef = useRef(makeBackupText)
   makeRef.current = makeBackupText
 
-  useEffect(() => { void api?.status().then(setStatus).catch(() => setStatus(null)) }, [api])
+  useEffect(() => { void api?.status().then(setStatus).catch(() => setStatus(null)).finally(() => setReady(true)) }, [api])
 
   const run = useCallback(async (action: () => Promise<GoogleStatus | void>) => {
     setBusy(true)
@@ -84,12 +88,32 @@ export function useGoogleAccount({ makeBackupText, dataKey, notify }: Options): 
   return {
     available: !!api,
     status,
+    ready,
     busy,
     autoBackup,
     setAutoBackup,
-    saveCredentials: (clientId, clientSecret) => run(() => api!.saveCredentials(clientId, clientSecret)),
+    saveCredentials: async (clientId, clientSecret) => {
+      let ok = false
+      await run(async () => { const next = await api!.saveCredentials(clientId, clientSecret); ok = true; return next })
+      return ok
+    },
     forgetCredentials: () => run(() => api!.forgetCredentials()),
-    signIn: () => run(async () => { const next = await api!.signIn(); notify('notice', `Conectado como ${next.email ?? 'sua conta Google'}.`); return next }),
+    signIn: async () => {
+      let done = false
+      await run(async () => {
+        try {
+          const next = await api!.signIn()
+          done = true
+          notify('notice', `Conectado como ${next.email ?? 'sua conta Google'}.`)
+          return next
+        } catch (cause) {
+          if (messageOf(cause).includes('Login cancelado')) return
+          throw cause
+        }
+      })
+      return done
+    },
+    cancelSignIn: async () => { await api?.cancelSignIn() },
     signOut: () => run(() => api!.signOut()),
     backupNow,
     latest: () => api!.latest(),

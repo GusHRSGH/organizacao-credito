@@ -355,3 +355,24 @@ td.desc { white-space: normal; min-width: 180px; }
 .avatar-img { width: 32px; height: 32px; }
 .check-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text); margin-bottom: 4px; }
 .check-row input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+/* ---------- Tela de entrada ---------- */
+.welcome { min-height: 100vh; display: grid; place-items: center; padding: 24px; position: relative; overflow: hidden; background: radial-gradient(60% 50% at 15% 10%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%), radial-gradient(50% 45% at 90% 95%, color-mix(in srgb, #12b5d6 18%, transparent), transparent 70%), var(--bg); }
+.welcome-theme { position: absolute; top: 20px; right: 20px; }
+.welcome-card { width: min(480px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 38px 36px 30px; box-shadow: var(--shadow-hover); text-align: center; display: flex; flex-direction: column; align-items: center; animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; }
+.welcome-card .logo { margin-bottom: 18px; animation: float 5s ease-in-out infinite; filter: drop-shadow(0 12px 20px #2358e64d); }
+.welcome-card h1 { font-weight: 800; font-size: 30px; letter-spacing: -.9px; margin: 0 0 8px; }
+.welcome-lead { margin: 0 0 26px; color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 380px; }
+.welcome-card .alert { width: 100%; text-align: left; }
+.welcome-actions { width: 100%; display: grid; gap: 12px; justify-items: center; }
+.wide { width: 100%; padding-block: 13px; font-size: 15px; }
+.google-button.wide { justify-content: center; }
+.divider { display: flex; align-items: center; gap: 14px; width: 100%; color: var(--faint); font-size: 12px; font-weight: 600; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.welcome-points { list-style: none; margin: 24px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); width: 100%; display: grid; gap: 10px; text-align: left; font-size: 13px; color: var(--muted); }
+.welcome-points li { display: flex; gap: 10px; align-items: flex-start; line-height: 1.45; }
+.welcome-points .icon { color: var(--good); margin-top: 1px; }
+.hint.center { text-align: center; }
+.welcome-setup { width: 100%; text-align: left; }
+.restore-offer { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; margin-bottom: 14px; background: var(--primary-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); font-size: 14px; animation: rise .3s ease both; }
+.restore-offer .button-row { gap: 6px; }

@@ -87,3 +87,10 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - O usuário cria o próprio projeto gratuito no Google Cloud e cola ID e chave do cliente no app (guia dentro do painel). Nada disso vai para o repositório.
 - Verificado: lint, build, simulação do fluxo completo com um Google falso (PKCE, state, criar/atualizar/restaurar backup). **Ainda não testado com uma conta Google real.**
 - Pendente: fonte de dados Google Sheets.
+
+## Atualização 2026-11-08 (tela de entrada)
+
+- Tela de boas-vindas ao abrir o app: "Continuar com Google" ou "Continuar sem login". A escolha de seguir sem login fica lembrada; sair da conta Google em Dados e backup volta para a tela de entrada.
+- Se a chave do Google ainda não foi cadastrada, o botão do Google abre o guia e os campos de ID e chave na própria tela; depois de salvar, o login começa sozinho. Há botão para cancelar a espera do navegador.
+- Ao entrar com Google num computador sem dados, o app oferece restaurar o backup encontrado no Drive.
+- Verificado no navegador com um app desktop simulado (entrar, oferta de restauração, sair, seguir sem login, lembrar escolha). Login real com conta Google continua não testado.
