@@ -4,4 +4,8 @@
     <string name="title_activity_main">Organização do Crédito</string>
     <string name="package_name">br.com.gushrs.organizacaocredito</string>
     <string name="custom_url_scheme">br.com.gushrs.organizacaocredito</string>
+    <string name="shortcut_novo">Novo gasto</string>
+    <string name="shortcut_novo_long">Lançar um novo gasto</string>
+    <string name="shortcut_cobranca">Quem deve</string>
+    <string name="shortcut_cobranca_long">Ver quem deve quanto</string>
 </resources>

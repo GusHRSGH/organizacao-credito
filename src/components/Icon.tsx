@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 export type IconName =
   | 'dashboard' | 'invoices' | 'settings' | 'sun' | 'moon' | 'plus' | 'check' | 'clock' | 'trash'
   | 'download' | 'upload' | 'database' | 'cloud' | 'trend-up' | 'trend-down' | 'wallet' | 'receipt' | 'sparkle'
-  | 'edit' | 'copy' | 'users' | 'undo'
+  | 'edit' | 'copy' | 'users' | 'undo' | 'menu' | 'lock'
 
 const PATHS: Record<IconName, ReactNode> = {
   dashboard: <>
@@ -60,6 +60,8 @@ const PATHS: Record<IconName, ReactNode> = {
     <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
     <path d="M9.5 8h5M9.5 12h5" />
   </>,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  lock: <><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
   edit: <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />,
   copy: <><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h8" /></>,
   users: <><circle cx="9" cy="8.5" r="3.2" /><path d="M3.5 19c.5-3.2 2.8-5 5.5-5s5 1.8 5.5 5" /><path d="M16 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.3 4.7" /></>,

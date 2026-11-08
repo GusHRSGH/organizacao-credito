@@ -41,7 +41,18 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
   const head = (key: SortKey, label: string, className = '') => onSort
     ? <th className={className}><button className="th-button" onClick={() => onSort(key)}>{label}{sort?.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>
     : <th className={className}>{label}</th>
-  return <div className="table-scroll"><table><thead><tr>
+  const cards = <ul className="tx-cards">{rows.map((row) => <li key={row.id} className={`tx-card ${selected?.has(row.id) ? 'selected' : ''}`}>
+    {selected && <input type="checkbox" className="tx-check" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} />}
+    <div className="tx-main">
+      <div className="tx-top"><b>{row.description}</b><span className="tx-amount">{money(Number(row.amount))}</span></div>
+      <div className="tx-meta"><span>{formatDate(row.occurred_on).slice(0, 5)}</span><span>{row.person?.name || '—'}</span>{row.category?.name && <span className="tag">{row.category.name}</span>}{row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}</div>
+      <div className="tx-foot">
+        <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button>
+        <span className="tx-actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento"><Icon name="edit" size={18} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento"><Icon name="trash" size={18} /></button></span>
+      </div>
+    </div>
+  </li>)}</ul>
+  return <><div className="table-scroll"><table><thead><tr>
     {selected && <th className="check"><input type="checkbox" aria-label="Selecionar todos" checked={rows.length > 0 && rows.every((row) => selected.has(row.id))} onChange={(event) => onSelectAll?.(event.target.checked)} /></th>}{head('date', 'Data')}<th>Descrição</th>{head('person', 'Responsável')}<th>Categoria</th><th>Parcela</th><th>Status</th>{head('amount', 'Valor', 'num')}<th />
   </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={selected?.has(row.id) ? 'selected' : ''}>
     {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
@@ -53,7 +64,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
     <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button></td>
     <td className="num">{money(Number(row.amount))}</td>
     <td className="actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento" title="Editar"><Icon name="edit" size={16} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
-  </tr>)}</tbody></table></div>
+  </tr>)}</tbody></table></div>{cards}</>
 }
 
 export interface HeroProps {

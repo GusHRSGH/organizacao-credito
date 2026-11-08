@@ -1,4 +1,5 @@
 import GoogleAccountPanel from '../components/GoogleAccount'
+import SecurityPanel from '../components/SecurityPanel'
 import { Icon } from '../components/Icon'
 import type { GoogleAccount } from '../hooks/useGoogleAccount'
 import { useRef, useState } from 'react'
@@ -102,6 +103,8 @@ export default function Settings({ kind, google, local, invoices, transactions, 
       </div>
       <p className="hint">A integração com Google Sheets entra numa próxima etapa.</p>
     </Panel>
+
+    <SecurityPanel notify={notify} />
 
     <GoogleAccountPanel google={google} local={isLocal ? local : null} onChanged={onChanged} notify={notify} />
 

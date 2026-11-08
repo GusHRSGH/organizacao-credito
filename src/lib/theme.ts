@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { applyNativeTheme } from './native'
 
 export type Theme = 'light' | 'dark'
 const KEY = 'oc:theme'
@@ -17,6 +18,7 @@ export function storedTheme(): Theme {
 
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme
+  applyNativeTheme(theme)
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a1124' : '#f3f6fd')
 }
 

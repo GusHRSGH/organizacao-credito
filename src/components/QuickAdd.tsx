@@ -16,11 +16,13 @@ interface Props {
   categories: string[]
   suggestions: Map<string, Suggestion>
   signal: number
+  /** true quando aberto na tela cheia do celular */
+  sheet?: boolean
   onSaved: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
 }
 
-export default function QuickAdd({ source, invoice, people, categories, suggestions, signal, onSaved, notify }: Props) {
+export default function QuickAdd({ source, invoice, people, categories, suggestions, signal, sheet, onSaved, notify }: Props) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [last, setLast] = useState<Suggestion>(readLast)
@@ -53,11 +55,11 @@ export default function QuickAdd({ source, invoice, people, categories, suggesti
     if (event.key === 'Escape') setText('')
   }
 
-  return <section className="quick-add" aria-label="Lançamento rápido">
+  return <section className={`quick-add ${sheet ? 'sheet' : 'inline'}`} aria-label="Lançamento rápido">
     <div className="quick-row">
       <span className="quick-icon"><Icon name="sparkle" size={18} /></span>
       <input ref={input} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onKey} disabled={busy} maxLength={200}
-        placeholder="Digite e dê Enter: mercado 150,90 3x @ana #casa ontem" aria-label="Lançamento rápido" autoComplete="off" />
+        placeholder="Digite e dê Enter: mercado 150,90 3x @ana #casa ontem" aria-label="Lançamento rápido" autoComplete="off" enterKeyHint="done" autoCapitalize="sentences" />
       <button className="primary-button" onClick={() => void save()} disabled={busy || !text.trim()}>Salvar</button>
     </div>
     {text.trim() && <div className="quick-chips" aria-live="polite">

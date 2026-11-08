@@ -6,6 +6,9 @@ import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { Icon, Logo, type IconName } from './components/Icon'
 import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
+import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
+import { buildSuggestions } from './lib/suggest'
+import QuickSheet from './components/QuickSheet'
 import { currentPeriod } from './services/installments'
 import { getSource, getStoredKind, isLocalSource, storeKind } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -35,6 +38,8 @@ export default function App() {
   const [alert, setAlert] = useState<{ kind: 'notice' | 'error'; text: string } | null>(null)
   const [authNotice, setAuthNotice] = useState('')
   const [quickSignal, setQuickSignal] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const active = kind === 'local' || !!session
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
@@ -76,6 +81,35 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  const closeMenu = useCallback(() => setMenuOpen(false), [])
+  const closeSheet = useCallback(() => setSheetOpen(false), [])
+  useBackHandler(menuOpen, closeMenu)
+  useEffect(() => {
+    if (page === 'dashboard') return
+    return registerBack(() => { setPage('dashboard'); return true })
+  }, [page])
+  useEffect(() => watchShortcuts((target) => {
+    if (target === 'novo') { setPage('invoices'); setSheetOpen(true) }
+    if (target === 'cobranca') setPage('billing')
+  }), [])
+  useEffect(() => {
+    let startX = -1, startY = 0
+    const down = (event: TouchEvent) => { startX = event.touches[0].clientX; startY = event.touches[0].clientY }
+    const up = (event: TouchEvent) => {
+      if (startX < 0 || window.innerWidth > 820) return
+      const dx = event.changedTouches[0].clientX - startX, dy = Math.abs(event.changedTouches[0].clientY - startY)
+      if (dy < 60 && dx > 70 && startX < 28) setMenuOpen(true)
+      if (dy < 60 && dx < -70) setMenuOpen(false)
+      startX = -1
+    }
+    document.addEventListener('touchstart', down, { passive: true })
+    document.addEventListener('touchend', up, { passive: true })
+    return () => { document.removeEventListener('touchstart', down); document.removeEventListener('touchend', up) }
+  }, [])
+  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
+  const people = useMemo(() => [...new Set(transactions.map((row) => row.person?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
+  const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
 
   const refresh = useCallback(async () => {
     const [inv, rows] = await Promise.all([source.listInvoices(), source.listAllTransactions()])
@@ -128,9 +162,10 @@ export default function App() {
 
   const local = isLocalSource(source) ? source : null
   const googleUi = { ...google, signOut: signOutGoogle }
-  const nav = (id: Page, icon: IconName, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
+  const nav = (id: Page, icon: IconName, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setMenuOpen(false) }} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
 
-  return <div className="app-shell">
+  return <div className={`app-shell ${menuOpen ? 'menu-open' : ''}`}>
+    <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
     <aside className="sidebar">
       <div className="brand"><Logo size={38} /><span>Organização<br />do Crédito</span></div>
       <div className="nav-label">Workspace</div>
@@ -139,11 +174,11 @@ export default function App() {
       <div className="sidebar-footer">
         {kind === 'local' && google.status?.signedIn
           ? <>{google.status.picture ? <img className="avatar-img" src={google.status.picture} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{(google.status.email ?? '?')[0].toUpperCase()}</span>}<span>{google.status.name ?? google.status.email}<br /><small>Google conectado · {counts.invoices} faturas</small></span></>
-          : <><span className="avatar">{kind === 'local' ? <Icon name="database" size={15} /> : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? 'Neste computador' : 'Nuvem'} · {counts.invoices} faturas</small></span></>}
+          : <><span className="avatar">{kind === 'local' ? <Icon name="database" size={15} /> : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? (isNative ? 'Neste aparelho' : 'Neste computador') : 'Nuvem'} · {counts.invoices} faturas</small></span></>}
       </div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div>
+      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div></div>
         <div className="topbar-actions">{kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
@@ -155,5 +190,7 @@ export default function App() {
         {page === 'settings' && (local ? <Settings kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
+    {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
+    <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }

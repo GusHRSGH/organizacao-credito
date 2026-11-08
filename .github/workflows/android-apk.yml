@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/android-apk]
+    branches: [main, feature/android-nativo]
     paths: ['android/**', 'src/**', 'capacitor.config.json', 'package.json', '.github/workflows/android-apk.yml']
 
 jobs:
@@ -22,11 +22,32 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx cap sync android
-      - name: Build debug APK
+      - name: Preparar assinatura (se os segredos existirem)
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/orc.keystore"
+            echo "ORC_KEYSTORE=$RUNNER_TEMP/orc.keystore" >> "$GITHUB_ENV"
+            echo "ORC_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "ORC_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ORC_KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "Assinatura própria encontrada."
+          else
+            echo "Sem assinatura própria: vai sair um APK de teste (debug)."
+          fi
+      - name: Build do APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        env:
+          ORC_VERSION_CODE: ${{ github.run_number }}
+          ORC_VERSION_NAME: 1.${{ github.run_number }}
+        run: |
+          if [ -n "$ORC_KEYSTORE" ]; then ./gradlew assembleRelease --no-daemon; else ./gradlew assembleDebug --no-daemon; fi
       - uses: actions/upload-artifact@v4
         with:
           name: organizacao-credito-android
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/**/*.apk
           retention-days: 14
