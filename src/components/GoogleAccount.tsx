@@ -86,7 +86,7 @@ export default function GoogleAccountPanel({ google, local, onChanged, notify }:
     </> : !status.signedIn ? <>
       <div className="button-row">
         <button className="google-button" disabled={busy} onClick={() => void google.signIn()}><GoogleLogo />{busy ? 'Aguardando o navegador…' : 'Entrar com Google'}</button>
-        <button className="text-button" onClick={() => setEditing(true)}>Trocar chave</button>
+        {!status.bundled && <button className="text-button" onClick={() => setEditing(true)}>Trocar chave</button>}
       </div>
       <p className="hint">O navegador abre para você escolher a conta. Depois é só voltar ao app.</p>
     </> : <>

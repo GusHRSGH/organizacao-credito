@@ -2,6 +2,7 @@
 
 interface GoogleStatus {
   configured: boolean
+  bundled: boolean
   signedIn: boolean
   email: string | null
   name: string | null
