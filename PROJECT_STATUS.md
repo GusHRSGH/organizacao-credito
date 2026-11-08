@@ -33,7 +33,7 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 
 ## Ainda não implementado / verificado
 
-- Repositório GitHub privado recém-criado: `GusHRSGH/organizacao-credito`. O código local está sendo enviado agora; confirmar pela listagem de arquivos/commits.
+- Repositório GitHub privado: `GusHRSGH/organizacao-credito`. A estrutura e os 24 arquivos do projeto foram enviados ao branch `main` e conferidos na página do repositório.
 - Projeto Supabase/Vercel ainda não vinculado.
 - Nenhuma migration foi aplicada a um banco remoto.
 - Não foi possível instalar dependências ou executar lint/build nesta máquina (Node está disponível, npm não).
