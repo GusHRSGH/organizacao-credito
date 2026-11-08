@@ -5,7 +5,7 @@ import type { GoogleAccount } from '../hooks/useGoogleAccount'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
-import { downloadText, stamp, toCsv } from '../services/exporters'
+import { downloadAsset, downloadText, stamp, toCsv } from '../services/exporters'
 import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
 import type { ImportResult, Invoice, SourceKind, Transaction } from '../types'
@@ -143,7 +143,9 @@ export default function Settings({ kind, google, local, invoices, transactions, 
     {isLocal ? <Panel title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
       <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
         <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
+        <button className="secondary-button" onClick={() => void downloadAsset('modelo-fatura.xlsx', 'modelo-fatura.xlsx').catch((cause) => notify('error', messageOf(cause)))}><Icon name="download" size={16} />Baixar modelo de planilha</button>
         {fileName && <span className="muted">{fileName}</span>}</div>
+      <p className="hint">Não tem planilha ainda? Baixe o modelo, preencha e importe. Uma aba por fatura; o nome da aba define o mês.</p>
       {sheets.length > 0 && <div className="import-box">
         <table className="data-table"><thead><tr><th /><th>Aba</th><th>Fatura</th><th className="num">Linhas</th><th className="num">Total</th><th>Resultado</th></tr></thead><tbody>
           {sheets.map((sheet) => {
