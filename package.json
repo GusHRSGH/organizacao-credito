@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "desktop:dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "desktop:dist": "npm run build && electron-builder --win nsis"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
@@ -25,7 +27,25 @@
     "globals": "^15.14.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.0",
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "concurrently": "^9.2.1",
+    "electron": "^44.0.0",
+    "electron-builder": "^27.0.0",
+    "wait-on": "^8.0.4"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "com.organizacaocredito.desktop",
+    "productName": "Organização do Crédito",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "win": { "target": ["nsis"] },
+    "protocols": [{ "name": "Organização do Crédito", "schemes": ["organizacao-credito"] }],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
-
