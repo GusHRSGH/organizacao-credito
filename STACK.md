@@ -2,7 +2,7 @@
 
 ## Stack inicial
 
-- **Frontend:** React + TypeScript + Vite. Mantém a interface rápida de evoluir e facilita separar componentes, validações e telas.
+- **Frontend:** React + TypeScript + Vite. A mesma interface atende ao site pessoal e ao aplicativo Windows empacotado com Electron; a geração do instalador usa electron-builder/NSIS.
 - **Backend:** Supabase, usando PostgreSQL como fonte única de dados, Supabase Auth para login e Row Level Security (RLS) para garantir que cada usuário só veja os próprios registros.
 - **Hospedagem do frontend:** Vercel, com deploy conectado ao GitHub.
 - **Automação:** GitHub Actions para checagem de tipos, lint e build a cada pull request.
@@ -28,7 +28,7 @@ O produto será desenvolvido e publicado somente dentro de planos gratuitos. Nã
 - **E-mail:** usar o envio incluído do Supabase Auth para link mágico, sem contratar SMTP. O envio padrão aceita apenas endereços da equipe do projeto e tem limite atual de 2 mensagens por hora; para este app, a conta proprietária precisa ser o usuário autorizado. Se essa regra impedir o acesso, não contrataremos SMTP: vamos trocar para uma alternativa de autenticação gratuita compatível ou repensar o backend.
 - **Backup:** Supabase Free não oferece backup automático para restauração. A aplicação deverá exportar um backup JSON completo que você baixa para seu próprio computador. Não haverá backup agendado em nuvem dentro deste orçamento.
 
-Esse conjunto não garante operação contínua ou cotas imutáveis: políticas e limites dos planos gratuitos podem mudar. Se um provedor exigir cobrança para continuar, paramos o deploy/uso e escolhemos alternativa gratuita, sem autorizar upgrade. Sem domínio próprio, o site usa o subdomínio gratuito do Vercel.
+Esse conjunto não garante operação contínua ou cotas imutáveis: políticas e limites dos planos gratuitos podem mudar. Se um provedor exigir cobrança para continuar, paramos o deploy/uso e escolhemos alternativa gratuita, sem autorizar upgrade. Sem domínio próprio, o site usa o subdomínio gratuito do Vercel. O instalador Windows é compilado sem custo com electron-builder/NSIS; pode ser distribuído como artefato do GitHub Actions (retenção de 14 dias) dentro da cota. Sem assinatura de código paga, o Windows pode alertar sobre editor desconhecido.
 
 ## Modelo de dados inicial
 
@@ -147,7 +147,6 @@ Vencimento/fechamento da fatura ainda não está definido pela planilha; o MVP u
 
 ## Estado real da implementação
 
-Há um esqueleto React/TypeScript/Vite com interface autenticada, consultas de fatura/lançamentos, filtros, status e cadastro de compras parceladas. A migration e a função RPC estão escritas, mas **não foram aplicadas nem verificadas num projeto Supabase**. Importação XLSX com prévia, exportação integral e backup/restauração JSON continuam pendentes. O build também não foi executado; esta máquina não tem npm disponível.
+Há um esqueleto React/TypeScript/Vite com interface autenticada, consultas de fatura/lançamentos, filtros, status e cadastro de compras parceladas. A camada Electron e o empacotamento NSIS foram configurados; o retorno por deep link do login está implementado, mas depende da allowlist Supabase e de validação em um Windows com npm. A migration e a função RPC estão escritas, mas **não foram aplicadas nem verificadas num projeto Supabase**. Importação XLSX com prévia, exportação integral e backup/restauração JSON continuam pendentes. O build não foi executado; esta máquina tem Node, mas não npm.
 
 O protótipo HTML isolado foi apenas um estudo visual e não é fonte de verdade nem está incluído no repositório.
-
