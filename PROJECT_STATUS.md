@@ -9,6 +9,7 @@
 - Interface de celular (até 820 px): menu lateral deslizante (gesto da borda e botão), botão + que abre a linha rápida em tela cheia, lançamentos em cartões, folhas de edição ancoradas embaixo, alvos de toque maiores.
 - Nativo (Capacitor 7): botão Voltar do Android (fecha menu/janela, volta à visão geral, minimiza), barra de status por tema, tela de abertura, atalhos na tela inicial (`organizacaocredito://novo` e `://cobranca`), bloqueio por biometria ou PIN do aparelho (`@aparajita/capacitor-biometric-auth`), compartilhar arquivos de exportação.
 - APK: o workflow `Build Android APK` assina com chave própria se existirem os segredos `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`; sem eles gera APK de teste (debug, a chave muda a cada build e não instala por cima do anterior). `versionCode` = número da execução.
+- Atualização do celular: a cada push no `main` o workflow gera o APK assinado e publica uma Release (`v1.N`) com o arquivo `organizacao-credito-1.N.apk`. No celular, o app Obtainium acompanha as Releases do repositório e avisa/instala a versão nova. Requer repositório público (ou token de leitura) e os segredos de assinatura.
 - Não verificado em aparelho real: atalhos, biometria, gesto de borda, botão Voltar e tela de abertura. Verificado no navegador (emulação Pixel 7): layout, menu, botão + e linha rápida.
 
 ## Roteiro acordado (2026-11-08)
