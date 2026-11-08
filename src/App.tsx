@@ -24,9 +24,39 @@ export default function App() {
 
   useEffect(() => {
     if (!supabase) { setReady(true); return }
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true) })
     const { data } = supabase.auth.onAuthStateChange((_event, current) => setSession(current))
-    return () => data.subscription.unsubscribe()
+    let mounted = true
+    const finishDesktopCallback = async (callbackUrl: string | null) => {
+      if (!callbackUrl) return
+      try {
+        const callback = new URL(callbackUrl)
+        const values = new URLSearchParams(callback.hash.slice(1) || callback.search.slice(1))
+        const code = values.get('code')
+        const authError = values.get('error_description')
+        if (authError) throw new Error(authError)
+        if (code) {
+          const result = await supabase.auth.exchangeCodeForSession(code)
+          if (result.error) throw result.error
+        } else {
+          const accessToken = values.get('access_token')
+          const refreshToken = values.get('refresh_token')
+          if (!accessToken || !refreshToken) throw new Error('O link de acesso não trouxe uma sessão válida. Solicite um novo link.')
+          const result = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (result.error) throw result.error
+        }
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (mounted) setSession(sessionData.session)
+      } catch (cause) {
+        if (mounted) setError(messageOf(cause))
+      }
+    }
+    const unsubscribeDesktop = window.desktopAuth?.onCallback((url) => { void finishDesktopCallback(url) })
+    void (async () => {
+      await finishDesktopCallback(await window.desktopAuth?.consumeCallback() ?? null)
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (mounted) { setSession(sessionData.session); setReady(true) }
+    })()
+    return () => { mounted = false; unsubscribeDesktop?.(); data.subscription.unsubscribe() }
   }, [])
 
   const refresh = useCallback(async () => {
@@ -75,7 +105,7 @@ export default function App() {
     event.preventDefault(); setError(''); setNotice('')
     const email = String(new FormData(event.currentTarget).get('email'))
     if (!supabase) return
-    const { error: authError } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+    const { error: authError } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.desktopAuth?.redirectUrl ?? window.location.origin } })
     if (authError) setError(authError.message)
     else setNotice('Enviamos um link de acesso para seu e-mail.')
   }
@@ -104,4 +134,3 @@ export default function App() {
 function Metric({ label, value, foot, warning = false }: { label: string; value: string; foot?: string; warning?: boolean }) { return <article className="metric-card"><div className="metric-label">{label}</div><div className="metric-value">{value}</div>{foot&&<div className={`metric-foot ${warning?'warning':''}`}>{foot}</div>}</article> }
 function RankList({ rows, total }: { rows: [string, number][]; total: number }) { return rows.length ? <div className="rank-list">{rows.map(([name, amount])=><div className="rank-row" key={name}><span className="rank-icon">{name[0]?.toUpperCase()}</span><div className="rank-main"><b>{name}</b><div className="progress"><i style={{width:`${total?Math.min(100,amount/total*100):0}%`}}/></div></div><strong>{money(amount)}</strong></div>)}</div> : <p className="empty">Sem lançamentos nesta fatura.</p> }
 function TransactionTable({ rows, busy, onToggle, onDelete }: { rows: Transaction[]; busy: boolean; onToggle: (row: Transaction) => void; onDelete: (row: Transaction) => void }) { if (busy) return <p className="empty">Carregando lançamentos…</p>; if (!rows.length) return <p className="empty">Nenhum lançamento ainda. Cadastre uma compra para começar.</p>; return <div className="table-scroll"><table><thead><tr><th>Data</th><th>Descrição</th><th>Responsável</th><th>Categoria</th><th>Parcela</th><th>Status</th><th>Valor</th><th/></tr></thead><tbody>{rows.map((row)=><tr key={row.id}><td>{new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short'}).format(new Date(`${row.occurred_on}T12:00:00`))}</td><td><b>{row.description}</b></td><td>{row.person?.name??'—'}</td><td><span className="tag">{row.category?.name??'—'}</span></td><td>{row.installment_count?`${row.installment_number} / ${row.installment_count}`:'À vista'}</td><td><button className={`tag ${row.status==='paid'?'paid':'pending'}`} onClick={()=>onToggle(row)}>{row.status==='paid'?'Pago':'Pendente'}</button></td><td>{money(Number(row.amount))}</td><td><button className="text-button" onClick={()=>onDelete(row)} aria-label="Excluir lançamento">Excluir</button></td></tr>)}</tbody></table></div> }
-
