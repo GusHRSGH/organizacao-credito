@@ -147,16 +147,16 @@ export default function Settings({ kind, google, local, invoices, transactions, 
         {fileName && <span className="muted">{fileName}</span>}</div>
       <p className="hint">Não tem planilha ainda? Baixe o modelo, preencha e importe. Uma aba por fatura; o nome da aba define o mês.</p>
       {sheets.length > 0 && <div className="import-box">
-        <table className="data-table"><thead><tr><th /><th>Aba</th><th>Fatura</th><th className="num">Linhas</th><th className="num">Total</th><th>Resultado</th></tr></thead><tbody>
+        <div className="import-list"><table className="data-table import-table"><thead><tr><th /><th>Aba</th><th>Fatura</th><th className="num">Linhas</th><th className="num">Total</th><th>Resultado</th></tr></thead><tbody>
           {sheets.map((sheet) => {
             const result = preview?.invoices.find((entry) => entry.period === sheet.period)
             const total = sheet.rows.reduce((sum, row) => sum + Math.round(row.amount * 100), 0) / 100
             return <tr key={sheet.sheetName}>
               <td><input type="checkbox" checked={!!picked[sheet.sheetName]} disabled={!sheet.period} onChange={() => void toggleSheet(sheet.sheetName)} aria-label={`Importar ${sheet.sheetName}`} /></td>
-              <td>{sheet.sheetName}</td><td>{sheet.period ? sheet.label : <span className="neg">mês não identificado</span>}</td>
-              <td className="num">{sheet.rows.length}</td><td className="num">{money(total)}</td>
-              <td>{result ? `${result.added} novos · ${result.duplicates} já existentes${result.created ? ' · fatura nova' : ''}` : '—'}</td></tr>
-          })}</tbody></table>
+              <td data-label="Aba">{sheet.sheetName}</td><td data-label="Fatura">{sheet.period ? sheet.label : <span className="neg">mês não identificado</span>}</td>
+              <td className="num" data-label="Linhas">{sheet.rows.length}</td><td className="num" data-label="Total">{money(total)}</td>
+              <td data-label="Resultado">{result ? `${result.added} novos · ${result.duplicates} já existentes${result.created ? ' · fatura nova' : ''}` : '—'}</td></tr>
+          })}</tbody></table></div>
         {sheets.some((sheet) => sheet.issues.length) && <details className="issues"><summary>{sheets.reduce((n, s) => n + s.issues.length, 0)} avisos de leitura</summary><ul>{sheets.flatMap((s) => s.issues.map((issue) => <li key={s.sheetName + issue}>{s.sheetName}: {issue}</li>))}</ul></details>}
         <p className="hint">Primeiro lançamento: {sheets[0].rows[0] ? `${formatDate(sheets[0].rows[0].date)} · ${sheets[0].rows[0].description}` : '—'}. Lançamentos idênticos já existentes são ignorados, então reimportar é seguro.</p>
         <div className="button-row"><button className="primary-button" disabled={busy || !preview?.added} onClick={() => void confirmImport()}>Importar {preview?.added ?? 0} lançamentos</button><button className="text-button" onClick={() => { setSheets([]); setPreview(null) }}>Cancelar</button></div>
