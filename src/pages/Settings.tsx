@@ -1,4 +1,5 @@
 import GoogleAccountPanel from '../components/GoogleAccount'
+import SecurityPanel, { UpdatePanel } from '../components/SecurityPanel'
 import { Icon } from '../components/Icon'
 import type { GoogleAccount } from '../hooks/useGoogleAccount'
 import { useRef, useState } from 'react'
@@ -17,11 +18,12 @@ interface Props {
   invoices: Invoice[]
   transactions: Transaction[]
   onKind: (kind: SourceKind) => void
+  onCheckUpdate: () => void
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
 }
 
-export default function Settings({ kind, google, local, invoices, transactions, onKind, onChanged, notify }: Props) {
+export default function Settings({ kind, google, local, invoices, transactions, onKind, onCheckUpdate, onChanged, notify }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -102,6 +104,9 @@ export default function Settings({ kind, google, local, invoices, transactions, 
       </div>
       <p className="hint">A integração com Google Sheets entra numa próxima etapa.</p>
     </Panel>
+
+    <SecurityPanel notify={notify} />
+    <UpdatePanel onCheck={onCheckUpdate} />
 
     <GoogleAccountPanel google={google} local={isLocal ? local : null} onChanged={onChanged} notify={notify} />
 

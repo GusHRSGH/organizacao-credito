@@ -2,5 +2,19 @@
   "appId": "br.com.gushrs.organizacaocredito",
   "appName": "Organização do Crédito",
   "webDir": "dist",
-  "android": { "allowMixedContent": false }
+  "android": {
+    "allowMixedContent": false,
+    "adjustMarginsForEdgeToEdge": "force"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#1f4fd8",
+      "showSpinner": false
+    },
+    "Keyboard": {
+      "resize": "body"
+    }
+  }
 }

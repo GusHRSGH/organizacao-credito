@@ -4,6 +4,14 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Android nativo (2026-11-08)
+
+- Interface de celular (até 820 px): menu lateral deslizante (gesto da borda e botão), botão + que abre a linha rápida em tela cheia, lançamentos em cartões, folhas de edição ancoradas embaixo, alvos de toque maiores.
+- Nativo (Capacitor 7): botão Voltar do Android (fecha menu/janela, volta à visão geral, minimiza), barra de status por tema, tela de abertura, atalhos na tela inicial (`organizacaocredito://novo` e `://cobranca`), bloqueio por biometria ou PIN do aparelho (`@aparajita/capacitor-biometric-auth`), compartilhar arquivos de exportação.
+- APK: o workflow `Build Android APK` assina com chave própria se existirem os segredos `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`; sem eles gera APK de teste (debug, a chave muda a cada build e não instala por cima do anterior). `versionCode` = número da execução.
+- Atualização do celular: a cada push no `main` o workflow gera o APK assinado e publica uma Release (`v1.N`) com o arquivo `organizacao-credito-1.N.apk`. Dentro do app (Android) a checagem roda ao abrir (no máximo a cada 6 h) e em Dados e backup > Atualização do app: consulta a última Release pela API pública do GitHub, mostra "Nova versão disponível" e, ao tocar em Atualizar, o plugin `ApkInstaller` (Java) baixa o APK (só de `github.com/GusHRSGH/organizacao-credito/releases/download/`) e abre o instalador do Android; o Android só aceita se a assinatura for a mesma. Exige a permissão "instalar apps desconhecidos" para o app (pedida uma vez). Requer repositório público e os segredos de assinatura. A primeira versão com o atualizador precisa ser instalada à mão.
+- Não verificado em aparelho real: atalhos, biometria, gesto de borda, botão Voltar e tela de abertura. Verificado no navegador (emulação Pixel 7): layout, menu, botão + e linha rápida.
+
 ## Roteiro acordado (2026-11-08)
 
 Decisões do dono para a evolução do app:

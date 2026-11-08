@@ -73,7 +73,7 @@ export default function GoogleAccountPanel({ google, local, onChanged, notify }:
 
   if (!available) {
     return <Panel title="Conta Google" subtitle="Login e backup no seu Google Drive">
-      <p className="empty">Disponível no aplicativo para Windows. No navegador, use o backup em arquivo.</p>
+      <p className="empty">Disponível no aplicativo para Windows. Aqui, use o backup em arquivo: exporte e guarde onde preferir.</p>
     </Panel>
   }
   if (!status) return <Panel title="Conta Google"><p className="empty">Carregando…</p></Panel>
