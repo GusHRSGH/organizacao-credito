@@ -4,6 +4,10 @@
 **Fonte de verdade:** repositório privado `GusHRSGH/organizacao-credito` e documentação versionada.  
 **Orçamento:** R$ 0. Não autorizar upgrades ou serviços cobrados.
 
+## Entrada rápida (2026-11-08)
+
+- Linha rápida em Faturas (`QuickAdd`, atalho Ctrl+N) com leitura de valor, parcelas, data, @responsável e #categoria (`src/lib/quickEntry.ts`); sugestão de responsável/categoria pelo histórico (`suggest.ts`); formulário completo agora continua aberto e lembra data, responsável, categoria e parcelas; colar fatura do banco com prévia (`PasteBill`, `pasteImport.ts`, só banco local). 19 testes Vitest passando; fluxo verificado no navegador.
+
 ## Android (2026-11-08)
 
 - Versão Android via Capacitor (`android/`, `capacitor.config.json`). O APK de teste (debug) é gerado pelo workflow `Build Android APK`. Login com Google e backup no Drive ainda são só do Windows; no celular o app funciona sem login e exporta CSV/JSON pela folha de compartilhar. Ainda não testado em aparelho real.

@@ -33,6 +33,7 @@ export default function App() {
   const [invoiceId, setInvoiceId] = useState('')
   const [alert, setAlert] = useState<{ kind: 'notice' | 'error'; text: string } | null>(null)
   const [authNotice, setAuthNotice] = useState('')
+  const [quickSignal, setQuickSignal] = useState(0)
 
   const active = kind === 'local' || !!session
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
@@ -66,6 +67,14 @@ export default function App() {
       notify('notice', 'Backup do Google Drive restaurado.')
     } catch (cause) { notify('error', messageOf(cause)) }
   }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'n') { event.preventDefault(); setPage('invoices'); setQuickSignal((n) => n + 1) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const refresh = useCallback(async () => {
     const [inv, rows] = await Promise.all([source.listInvoices(), source.listAllTransactions()])
@@ -140,7 +149,7 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
-        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
+        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} />}
         {page === 'settings' && (local ? <Settings kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
