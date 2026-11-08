@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, nativeTheme, shell } = require('electron')
 const path = require('node:path')
 
 const protocol = 'organizacao-credito'
@@ -50,7 +50,9 @@ function createWindow() {
     minWidth: 980,
     minHeight: 680,
     title: 'Organização do Crédito',
-    backgroundColor: '#f5f6f2',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a1124' : '#f3f6fd',
+    icon: path.join(__dirname, 'icon.png'),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,

@@ -46,7 +46,7 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
               cursor += width
               if (value <= 0) return null
               return <g key={i}>
-                <rect x={x} y={y0} width={Math.max(width - 1.5, 1)} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
+                <rect className="grow-x" style={{ animationDelay: `${r * 60}ms` }} x={x} y={y0} width={Math.max(width - 1.5, 1)} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
                 {width > 52 && <text x={x + width / 2} y={y0 + barH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(value)}</text>}
               </g>
             })}
@@ -55,7 +55,7 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
             const y = y0 + i * (barH + 3)
             const width = value * scale
             return <g key={i}>
-              <rect x={labelW} y={y} width={value > 0 ? Math.max(width, 3) : 0} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
+              <rect className="grow-x" style={{ animationDelay: `${r * 60 + i * 40}ms` }} x={labelW} y={y} width={value > 0 ? Math.max(width, 3) : 0} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
               {value > 0 && <text x={labelW + Math.max(width, 3) + 6} y={y + barH - 2.5} className="chart-value">{moneyShort(value)}</text>}
             </g>
           })}
@@ -77,7 +77,7 @@ export function Donut({ slices, centerLabel }: { slices: Slice[]; centerLabel: s
   let offset = 0
   return <div className="donut-wrap">
     <svg viewBox="0 0 200 200" className="donut-svg" role="img" aria-label="Gráfico de rosca por categoria">
-      <circle cx="100" cy="100" r={r} fill="none" stroke="#f0f3ee" strokeWidth="26" />
+      <circle cx="100" cy="100" r={r} fill="none" className="donut-track" strokeWidth="26" />
       {visible.map((slice) => {
         const length = (slice.value / total) * C
         const gap = visible.length > 1 ? 2.5 : 0
@@ -115,15 +115,15 @@ export function StackedColumns({ items }: { items: Column[] }) {
         <linearGradient id={`${uid}p`} x1="0" x2="0" y1="1" y2="0"><stop offset="0" stopColor={GREEN.color} /><stop offset="1" stopColor={GREEN.light} /></linearGradient>
         <linearGradient id={`${uid}n`} x1="0" x2="0" y1="1" y2="0"><stop offset="0" stopColor={RED.color} /><stop offset="1" stopColor={RED.light} /></linearGradient>
       </defs>
-      <line x1={padX} x2={W - padX} y1={base} y2={base} stroke="#e1e6df" />
+      <line className="chart-axis" x1={padX} x2={W - padX} y1={base} y2={base} />
       {items.map((item, i) => {
         const x = padX + slot * i + (slot - barW) / 2
         const paidH = item.paid * scale
         const pendH = item.pending * scale
         const total = item.paid + item.pending
         return <g key={item.label + i}>
-          {item.paid > 0 && <rect x={x} y={base - paidH} width={barW} height={paidH} rx={pendH > 0 ? 0 : 6} fill={`url(#${uid}p)`} />}
-          {item.pending > 0 && <rect x={x} y={base - paidH - pendH} width={barW} height={pendH} rx={6} fill={`url(#${uid}n)`} />}
+          {item.paid > 0 && <rect className="grow-y" style={{ animationDelay: `${i * 50}ms` }} x={x} y={base - paidH} width={barW} height={paidH} rx={pendH > 0 ? 0 : 6} fill={`url(#${uid}p)`} />}
+          {item.pending > 0 && <rect className="grow-y" style={{ animationDelay: `${i * 50 + 120}ms` }} x={x} y={base - paidH - pendH} width={barW} height={pendH} rx={6} fill={`url(#${uid}n)`} />}
           {paidH > 18 && <text x={x + barW / 2} y={base - paidH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(item.paid)}</text>}
           {pendH > 18 && <text x={x + barW / 2} y={base - paidH - pendH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(item.pending)}</text>}
           <text x={x + barW / 2} y={base - paidH - pendH - 8} textAnchor="middle" className="chart-total">{moneyShort(total)}</text>

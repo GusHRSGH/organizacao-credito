@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Metric, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money, pct } from '../lib/format'
@@ -81,7 +82,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     <PageHeading title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
-      <button className="primary-button" onClick={() => setShowForm(!showForm)}>＋ Novo lançamento</button>
+      <button className="primary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Novo lançamento</button>
     </PageHeading>
 
     {showForm && <Panel title="Nova compra" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>

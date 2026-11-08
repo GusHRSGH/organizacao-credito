@@ -1,9 +1,12 @@
 export interface Series { name: string; color: string; light: string }
 
-export const TEAL: Series = { name: '', color: '#1f8a7d', light: '#5cc6b8' }
-export const AMBER: Series = { name: '', color: '#e08a12', light: '#f6c56b' }
-export const GREEN: Series = { name: '', color: '#2e9e5b', light: '#7ed6a0' }
-export const RED: Series = { name: '', color: '#d64545', light: '#f19393' }
-export const SLICE_COLORS = ['#2a9d8f', '#e9a23b', '#3d5a98', '#d64545', '#8e7cc3', '#4f9d69', '#c76b98', '#6c8ea4', '#b5894a', '#9aa5b1']
+// Paleta azul. Nomes antigos mantidos para não quebrar imports:
+// TEAL = série principal (azul cobalto), AMBER = série de comparação (ciano),
+// GREEN = pago (esmeralda), RED = pendente (âmbar).
+export const TEAL: Series = { name: '', color: '#2f6bff', light: '#7aa5ff' }
+export const AMBER: Series = { name: '', color: '#12b5d6', light: '#7fe0f2' }
+export const GREEN: Series = { name: '', color: '#12a979', light: '#5fdcb2' }
+export const RED: Series = { name: '', color: '#f09a2b', light: '#ffc87a' }
+export const SLICE_COLORS = ['#2f6bff', '#12b5d6', '#7a5cff', '#12a979', '#f09a2b', '#5aa2ff', '#c05cf0', '#4b6fb8', '#e2688f', '#8fb0e6']
+export const NEUTRAL_SLICE = '#8da2c4'
 export const withName = (series: Series, name: string): Series => ({ ...series, name })
-

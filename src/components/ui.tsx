@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Icon, Logo, type IconName } from './Icon'
 import { formatDate, money } from '../lib/format'
 import type { Transaction } from '../types'
 
@@ -6,8 +7,8 @@ export function PageHeading({ title, subtitle, children }: { title: string; subt
   return <div className="page-heading"><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{children && <div className="heading-actions">{children}</div>}</div>
 }
 
-export function Metric({ label, value, foot, tone }: { label: string; value: string; foot?: string; tone?: 'warning' | 'good' | 'bad' }) {
-  return <article className="metric-card"><div className="metric-label">{label}</div><div className={`metric-value ${tone === 'bad' ? 'neg' : tone === 'good' ? 'pos' : ''}`}>{value}</div>{foot && <div className={`metric-foot ${tone === 'warning' ? 'warning' : ''}`}>{foot}</div>}</article>
+export function Metric({ label, value, foot, tone, icon }: { label: string; value: string; foot?: string; tone?: 'warning' | 'good' | 'bad'; icon?: IconName }) {
+  return <article className="metric-card"><div className="metric-label">{icon && <span className={`metric-icon ${tone ?? ''}`}><Icon name={icon} size={16} /></span>}{label}</div><div className={`metric-value ${tone === 'bad' ? 'neg' : tone === 'good' ? 'pos' : ''}`}>{value}</div>{foot && <div className={`metric-foot ${tone === 'warning' ? 'warning' : ''}`}>{foot}</div>}</article>
 }
 
 export function Panel({ title, subtitle, children, action }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode }) {
@@ -15,7 +16,7 @@ export function Panel({ title, subtitle, children, action }: { title: string; su
 }
 
 export function EmptyState({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
-  return <section className="panel empty-state"><span className="brand-mark">◒</span><h2>{title}</h2><p>{children}</p>{actions && <div className="empty-actions">{actions}</div>}</section>
+  return <section className="panel empty-state"><Logo size={56} /><h2>{title}</h2><p>{children}</p>{actions && <div className="empty-actions">{actions}</div>}</section>
 }
 
 export type SortKey = 'date' | 'person' | 'amount'
@@ -44,8 +45,29 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort 
     <td>{row.person?.name || '—'}</td>
     <td>{row.category?.name ? <span className="tag">{row.category.name}</span> : '—'}</td>
     <td>{row.installment_count ? <span className={`tag ${row.installment_number === row.installment_count ? 'last' : ''}`}>{row.installment_number}/{row.installment_count}</span> : <span className="muted">À vista</span>}</td>
-    <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar">{row.status === 'paid' ? 'Pago' : 'Não pago'}</button></td>
+    <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button></td>
     <td className="num">{money(Number(row.amount))}</td>
-    <td><button className="text-button" onClick={() => onDelete(row)} aria-label="Excluir lançamento">Excluir</button></td>
+    <td><button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
   </tr>)}</tbody></table></div>
+}
+
+export interface HeroProps {
+  label: string
+  total: string
+  count: number
+  paid: string
+  pending: string
+  paidShare: number
+  badge?: { text: string; tone: 'bad' | 'good' | 'flat'; trend: 'trend-up' | 'trend-down' }
+}
+
+export function Hero({ label, total, count, paid, pending, paidShare, badge }: HeroProps) {
+  const share = Math.max(0, Math.min(1, paidShare))
+  return <article className="hero-card">
+    <div className="hero-top"><span className="hero-label">{label}</span>{badge && <span className={`hero-badge ${badge.tone}`}><Icon name={badge.trend} size={14} />{badge.text}</span>}</div>
+    <div className="hero-total">{total}</div>
+    <div className="hero-sub">{count} lançamentos nesta fatura</div>
+    <div className="hero-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
+    <div className="hero-split"><span><b>{paid}</b> pago</span><span><b>{pending}</b> pendente</span></div>
+  </article>
 }

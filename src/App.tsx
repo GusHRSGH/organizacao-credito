@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { hasSupabaseConfig, supabase } from './lib/supabase'
 import { messageOf } from './lib/format'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
+import { Icon, Logo, type IconName } from './components/Icon'
+import { useTheme } from './lib/theme'
 import { currentPeriod } from './services/installments'
 import { getSource, getStoredKind, isLocalSource, storeKind } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -13,6 +15,7 @@ type Page = 'dashboard' | 'invoices' | 'settings'
 const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', settings: 'Dados' }
 
 export default function App() {
+  const [theme, toggleTheme] = useTheme()
   const [kind, setKind] = useState<SourceKind>(getStoredKind)
   const source = getSource(kind)
   const { session, ready, error: authError } = useSupabaseAuth(kind === 'supabase')
@@ -71,25 +74,26 @@ export default function App() {
 
   if (kind === 'supabase' && !ready) return <main className="center-screen">Carregando…</main>
   if (kind === 'supabase' && !hasSupabaseConfig) return <main className="center-screen"><section className="auth-card"><h1>Nuvem não configurada</h1><p>Este build não tem credenciais do Supabase.</p><button className="primary-button" onClick={() => changeKind('local')}>Usar banco local</button></section></main>
-  if (kind === 'supabase' && !session) return <main className="center-screen"><section className="auth-card"><span className="brand-mark">◒</span><h1>Organização do Crédito</h1><p>Acesse sua área privada. Enviaremos um link de entrada para seu e-mail.</p>
+  if (kind === 'supabase' && !session) return <main className="center-screen"><section className="auth-card"><Logo size={52} /><h1>Organização do Crédito</h1><p>Acesse sua área privada. Enviaremos um link de entrada para seu e-mail.</p>
     <form onSubmit={(event) => void sendMagicLink(event)} className="auth-form"><label>E-mail<input type="email" name="email" required autoComplete="email" placeholder="voce@exemplo.com" /></label><button className="primary-button">Enviar link de acesso</button></form>
     {(authError || alert?.kind === 'error') && <p className="error">{authError || alert?.text}</p>}{authNotice && <p className="notice">{authNotice}</p>}
     <button className="text-button" onClick={() => changeKind('local')}>Voltar ao banco local</button></section></main>
 
   const local = isLocalSource(source) ? source : null
-  const nav = (id: Page, icon: string, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)}><span className="nav-icon">{icon}</span><span className="nav-text">{label}</span></button>
+  const nav = (id: Page, icon: IconName, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><span className="brand-mark">◒</span><span>Organização<br />do Crédito</span></div>
+      <div className="brand"><Logo size={38} /><span>Organização<br />do Crédito</span></div>
       <div className="nav-label">Workspace</div>
-      {nav('dashboard', '▦', 'Visão geral')}{nav('invoices', '▤', 'Faturas e lançamentos')}{nav('settings', '⚙', 'Dados e backup')}
+      {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('settings', 'settings', 'Dados e backup')}
       <div className="sidebar-note">Responsável é a pessoa a quem o gasto é atribuído.</div>
-      <div className="sidebar-footer"><span className="avatar">{kind === 'local' ? '▣' : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? 'Neste computador' : 'Nuvem'} · {counts.invoices} faturas</small></span></div>
+      <div className="sidebar-footer"><span className="avatar">{kind === 'local' ? <Icon name="database" size={15} /> : (session?.user.email?.[0] ?? '?').toUpperCase()}</span><span>{kind === 'local' ? 'Banco local' : session?.user.email}<br /><small>{kind === 'local' ? 'Neste computador' : 'Nuvem'} · {counts.invoices} faturas</small></span></div>
     </aside>
     <main className="main">
       <header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div>
-        {kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}</header>
+        <div className="topbar-actions">{kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}
+          <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
