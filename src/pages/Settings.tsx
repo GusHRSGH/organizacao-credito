@@ -2,12 +2,12 @@ import GoogleAccountPanel from '../components/GoogleAccount'
 import SecurityPanel, { UpdatePanel } from '../components/SecurityPanel'
 import { Icon } from '../components/Icon'
 import type { GoogleAccount } from '../hooks/useGoogleAccount'
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
 import { downloadText, stamp, toCsv } from '../services/exporters'
 import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
-import type { LocalSource } from '../services/localSource'
+import type { LocalSource, SnapshotInfo } from '../services/localSource'
 import type { ImportResult, Invoice, SourceKind, Transaction } from '../types'
 import { hasSupabaseConfig } from '../lib/supabase'
 
@@ -32,6 +32,16 @@ export default function Settings({ kind, google, local, invoices, transactions, 
   const [fileName, setFileName] = useState('')
   const [busy, setBusy] = useState(false)
   const isLocal = kind === 'local'
+  const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([])
+  const [lastFile, setLastFile] = useState<string | null>(() => { try { return localStorage.getItem('orc-last-file-backup') } catch { return null } })
+  const loadSnapshots = useCallback(async () => { try { setSnapshots(await local.listSnapshots()) } catch { setSnapshots([]) } }, [local])
+  useEffect(() => { if (isLocal) void loadSnapshots() }, [isLocal, loadSnapshots, transactions.length])
+
+  async function restoreSnapshot(snapshot: SnapshotInfo) {
+    const when = new Date(snapshot.savedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    if (!window.confirm(`Voltar para a cópia de ${when} (${snapshot.transactions} lançamentos)? Os dados atuais são guardados antes, então dá para desfazer.`)) return
+    try { await local.restoreSnapshot(snapshot.id); await onChanged(); await loadSnapshots(); notify('notice', 'Cópia restaurada. Os dados de antes ficaram guardados na lista.') } catch (cause) { notify('error', messageOf(cause)) }
+  }
 
   const batchOf = (list: ParsedSheet[], selection: Record<string, boolean>) =>
     list.filter((s) => selection[s.sheetName] && s.period).map((s) => ({ period: s.period!, label: s.label, rows: s.rows }))
@@ -85,7 +95,10 @@ export default function Settings({ kind, google, local, invoices, transactions, 
   async function backup() {
     try {
       downloadText(`organizacao-credito-backup-${stamp()}.json`, JSON.stringify(await local.exportBackup(), null, 2), 'application/json')
-      notify('notice', 'Backup baixado. Guarde o arquivo em um lugar seguro.')
+      const now = new Date().toISOString()
+      try { localStorage.setItem('orc-last-file-backup', now) } catch { /* sem armazenamento: só não lembra a data */ }
+      setLastFile(now)
+      notify('notice', 'Backup salvo. Guarde o arquivo em um lugar seguro (WhatsApp, e-mail, pen drive…).')
     } catch (cause) { notify('error', messageOf(cause)) }
   }
 
@@ -107,6 +120,14 @@ export default function Settings({ kind, google, local, invoices, transactions, 
 
     <SecurityPanel notify={notify} />
     <UpdatePanel onCheck={onCheckUpdate} />
+
+    {isLocal && <Panel title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">
+      {snapshots.length ? <ul className="snapshot-list">{snapshots.map((snapshot) => <li key={snapshot.id}>
+        <span><b>{new Date(snapshot.savedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</b> · {snapshot.reason === 'antes' ? 'antes de restaurar/limpar' : 'cópia do dia'} · {snapshot.transactions} lançamentos</span>
+        <button className="text-button" onClick={() => void restoreSnapshot(snapshot)}>Voltar para esta</button></li>)}</ul>
+        : <p className="hint">Ainda não há cópias. A primeira é criada quando você mexer nos dados.</p>}
+      <p className="hint">{lastFile ? `Último backup em arquivo: ${new Date(lastFile).toLocaleDateString('pt-BR')}. ` : 'Você ainda não salvou um backup em arquivo. '}As cópias automáticas ficam no aparelho: se ele for perdido ou formatado, somem junto. Por isso, de vez em quando, use “Baixar backup” e mande o arquivo para você mesmo.</p>
+    </Panel>}
 
     <GoogleAccountPanel google={google} local={isLocal ? local : null} onChanged={onChanged} notify={notify} />
 
