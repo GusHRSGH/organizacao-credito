@@ -22,6 +22,8 @@ Aplicativo para Windows, gratuito, com dados guardados no próprio computador.
 
 - **Visão geral** com o total da fatura, quanto já foi pago, comparação com outro mês e gráficos por responsável e por categoria.
 - **Lançamento rápido**: digite uma linha como `mercado 150,90 3x @ana #casa ontem` e dê Enter (atalho Ctrl+N). O app sugere responsável e categoria pelo seu histórico e lembra os últimos usados.
+- **Editar e corrigir**: edite qualquer campo de um lançamento, refaça uma compra parcelada inteira (as parcelas são recalculadas e as já pagas continuam pagas), exclua com botão Desfazer e aja em vários lançamentos de uma vez (pagar, trocar responsável ou categoria, excluir).
+- **Quem deve quanto**: total, pago e pendente por responsável, com mensagem de cobrança pronta para o WhatsApp e botão para marcar tudo da pessoa como pago.
 - **Colar da fatura do banco**: cole as linhas copiadas do app ou site do banco, confira a prévia e importe de uma vez, sem duplicar.
 - **Faturas e lançamentos**: cadastro de compras à vista e parceladas (o total é dividido em parcelas mensais iguais e os centavos que sobram vão para a última), filtros e controle de pago ou pendente.
 - **Importação da planilha .xlsx** com prévia antes de gravar. Reimportar é seguro, pois lançamentos idênticos são ignorados.
@@ -74,6 +76,8 @@ npm run desktop:dist   # instalador NSIS em release/ (no Windows)
 - **Overview** with the invoice total, how much is already paid, a comparison against another month, and charts by person and by category.
 - **Quick entry**: type a line like `mercado 150,90 3x @ana #casa ontem` and press Enter (shortcut Ctrl+N). The app suggests person and category from your history and remembers the last ones used.
 - **Paste from your bank statement**: paste the lines copied from your bank's app or site, review the preview, and import in one go without duplicates.
+- **Edit and fix**: edit any field of a transaction, redo a whole installment purchase (installments are recalculated and paid ones stay paid), delete with an Undo button, and act on many transactions at once (mark paid, change person or category, delete).
+- **Who owes what**: total, paid and pending per person, with a ready-to-send WhatsApp message and a button to mark everything from that person as paid.
 - **Invoices and transactions**: one-off and installment purchases (the total is split into equal monthly installments, with leftover cents going to the last one), filters, and paid or pending tracking.
 - **Spreadsheet import (.xlsx)** with a preview before anything is saved. Re-importing is safe, since identical transactions are skipped.
 - **Export** to CSV (opens in Excel) and a full **JSON backup**.

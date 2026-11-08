@@ -29,17 +29,22 @@ interface TableProps {
   onDelete: (row: Transaction) => void
   sort?: Sort
   onSort?: (key: SortKey) => void
+  selected?: Set<string>
+  onSelect?: (id: string) => void
+  onSelectAll?: (all: boolean) => void
+  onEdit?: (row: Transaction) => void
 }
 
-export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort }: TableProps) {
+export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort, selected, onSelect, onSelectAll, onEdit }: TableProps) {
   if (busy) return <p className="empty">Carregando lançamentos…</p>
   if (!rows.length) return <p className="empty">Nenhum lançamento por aqui.</p>
   const head = (key: SortKey, label: string, className = '') => onSort
     ? <th className={className}><button className="th-button" onClick={() => onSort(key)}>{label}{sort?.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>
     : <th className={className}>{label}</th>
   return <div className="table-scroll"><table><thead><tr>
-    {head('date', 'Data')}<th>Descrição</th>{head('person', 'Responsável')}<th>Categoria</th><th>Parcela</th><th>Status</th>{head('amount', 'Valor', 'num')}<th />
-  </tr></thead><tbody>{rows.map((row) => <tr key={row.id}>
+    {selected && <th className="check"><input type="checkbox" aria-label="Selecionar todos" checked={rows.length > 0 && rows.every((row) => selected.has(row.id))} onChange={(event) => onSelectAll?.(event.target.checked)} /></th>}{head('date', 'Data')}<th>Descrição</th>{head('person', 'Responsável')}<th>Categoria</th><th>Parcela</th><th>Status</th>{head('amount', 'Valor', 'num')}<th />
+  </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={selected?.has(row.id) ? 'selected' : ''}>
+    {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
     <td>{formatDate(row.occurred_on)}</td>
     <td className="desc"><b>{row.description}</b></td>
     <td>{row.person?.name || '—'}</td>
@@ -47,7 +52,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort 
     <td>{row.installment_count ? <span className={`tag ${row.installment_number === row.installment_count ? 'last' : ''}`}>{row.installment_number}/{row.installment_count}</span> : <span className="muted">À vista</span>}</td>
     <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button></td>
     <td className="num">{money(Number(row.amount))}</td>
-    <td><button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
+    <td className="actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento" title="Editar"><Icon name="edit" size={16} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
   </tr>)}</tbody></table></div>
 }
 
