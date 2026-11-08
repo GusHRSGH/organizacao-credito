@@ -72,3 +72,9 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Vercel Hobby destina-se a uso pessoal/não comercial e pausa/limita recursos ao ultrapassar cotas gratuitas.
 - GitHub Free inclui repositórios privados e 2.000 minutos mensais de GitHub Actions.
 - Não prometer disponibilidade contínua nem cotas permanentes. Se um serviço exigir pagamento, interromper e procurar alternativa grátis.
+
+## Atualização 2026-11-08 (visual azul)
+
+- Novo tema azul com alternância claro/escuro (botão no topo, lembra a escolha e usa a preferência do sistema na primeira vez).
+- Ícones SVG animados (`src/components/Icon.tsx`), card de destaque com o total da fatura, gráficos com entrada animada e animações desativadas quando o sistema pede menos movimento.
+- Ícone do app em `public/icon.svg`, `build/icon.ico` e `electron/icon.png`. O Setup.exe gerado pelo GitHub Actions embute o ícone no executável; o zip portátil montado no Linux mostra o ícone na janela, mas o arquivo .exe pode aparecer com o ícone padrão no Explorer.

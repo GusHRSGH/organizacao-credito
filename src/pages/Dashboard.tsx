@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Donut, HBarChart, StackedColumns } from '../components/charts'
-import { AMBER, GREEN, RED, SLICE_COLORS, TEAL, withName } from '../components/palette'
-import { EmptyState, Metric, PageHeading, Panel } from '../components/ui'
+import { AMBER, GREEN, NEUTRAL_SLICE, RED, SLICE_COLORS, TEAL, withName } from '../components/palette'
+import { EmptyState, Hero, Metric, PageHeading, Panel } from '../components/ui'
 import { money, pct, signedMoney } from '../lib/format'
 import { shortPeriodLabel } from '../services/installments'
 import { compareGroups, groupBy, monthlyTotals, totals, variation } from '../services/stats'
@@ -45,7 +45,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
   const labelB = other?.label ?? ''
   const change = other ? variation(data.a.total, data.b.total) : null
   const changeTone = change === null ? undefined : change > 0.0005 ? 'bad' : change < -0.0005 ? 'good' : undefined
-  const sliceColor = (index: number, name: string) => (name === 'Sem categoria' ? '#9aa5b1' : SLICE_COLORS[index % SLICE_COLORS.length])
+  const sliceColor = (index: number, name: string) => (name === 'Sem categoria' ? NEUTRAL_SLICE : SLICE_COLORS[index % SLICE_COLORS.length])
   const slices = (key: 'a' | 'b') => data.categories.map((row, i) => ({ name: row.name, value: row[key], color: sliceColor(i, row.name) }))
   const series = [withName(TEAL, labelA), ...(other ? [withName(AMBER, labelB)] : [])]
   const peopleRows = data.people.filter((row) => row.a > 0 || row.b > 0)
@@ -59,10 +59,10 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
     </PageHeading>
 
     <section className="metric-grid">
-      <Metric label={`Total · ${labelA}`} value={money(data.a.total)} foot={`${data.a.count} lançamentos`} />
-      <Metric label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
-      <Metric label={`Variação vs ${other ? shortPeriodLabel(other.period) : 'mês comparado'}`} value={change === null ? '—' : `${change > 0 ? '+' : ''}${pct(change)}`} tone={changeTone} foot={other ? `${signedMoney(data.a.total - data.b.total)} em reais` : undefined} />
-      <Metric label={`Pendente · ${labelA}`} value={money(data.a.pending)} tone="warning" foot={`${data.a.total ? pct(data.a.paid / data.a.total) : '0,0%'} já pago`} />
+      <Hero label={labelA} total={money(data.a.total)} count={data.a.count} paid={money(data.a.paid)} pending={money(data.a.pending)} paidShare={data.a.total ? data.a.paid / data.a.total : 0}
+        badge={change === null ? undefined : { text: `${change > 0 ? '+' : ''}${pct(change)} vs ${shortPeriodLabel(other!.period)}`, tone: changeTone === 'bad' ? 'bad' : changeTone === 'good' ? 'good' : 'flat', trend: change > 0 ? 'trend-up' : 'trend-down' }} />
+      <Metric icon="receipt" label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
+      <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
 
     <div className="panel-grid">

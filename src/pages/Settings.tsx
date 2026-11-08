@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon'
 import { useRef, useState } from 'react'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
@@ -93,23 +94,23 @@ export default function Settings({ kind, local, invoices, transactions, onKind, 
 
     <Panel title="Fonte de dados" subtitle="Você pode alternar quando quiser; cada fonte guarda seus próprios dados.">
       <div className="source-switch">
-        <button className={`source-option ${isLocal ? 'active' : ''}`} onClick={() => onKind('local')}><b>Banco local</b><span>Neste computador, sem conta e sem internet.</span></button>
-        <button className={`source-option ${!isLocal ? 'active' : ''}`} onClick={() => onKind('supabase')} disabled={!hasSupabaseConfig}><b>Nuvem (Supabase)</b><span>{hasSupabaseConfig ? 'Sincroniza entre aparelhos, com login.' : 'Indisponível: falta configurar o Supabase neste build.'}</span></button>
+        <button className={`source-option ${isLocal ? 'active' : ''}`} onClick={() => onKind('local')}><Icon name="database" size={22} /><b>Banco local</b><span>Neste computador, sem conta e sem internet.</span></button>
+        <button className={`source-option ${!isLocal ? 'active' : ''}`} onClick={() => onKind('supabase')} disabled={!hasSupabaseConfig}><Icon name="cloud" size={22} /><b>Nuvem (Supabase)</b><span>{hasSupabaseConfig ? 'Sincroniza entre aparelhos, com login.' : 'Indisponível: falta configurar o Supabase neste build.'}</span></button>
       </div>
       <p className="hint">A integração com Google Sheets entra numa próxima etapa.</p>
     </Panel>
 
     <Panel title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
       <div className="button-row">
-        <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`organizacao-credito-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}>Baixar CSV (Excel)</button>
-        {isLocal && <button className="secondary-button" onClick={() => void backup()}>Baixar backup (JSON)</button>}
-        {isLocal && <button className="secondary-button" onClick={() => backupRef.current?.click()}>Restaurar backup…</button>}
+        <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`organizacao-credito-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}><Icon name="download" size={16} />Baixar CSV (Excel)</button>
+        {isLocal && <button className="secondary-button" onClick={() => void backup()}><Icon name="download" size={16} />Baixar backup (JSON)</button>}
+        {isLocal && <button className="secondary-button" onClick={() => backupRef.current?.click()}><Icon name="upload" size={16} />Restaurar backup…</button>}
         <input ref={backupRef} type="file" accept=".json,application/json" hidden onChange={(event) => void restore(event.target.files?.[0])} />
       </div>
     </Panel>
 
     {isLocal ? <Panel title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
-      <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}>Escolher arquivo…</button>
+      <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
         <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
         {fileName && <span className="muted">{fileName}</span>}</div>
       {sheets.length > 0 && <div className="import-box">
@@ -129,6 +130,6 @@ export default function Settings({ kind, local, invoices, transactions, onKind, 
       </div>}
     </Panel> : <Panel title="Importar planilha .xlsx"><p className="empty">A importação funciona no banco local. Troque a fonte de dados acima.</p></Panel>}
 
-    {isLocal && <Panel title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}>Apagar todos os dados locais</button></div></Panel>}
+    {isLocal && <Panel title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}><Icon name="trash" size={16} />Apagar todos os dados locais</button></div></Panel>}
   </>
 }
