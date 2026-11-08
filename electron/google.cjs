@@ -36,7 +36,14 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
   let memoryToken = null
   let cancelLogin = null
 
-  const credentials = () => readSealed(credentialsFile())
+  // Chave embutida no app (electron/google-client.json, fora do git). Se existir, o usuário só clica em entrar.
+  function bundled() {
+    try {
+      const value = JSON.parse(fs.readFileSync(path.join(__dirname, 'google-client.json'), 'utf8'))
+      return value?.clientId && value?.clientSecret ? { clientId: String(value.clientId), clientSecret: String(value.clientSecret) } : null
+    } catch { return null }
+  }
+  const credentials = () => readSealed(credentialsFile()) || bundled()
   const session = () => readSealed(sessionFile())
 
   function status() {
@@ -44,6 +51,7 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
     const current = session()
     return {
       configured: !!(creds && creds.clientId && creds.clientSecret),
+      bundled: !!bundled(),
       signedIn: !!(current && current.refreshToken),
       email: current?.email ?? null,
       name: current?.name ?? null,

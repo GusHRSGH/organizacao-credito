@@ -94,3 +94,8 @@ Aplicação web pessoal para organizar despesas e faturas de cartão compartilha
 - Se a chave do Google ainda não foi cadastrada, o botão do Google abre o guia e os campos de ID e chave na própria tela; depois de salvar, o login começa sozinho. Há botão para cancelar a espera do navegador.
 - Ao entrar com Google num computador sem dados, o app oferece restaurar o backup encontrado no Drive.
 - Verificado no navegador com um app desktop simulado (entrar, oferta de restauração, sair, seguir sem login, lembrar escolha). Login real com conta Google continua não testado.
+
+## Atualização 2026-11-08 (chave do Google embutida)
+
+- O app aceita uma chave OAuth do Google embutida (`electron/google-client.json`, ignorada pelo git; modelo em `google-client.example.json`). Com ela, quem abre o app só clica em "Continuar com Google". Sem ela, vale o cadastro manual da chave dentro do app.
+- O workflow do Windows cria esse arquivo a partir dos secrets `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`, se existirem.
