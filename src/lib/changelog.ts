@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 11, date: '2026-11-09', title: 'Radar e assinaturas',
+    items: [
+      'Novo Radar do mês na Visão geral: avisa cobrança duplicada, valor bem acima do seu normal, gasto novo e caro, e categoria que disparou. Toque em Ver para abrir os lançamentos, ou em Ignorar.',
+      'Novo painel de Assinaturas e custos fixos: o app descobre sozinho o que se repete todo mês, soma o custo fixo e avisa quando uma assinatura sobe de preço ou para de ser cobrada.',
+    ],
+  },
+  {
     n: 10, date: '2026-11-09', title: 'Robô de limpeza',
     items: [
       'Novo em Dados: o robô de limpeza acha descrições sujas do banco (“UBER *TRIP 8842” vira “Uber”) e tira códigos e letras maiúsculas.',
