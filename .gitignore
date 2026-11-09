@@ -10,3 +10,7 @@ release/
 
 # Chave OAuth do Google embutida no app (nunca versionar)
 electron/google-client.json
+
+# Resultados dos testes de tela
+test-results/
+playwright-report/

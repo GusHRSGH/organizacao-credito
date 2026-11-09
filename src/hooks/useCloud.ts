@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { hasStoredSession, loadSupabase } from '../lib/supabase'
 import { messageOf } from '../lib/format'
 import { CloudApi, VersionConflictError, decideSync, hashData, isEmptyData, type CloudRecord, type SyncMarker } from '../services/cloud'
 import { validateBackup } from '../services/backup'
@@ -45,7 +45,7 @@ interface Options {
 }
 
 export function useCloud({ local, dataKey, loaded, onDownloaded, notify }: Options): CloudState {
-  const api = useMemo(() => new CloudApi(supabase), [])
+  const api = useMemo(() => new CloudApi(loadSupabase), [])
   const [session, setSession] = useState<Session | null>(null)
   const [ready, setReady] = useState(false)
   const [status, setStatus] = useState<CloudState['status']>('idle')
@@ -57,10 +57,12 @@ export function useCloud({ local, dataKey, loaded, onDownloaded, notify }: Optio
 
   useEffect(() => {
     let mounted = true
-    void supabase.auth.getSession().then(({ data }) => { if (mounted) { setSession(data.session); setReady(true) } }).catch(() => { if (mounted) setReady(true) })
-    const { data } = supabase.auth.onAuthStateChange((_event, current) => { if (mounted) setSession(current) })
-    return () => { mounted = false; data.subscription.unsubscribe() }
-  }, [])
+    api.onSession((current) => { if (mounted) { setSession(current); setReady(true) } })
+    // Sem sessão guardada, nem carrega a biblioteca da nuvem: ela vem quando a pessoa abre o login.
+    if (hasStoredSession()) void api.start().catch(() => { if (mounted) setReady(true) })
+    else setReady(true)
+    return () => { mounted = false }
+  }, [api])
 
   const finish = useCallback((uid: string, version: number, hash: string) => {
     const at = new Date().toISOString()
@@ -130,6 +132,13 @@ export function useCloud({ local, dataKey, loaded, onDownloaded, notify }: Optio
     const timer = setTimeout(() => void reconcile(false), PUSH_DELAY_MS)
     return () => clearTimeout(timer)
   }, [dataKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Voltou a ter internet: tenta sincronizar o que ficou pendente.
+  useEffect(() => {
+    const onOnline = () => { if (userId && loaded && !conflict) void reconcile(false) }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [userId, loaded, conflict, reconcile])
 
   const keepThisDevice = useCallback(async () => {
     const record = pending.current

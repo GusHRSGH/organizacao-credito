@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
 import { messageOf } from './lib/format'
 import { useGoogleAccount } from './hooks/useGoogleAccount'
 import { useCloud } from './hooks/useCloud'
@@ -10,16 +10,16 @@ import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/na
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
-import Legal from './components/Legal'
-import Tour from './components/Tour'
-import WhatsNew from './components/WhatsNew'
+const Legal = lazy(() => import('./components/Legal'))
+const Tour = lazy(() => import('./components/Tour'))
+const WhatsNew = lazy(() => import('./components/WhatsNew'))
 import { ENTRIES, LATEST, pendingEntries, type ChangelogEntry } from './lib/changelog'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
 import Dashboard from './pages/Dashboard'
-import Invoices from './pages/Invoices'
-import Billing from './pages/Billing'
-import Settings from './pages/Settings'
+const Invoices = lazy(() => import('./pages/Invoices'))
+const Billing = lazy(() => import('./pages/Billing'))
+const Settings = lazy(() => import('./pages/Settings'))
 import type { Invoice, Transaction } from './types'
 
 const ENTRY_KEY = 'oc:entry'
@@ -173,7 +173,7 @@ export default function App() {
   const counts = useMemo(() => ({ invoices: invoices.length, rows: transactions.length }), [invoices, transactions])
 
   if (!google.ready || !cloud.ready) return <main className="center-screen" />
-  if (!signedIn && !guest && !cloud.session) return <><Welcome google={google} cloud={cloud} theme={theme} onToggleTheme={toggleTheme} onGuest={continueAsGuest} onLegal={() => setLegalOpen(true)} alert={alert} onDismissAlert={() => setAlert(null)} />{legalOpen && <Legal onClose={closeLegal} />}</>
+  if (!signedIn && !guest && !cloud.session) return <><Welcome google={google} cloud={cloud} theme={theme} onToggleTheme={toggleTheme} onGuest={continueAsGuest} onLegal={() => setLegalOpen(true)} alert={alert} onDismissAlert={() => setAlert(null)} /><Suspense fallback={null}>{legalOpen && <Legal onClose={closeLegal} />}</Suspense></>
 
   const local = source
   const googleUi = { ...google, signOut: signOutGoogle }
@@ -200,18 +200,20 @@ export default function App() {
       {guest && !cloud.session && !signedIn && loaded && !nudgeHidden && page !== 'settings' && <div className="restore-offer" role="status"><span><b>Seus dados estão só neste aparelho.</b> Crie uma conta com o e-mail para ter uma cópia segura na nuvem e usar em outros aparelhos.</span><div className="button-row"><button className="primary-button" onClick={() => setPage('settings')}>Criar conta</button><button className="text-button" onClick={hideNudge}>Depois</button></div></div>}
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
-      {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
+      {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} />}
-      </>}
+      </Suspense>}
     </main>
     <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
     {!sheetOpen && <button data-tour="fab" className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
+    <Suspense fallback={null}>
     {legalOpen && <Legal onClose={closeLegal} />}
     {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
     {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
+    </Suspense>
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }
