@@ -5,8 +5,8 @@ import PasteBill from '../components/PasteBill'
 import EditDialog from '../components/EditDialog'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
-import { Metric, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
-import { messageOf, money, pct } from '../lib/format'
+import { Hero, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
+import { messageOf, money } from '../lib/format'
 import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
 import { totals } from '../services/stats'
 import type { DataSource, Invoice, Transaction, TransactionRow } from '../types'
@@ -170,17 +170,15 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     </Panel>}
 
     <section className="metric-grid">
-      <Metric label="Total da fatura" value={money(summary.total)} foot={`${summary.count} lançamentos`} />
-      <Metric label="Já pago" value={money(summary.paid)} foot={`${summary.total ? pct(summary.paid / summary.total) : '0,0%'} do total`} />
-      <Metric label="Pendente" value={money(summary.pending)} tone="warning" />
-      <article className="metric-card"><div className="metric-label">Nova fatura</div><div className="inline-form"><input type="month" value={newPeriod} onChange={(event) => setNewPeriod(event.target.value)} aria-label="Mês da nova fatura" /><button className="secondary-button" onClick={() => void addInvoice()}>Criar</button></div><div className="metric-foot">Sem mês, cria o seguinte à última.</div></article>
+      <Hero label={invoices.find((invoice) => invoice.id === invoiceId)?.label ?? 'Fatura'} total={money(summary.total)} count={summary.count} paid={money(summary.paid)} pending={money(summary.pending)} paidShare={summary.total ? summary.paid / summary.total : 0} />
+      <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><input type="month" value={newPeriod} onChange={(event) => setNewPeriod(event.target.value)} aria-label="Mês da nova fatura" /><button className="secondary-button" onClick={() => void addInvoice()}>Criar</button></div><div className="metric-foot">Sem mês, cria o seguinte à última.</div></article>
     </section>
 
     <div className="toolbar">
       <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento" />
       <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}</select>
       <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Categoria"><option value="">Todas as categorias</option>{categories.map((name) => <option key={name}>{name}</option>)}</select>
-      <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status"><option value="">Todos os status</option><option value="paid">Pago</option><option value="pending">Não pago</option></select>
+      <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status"><option value="">Todos os status</option><option value="paid">Pago</option><option value="pending">Pendente</option></select>
       {pendingVisible.length > 0 && (person || category || query || status) && <button className="secondary-button" onClick={markVisiblePaid}>Marcar {pendingVisible.length} como pagos</button>}
       <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
     </div>
