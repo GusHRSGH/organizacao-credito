@@ -1,25 +1,9 @@
-import { hasSupabaseConfig } from '../lib/supabase'
-import type { DataSource, SourceKind } from '../types'
 import { LocalSource } from './localSource'
-import { SupabaseSource } from './supabaseSource'
 
-const STORAGE_KEY = 'oc:source'
-const instances: Partial<Record<SourceKind, DataSource>> = {}
+let instance: LocalSource | undefined
 
-export function getStoredKind(): SourceKind {
-  try {
-    if (localStorage.getItem(STORAGE_KEY) === 'supabase' && hasSupabaseConfig) return 'supabase'
-  } catch { /* armazenamento indisponível: usa o banco local */ }
-  return 'local'
+/** Os dados do app ficam sempre neste aparelho; a conta na nuvem só sincroniza uma cópia. */
+export function getSource(): LocalSource {
+  instance ??= new LocalSource()
+  return instance
 }
-
-export function storeKind(kind: SourceKind) {
-  try { localStorage.setItem(STORAGE_KEY, kind) } catch { /* ignora */ }
-}
-
-export function getSource(kind: SourceKind): DataSource {
-  instances[kind] ??= kind === 'supabase' ? new SupabaseSource() : new LocalSource()
-  return instances[kind]!
-}
-
-export const isLocalSource = (source: DataSource): source is LocalSource => source instanceof LocalSource

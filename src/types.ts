@@ -1,6 +1,6 @@
 export type InvoiceStatus = 'open' | 'closed' | 'paid'
 export type TransactionStatus = 'pending' | 'paid'
-export type SourceKind = 'local' | 'supabase'
+export type SourceKind = 'local'
 
 export interface Invoice {
   id: string

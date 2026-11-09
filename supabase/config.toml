@@ -11,7 +11,7 @@ major_version = 15
 
 [auth]
 enabled = true
-enable_signup = false
+enable_signup = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = []
 
