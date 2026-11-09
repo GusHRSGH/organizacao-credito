@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Donut, HBarChart, StackedColumns } from '../components/charts'
 import { AMBER, GREEN, NEUTRAL_SLICE, RED, SLICE_COLORS, TEAL, withName } from '../components/palette'
 import { Icon } from '../components/Icon'
+import WatchPanels from '../components/WatchPanels'
 import { EmptyState, Hero, Metric, PageHeading, Panel } from '../components/ui'
 import { money, pct, signedMoney } from '../lib/format'
 import { categoryToken, personToken, type DrillFilter } from '../lib/drill'
@@ -73,6 +74,8 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
     {showInsight && <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} /><span>{insight}</span><button className="insight-x" aria-label="Ocultar o resumo" title="Ocultar (volta em Dados > Aparência)" onClick={() => setShowInsight(false)}>×</button></p>}
+
+    <WatchPanels invoices={invoices} transactions={transactions} focusId={focusId} onDrill={onDrill} />
 
     <div className="panel-grid">
       <Panel tour="dash-people" icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>

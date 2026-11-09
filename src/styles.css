@@ -842,3 +842,14 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .clean-row input[type=checkbox]{width:auto}
 .clean-from{color:var(--faint);overflow-wrap:anywhere;flex:1;min-width:140px}
 .clean-to{flex:1.2;min-width:140px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text);font-size:14px}
+
+.radar-list,.subs-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.radar-item{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line);border-left:4px solid var(--warn,#f59e0b)}
+.radar-item.duplicada{border-left-color:var(--bad,#ef4444)}
+.radar-item p{margin:4px 0 0;font-size:13px;color:var(--faint);line-height:1.4}
+.radar-actions{display:flex;gap:2px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.subs-list li{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.subs-list li.off{opacity:.55}
+.subs-list li:first-child{border-top:0}
+.subs-list small{display:block;font-size:12px;color:var(--faint)}
+.subs-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}

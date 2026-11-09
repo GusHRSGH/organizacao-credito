@@ -204,3 +204,24 @@ test('o robô de limpeza arruma descrições sujas depois de aprovar', async ({ 
   await page.getByRole('button', { name: 'Procurar bagunça' }).click()
   await expect(page.getByRole('dialog', { name: 'Robô de limpeza' })).toContainText('Tudo certo por aqui')
 })
+
+test('o radar avisa cobrança duplicada e deixa ignorar', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  for (let i = 0; i < 2; i++) {
+    await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+    const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+    if (!(await campo.isVisible().catch(() => false))) await page.locator('[data-tour="fab"]').click()
+    await page.locator('input[placeholder*="mercado 150,90"]:visible').first().fill('Padaria dupla 23,90 @ana #alimentacao')
+    await page.keyboard.press('Enter')
+    await expect(page.getByText(/^Salvo:/).first()).toBeVisible({ timeout: 10_000 })
+    await page.keyboard.press('Escape')
+  }
+  await irPara(page, 'dashboard')
+  const radar = page.locator('.panel', { has: page.locator('[data-tour="dash-radar"]') })
+  await expect(radar).toContainText('Possível cobrança duplicada: Padaria dupla')
+  await radar.getByRole('button', { name: /^Ignorar o alerta/ }).click()
+  await expect(radar).not.toContainText('Possível cobrança duplicada')
+  await expect(page.locator('.panel', { has: page.locator('[data-tour="dash-subs"]') })).toContainText('Assinaturas e custos fixos')
+})
