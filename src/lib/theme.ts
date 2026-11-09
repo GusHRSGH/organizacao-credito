@@ -5,7 +5,7 @@ export type Theme = 'light' | 'dark'
 const KEY = 'oc:theme'
 
 function systemTheme(): Theme {
-  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
 export function storedTheme(): Theme {

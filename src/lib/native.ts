@@ -26,7 +26,7 @@ export function useBackHandler(active: boolean, close: () => void) {
 export function applyNativeTheme(theme: 'light' | 'dark') {
   if (!isNative) return
   void StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light }).catch(() => undefined)
-  void StatusBar.setBackgroundColor({ color: theme === 'dark' ? '#0a1124' : '#f3f6fd' }).catch(() => undefined)
+  void StatusBar.setBackgroundColor({ color: theme === 'dark' ? '#09090b' : '#f5f4fa' }).catch(() => undefined)
 }
 
 export function tap() {
