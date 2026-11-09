@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { Donut, HBarChart, StackedColumns } from '../components/charts'
 import { AMBER, GREEN, NEUTRAL_SLICE, RED, SLICE_COLORS, TEAL, withName } from '../components/palette'
+import { Icon } from '../components/Icon'
 import { EmptyState, Hero, Metric, PageHeading, Panel } from '../components/ui'
 import { money, pct, signedMoney } from '../lib/format'
 import { categoryToken, personToken, type DrillFilter } from '../lib/drill'
 import { shortPeriodLabel } from '../services/installments'
+import { summarize } from '../lib/insight'
 import { compareGroups, groupBy, monthlyTotals, totals, variation } from '../services/stats'
 import type { Invoice, Transaction } from '../types'
 
@@ -50,6 +52,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
   const sliceColor = (index: number, name: string) => (name === 'Sem categoria' ? NEUTRAL_SLICE : SLICE_COLORS[index % SLICE_COLORS.length])
   const slices = (key: 'a' | 'b') => data.categories.map((row, i) => ({ name: row.name, value: row[key], color: sliceColor(i, row.name) }))
   const series = [withName(TEAL, labelA), ...(other ? [withName(AMBER, labelB)] : [])]
+  const insight = summarize({ label: labelA, total: data.a.total, pending: data.a.pending, count: data.a.count, otherLabel: other ? labelB : undefined, otherTotal: other ? data.b.total : undefined, categories: data.categories })
   const peopleRows = data.people.filter((row) => row.a > 0 || row.b > 0)
   const invoiceOf = (index: number) => (index === 0 ? focusId : compareId)
 
@@ -67,6 +70,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <Metric icon="receipt" label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
       <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
+    <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} />{insight}</p>
 
     <div className="panel-grid">
       <Panel tour="dash-people" icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
