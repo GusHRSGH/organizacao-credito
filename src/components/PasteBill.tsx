@@ -25,7 +25,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const parsed = useMemo(() => parsePastedBill(text, new Date().toISOString().slice(0, 10)), [text])
+  const parsed = useMemo(() => parsePastedBill(text, new Date().toISOString().slice(0, 10), people, categories), [text, people, categories])
   const picked = parsed.rows.filter((row) => !off.has(row.line))
   const total = picked.reduce((sum, row) => sum + Math.round(row.amount * 100), 0) / 100
 
@@ -35,7 +35,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       const hint = suggestFor(row.description, suggestions)
       const period = periodOfDate(row.date)
       const list = groups.get(period) ?? []
-      list.push({ date: row.date, description: row.description, amount: row.amount, person: hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: null, installmentCount: null })
+      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: null, installmentCount: null })
       groups.set(period, list)
     }
     return [...groups].map(([period, rows]) => ({ period, label: periodLabel(period), rows }))
@@ -59,8 +59,8 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
   }
 
   return <section className="panel paste-panel">
-    <div className="panel-heading"><div><h2>Colar da fatura do banco</h2><p className="panel-sub">Copie as linhas da fatura (data, descrição e valor) e cole aqui.</p></div><button className="text-button" onClick={onClose}>Fechar</button></div>
-    <textarea value={text} onChange={(event) => { setText(event.target.value); setOff(new Set()); reset() }} rows={6} placeholder={'05/11 SUPERMERCADO XYZ 152,30\n06/11 UBER *TRIP 23,40'} aria-label="Texto da fatura" />
+    <div className="panel-heading"><div><h2>Colar do banco ou da conversa</h2><p className="panel-sub">Cole linhas da fatura, notificações do banco ou mensagens do WhatsApp (“gastei 50 no mercado”). O robô separa os gastos e você confere.</p></div><button className="text-button" onClick={onClose}>Fechar</button></div>
+    <textarea value={text} onChange={(event) => { setText(event.target.value); setOff(new Set()); reset() }} rows={6} placeholder={'05/11 SUPERMERCADO XYZ 152,30\nCompra aprovada de R$ 23,40 em UBER hoje\n[08/11/2026 14:32] Ana: gastei 50 no mercado'} aria-label="Texto da fatura" />
     <div className="paste-defaults">
       <label>Responsável padrão<input value={person} onChange={(event) => { setPerson(event.target.value); reset() }} list="paste-people" placeholder="Quem paga o que eu não reconhecer" /></label>
       <label>Categoria padrão<input value={category} onChange={(event) => { setCategory(event.target.value); reset() }} list="paste-categories" placeholder="Ex: Outros" /></label>
@@ -74,7 +74,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
           return <label key={row.line} className={`paste-row ${off.has(row.line) ? 'off' : ''}`} role="listitem">
             <input type="checkbox" checked={!off.has(row.line)} onChange={() => { const next = new Set(off); if (next.has(row.line)) next.delete(row.line); else next.add(row.line); setOff(next); reset() }} />
             <span className="paste-date">{formatDate(row.date)}</span><span className="paste-desc">{row.description}</span>
-            <span className="paste-who">{hint?.person ?? (person || '?')}{hint ? ' · sugerido' : ''}</span><span className="paste-amount">{money(row.amount)}</span>
+            <span className="paste-who">{row.person ?? hint?.person ?? (person || '?')}{row.origin ? ` · ${row.origin}` : hint ? ' · sugerido' : ''}{row.dateGuessed ? ' · data: hoje?' : ''}</span><span className="paste-amount">{money(row.amount)}</span>
           </label>
         })}
         {!parsed.rows.length && <p className="empty">Nenhuma linha com data e valor foi encontrada.</p>}

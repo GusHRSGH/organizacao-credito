@@ -168,3 +168,16 @@ test('a cobrança guarda a chave Pix e leva no fim da mensagem', async ({ page }
   await page.getByRole('radio', { name: 'Tudo em aberto' }).click()
   await expect(page.getByText('Total em aberto')).toBeVisible()
 })
+
+test('o lançamento rápido entende uma frase falada', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+  const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+  if (!(await campo.isVisible())) await page.locator('[data-tour="fab"]').click()
+  await page.locator('input[placeholder*="mercado 150,90"]:visible').first().fill('gastei 77,70 em teste falado ontem com a Ana #alimentacao')
+  await expect(page.getByText(/teste falado/).first()).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText(/Salvo: teste falado, R\$\s?77,70/)).toBeVisible({ timeout: 10_000 })
+})
