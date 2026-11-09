@@ -7,11 +7,12 @@ import { messageOf } from '../lib/format'
 interface Props {
   cloud: CloudState
   notify: (kind: 'notice' | 'error', text: string) => void
+  onLegal: () => void
 }
 
 const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
 
-export default function CloudPanel({ cloud, notify }: Props) {
+export default function CloudPanel({ cloud, notify, onLegal }: Props) {
   const { session, status, lastSyncAt, conflict } = cloud
 
   async function remove() {
@@ -21,6 +22,7 @@ export default function CloudPanel({ cloud, notify }: Props) {
 
   if (!session) return <Panel icon="cloud" title="Conta na nuvem" subtitle="Entre com o e-mail para guardar seus dados com segurança e usar em outros aparelhos. É opcional.">
     <CloudLogin api={cloud.api} />
+    <p className="hint">Ao entrar, você concorda com os <button className="link-button" onClick={onLegal}>termos de uso e a privacidade</button>.</p>
   </Panel>
 
   return <Panel icon="cloud" title="Conta na nuvem" subtitle="Seus dados ficam numa área só sua e sincronizam sozinhos quando você mexe neles.">
@@ -38,5 +40,6 @@ export default function CloudPanel({ cloud, notify }: Props) {
       <button className="secondary-button" onClick={() => void cloud.signOut()}>Sair da conta</button>
       <button className="danger-button" onClick={() => void remove()}><Icon name="trash" size={16} />Excluir minha conta</button>
     </div>
+    <p className="hint"><button className="link-button" onClick={onLegal}>Termos de uso e privacidade</button></p>
   </Panel>
 }
