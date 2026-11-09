@@ -56,6 +56,8 @@ export interface EntryInput {
   personName: string
   categoryName: string
   installmentCount?: number
+  /** Fatura (AAAA-MM-01) onde a compra começa; se faltar, vale a fatura indicada ou o mês da data. */
+  period?: string
 }
 
 export interface ImportRow {

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Icon } from './Icon'
 import { messageOf, money, formatDate } from '../lib/format'
-import { addMonthsToPeriod, currentPeriod, shortPeriodLabel } from '../services/installments'
+import { addMonthsToPeriod, currentPeriod, periodLabel, shortPeriodLabel } from '../services/installments'
+import { invoicePeriodFor, readCard } from '../lib/card'
 import { parseQuickLine } from '../lib/quickEntry'
 import { suggestFor, type Suggestion } from '../lib/suggest'
 import type { DataSource, Invoice } from '../types'
@@ -33,12 +34,18 @@ export default function QuickAdd({ source, invoice, invoices = [], people, categ
   const [last, setLast] = useState<Suggestion>(readLast)
   const [picked, setPicked] = useState<string[]>([])
   const [choosing, setChoosing] = useState(false)
+  const [useOpen, setUseOpen] = useState(false)
   const input = useRef<HTMLInputElement>(null)
 
   useEffect(() => { if (signal > 0) input.current?.focus() }, [signal])
 
-  const parsed = useMemo(() => parseQuickLine(text, { people, categories, today: new Date().toISOString().slice(0, 10), basePeriod: basePeriodOf(invoice) }), [text, people, categories, invoice])
-  const base = basePeriodOf(invoice)
+  const card = readCard()
+  const today = new Date().toISOString().slice(0, 10)
+  const firstPass = useMemo(() => parseQuickLine(text, { people, categories, today, basePeriod: basePeriodOf(invoice) }), [text, people, categories, today, invoice])
+  // Com o cartão configurado, a fatura vem da data da compra e do fechamento, não do mês do calendário.
+  const auto = card && !useOpen ? invoicePeriodFor(firstPass.date, card) : null
+  const parsed = useMemo(() => (auto ? parseQuickLine(text, { people, categories, today, basePeriod: auto }) : firstPass), [auto, text, people, categories, today, firstPass])
+  const base = auto ?? basePeriodOf(invoice)
   const options = useMemo(() => [...new Set([...invoices.map((item) => item.period), ...Array.from({ length: 12 }, (_, i) => addMonthsToPeriod(base, i))])].sort(), [invoices, base])
   const months = useMemo(() => [...new Set([...parsed.months, ...picked])].sort(), [parsed.months, picked])
   const spread = parsed.installments > 1 ? Array.from({ length: parsed.installments }, (_, i) => addMonthsToPeriod(base, i)) : []
@@ -53,12 +60,12 @@ export default function QuickAdd({ source, invoice, invoices = [], people, categ
     if (missing.length) { notify('error', `Falta: ${missing.join(', ')}.`); return }
     setBusy(true)
     try {
-      if (months.length && parsed.installments === 1) await source.createRepeated({ invoiceId: invoice?.id ?? '', occurredOn: parsed.date, description: parsed.description, amount: parsed.amount ?? 0, personName: person ?? '', categoryName: category ?? '' }, months)
-      else await source.createPurchase({ invoiceId: invoice?.id ?? '', occurredOn: parsed.date, description: parsed.description, amount: parsed.amount ?? 0, personName: person ?? '', categoryName: category ?? '', installmentCount: parsed.installments })
+      if (months.length && parsed.installments === 1) await source.createRepeated({ invoiceId: invoice?.id ?? '', occurredOn: parsed.date, description: parsed.description, amount: parsed.amount ?? 0, personName: person ?? '', categoryName: category ?? '', period: auto ?? undefined }, months)
+      else await source.createPurchase({ invoiceId: invoice?.id ?? '', occurredOn: parsed.date, description: parsed.description, amount: parsed.amount ?? 0, personName: person ?? '', categoryName: category ?? '', installmentCount: parsed.installments, period: auto ?? undefined })
       const next = { person, category }
       writeLast(next); setLast(next); setText(''); setPicked([]); setChoosing(false)
       await onSaved()
-      notify('notice', `Salvo: ${parsed.description}, ${money(parsed.amount ?? 0)}${parsed.installments > 1 ? ` em ${parsed.installments}x` : months.length ? ` em ${months.length} ${months.length === 1 ? 'fatura' : 'faturas'}` : ''}.`)
+      notify('notice', `Salvo: ${parsed.description}, ${money(parsed.amount ?? 0)}${parsed.installments > 1 ? ` em ${parsed.installments}x` : months.length ? ` em ${months.length} ${months.length === 1 ? 'fatura' : 'faturas'}` : auto ? ` na fatura de ${periodLabel(auto)}` : ''}.`)
     } catch (cause) { notify('error', messageOf(cause)) } finally { setBusy(false); input.current?.focus() }
   }
 
@@ -82,7 +89,10 @@ export default function QuickAdd({ source, invoice, invoices = [], people, categ
       <span className="chip">{formatDate(parsed.date)}</span>
       <span className={`chip ${person ? '' : 'miss'}`}>{person ?? 'responsável?'}{guessed.person && person ? ' · sugerido' : ''}</span>
       <span className={`chip ${category ? '' : 'miss'}`}>{category ?? 'categoria?'}{guessed.category && category ? ' · sugerido' : ''}</span>
-      {invoice && !months.length && <span className="chip soft">{invoice.label}</span>}
+      {auto && !months.length && parsed.installments === 1 && <span className="chip accent">Fatura de {periodLabel(auto)}</span>}
+      {auto && invoice && auto !== invoice.period && <button type="button" className="chip pick" onClick={() => setUseOpen(true)}>Usar {invoice.label}</button>}
+      {useOpen && card && <button type="button" className="chip pick" onClick={() => setUseOpen(false)}>Voltar para o fechamento</button>}
+      {!auto && invoice && !months.length && <span className="chip soft">{invoice.label}</span>}
       {parsed.installments === 1 && <button type="button" className="chip pick" aria-expanded={choosing} onClick={() => setChoosing(!choosing)}>{months.length ? 'Trocar meses' : 'Lançar em vários meses'}</button>}
     </div>}
     {text.trim() && choosing && parsed.installments === 1 && <div className="month-picker" role="group" aria-label="Meses para lançar">

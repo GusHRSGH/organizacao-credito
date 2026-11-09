@@ -210,7 +210,7 @@ export class LocalSource implements DataSource {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.occurredOn)) return Promise.reject(new Error('Informe a data da compra.'))
     if (input.personName.trim().length > 80 || input.categoryName.trim().length > 60) return Promise.reject(new Error('Nome de responsável ou categoria muito longo.'))
     return this.mutate((db) => {
-      const start = db.invoices.find((invoice) => invoice.id === input.invoiceId)?.period ?? periodOfDate(input.occurredOn)
+      const start = input.period ?? db.invoices.find((invoice) => invoice.id === input.invoiceId)?.period ?? periodOfDate(input.occurredOn)
       const person = ensureNamed(db.people, input.personName)
       const category = ensureNamed(db.categories, input.categoryName)
       const group = count > 1 ? uuid() : null
@@ -238,7 +238,7 @@ export class LocalSource implements DataSource {
     return this.mutate((db) => {
       const person = ensureNamed(db.people, input.personName)
       const category = ensureNamed(db.categories, input.categoryName)
-      const origin = periodOfDate(input.occurredOn)
+      const origin = input.period ?? periodOfDate(input.occurredOn)
       for (const period of unique) {
         const invoice = ensureInvoice(db, period)
         const [fy, fm] = origin.split('-').map(Number)

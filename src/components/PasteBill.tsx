@@ -4,7 +4,8 @@ import { formatDate, messageOf, money } from '../lib/format'
 import { parsePastedBill } from '../lib/pasteImport'
 import { parseInstallment } from '../services/importXlsx'
 import { suggestFor, type Suggestion } from '../lib/suggest'
-import { periodLabel, periodOfDate } from '../services/installments'
+import { periodLabel } from '../services/installments'
+import { invoicePeriodFor, readCard } from '../lib/card'
 import type { LocalSource } from '../services/localSource'
 import type { ImportInvoice, ImportResult, ImportRow } from '../types'
 
@@ -39,7 +40,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
     const groups = new Map<string, ImportRow[]>()
     for (const row of picked) {
       const hint = suggestFor(row.description, suggestions)
-      const period = periodOfDate(row.date)
+      const period = invoicePeriodFor(row.date, readCard())
       const list = groups.get(period) ?? []
       list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })
       groups.set(period, list)

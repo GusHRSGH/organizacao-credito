@@ -1,6 +1,7 @@
 import type { ImportRow } from '../types'
 import { inferPeriod, parseDate, parseInstallment, type ParsedSheet } from './importXlsx'
 import { periodLabel } from './installments'
+import { invoicePeriodFor, type Card } from '../lib/card'
 
 export type Field = 'date' | 'desc' | 'amount' | 'person' | 'category' | 'status' | 'parcel' | 'ignore'
 export type Confidence = 'alta' | 'media' | 'baixa'
@@ -130,7 +131,7 @@ export function analyzeSheet(sheetName: string, data: unknown[][]): Proposal | n
 }
 
 /** Lê as linhas com o mapeamento escolhido (pelo robô ou ajustado pela pessoa). */
-export function applyMapping(proposal: Proposal, data: unknown[][]): ParsedSheet[] {
+export function applyMapping(proposal: Proposal, data: unknown[][], card: Card | null = null): ParsedSheet[] {
   const idx = (field: Field) => proposal.fields.indexOf(field)
   const [cDate, cDesc, cAmount, cPerson, cCat, cStatus, cParcel] = (['date', 'desc', 'amount', 'person', 'category', 'status', 'parcel'] as Field[]).map(idx)
   const issues: string[] = []
@@ -164,7 +165,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][]): ParsedSheet
   const named = inferPeriod(proposal.sheetName, rows)
   if (named) return [{ sheetName: proposal.sheetName, period: named, label: periodLabel(named), rows, issues }]
   const byMonth = new Map<string, ImportRow[]>()
-  for (const row of rows) byMonth.set(`${row.date.slice(0, 7)}-01`, [...(byMonth.get(`${row.date.slice(0, 7)}-01`) ?? []), row])
+  for (const row of rows) { const key = invoicePeriodFor(row.date, card); byMonth.set(key, [...(byMonth.get(key) ?? []), row]) }
   return [...byMonth].sort(([a], [b]) => a.localeCompare(b)).map(([period, list], i) => ({
     sheetName: byMonth.size > 1 ? `${proposal.sheetName} · ${periodLabel(period)}` : proposal.sheetName, period, label: periodLabel(period), rows: list, issues: i === 0 ? issues : [],
   }))

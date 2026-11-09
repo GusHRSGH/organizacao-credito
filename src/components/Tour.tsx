@@ -61,6 +61,8 @@ const STEPS: Step[] = [
 
   { section: 'Dados', target: 'nav-settings', page: 'settings', icon: 'settings', title: 'Dados: o painel de controle', text: 'Aparência, conta, backups e importação ficam aqui. Vou mostrar cada painel.',
     example: <Example><Chips items={['Aparência', 'Conta', 'Cópias', 'Exportar', 'Importar']} /></Example> },
+  { section: 'Dados', target: 'set-card', page: 'settings', icon: 'bank', title: 'Diga quando seu cartão fecha', text: 'Informe o dia do vencimento e quantos dias antes a fatura fecha. Aí cada compra vai sozinha para a fatura certa: uma compra de 09/11 com fatura vencendo dia 07 e fechando 7 dias antes entra em Dezembro, não em Novembro.',
+    example: <Example><Row a="Vence dia 7 · fecha 7 dias antes" /><div className="ex-arrow">compra de 09/11 → fatura de Dezembro</div></Example> },
   { section: 'Dados', target: 'set-theme', page: 'settings', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 9 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
     example: <Example><Chips items={['Violeta', 'Verde-petróleo', 'Preto puro', 'Dourado']} /></Example> },
   { section: 'Dados', target: 'set-cloud', page: 'settings', icon: 'cloud', title: 'Sua conta na nuvem', text: 'Entre com o e-mail (sem senha, só um código) para guardar uma cópia segura e usar em outros aparelhos. É opcional, e o app continua funcionando sem internet.',

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { formatDate, money } from '../lib/format'
+import { readCard } from '../lib/card'
 import { analyzeSheet, applyMapping, FIELD_LABELS, type Confidence, type Field, type Proposal, type RawSheet } from '../services/smartImport'
 import type { ParsedSheet } from '../services/importXlsx'
 
@@ -17,7 +18,7 @@ export default function ImportAssistant({ raw, onConfirm, onCancel }: Props) {
 
   const current = initial.map(({ sheet, proposal }) => {
     const mine: Proposal = { ...proposal, fields: fields[proposal.sheetName], headerIndex: header[proposal.sheetName] ? Math.max(proposal.headerIndex, 0) : -1 }
-    const parsed = applyMapping(mine, sheet.data)
+    const parsed = applyMapping(mine, sheet.data, readCard())
     const count = parsed.reduce((n, s) => n + s.rows.length, 0)
     const total = parsed.reduce((sum, s) => sum + s.rows.reduce((t, r) => t + Math.round(r.amount * 100), 0), 0) / 100
     const missing = (['date', 'desc', 'amount'] as Field[]).filter((f) => !mine.fields.includes(f))
