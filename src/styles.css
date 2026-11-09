@@ -737,3 +737,12 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .modal.legal p, .modal.legal ul { margin: 0; color: var(--muted); font-size: 14px; }
 .modal.legal ul { padding-left: 18px; display: grid; gap: 4px; }
 .modal.legal b { color: var(--text); }
+
+/* Tutorial */
+.modal.tour { text-align: center; justify-items: center; gap: 12px; }
+.modal.tour p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 15px; }
+.tour-icon { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 18px; background: var(--primary-soft); color: var(--primary); }
+.tour-dots { display: flex; gap: 6px; margin: 4px 0; }
+.tour-dots i { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width .2s ease, background .2s ease; }
+.tour-dots i.on { width: 22px; background: var(--primary); }
+.modal.tour .modal-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
