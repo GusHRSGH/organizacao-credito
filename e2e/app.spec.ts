@@ -181,3 +181,26 @@ test('o lançamento rápido entende uma frase falada', async ({ page }) => {
   await page.keyboard.press('Enter')
   await expect(page.getByText(/Salvo: teste falado, R\$\s?77,70/)).toBeVisible({ timeout: 10_000 })
 })
+
+test('o robô de limpeza arruma descrições sujas depois de aprovar', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  for (const texto of ['UBER *TRIP 8842 31,40 @ana #transporte', 'UBER *TRIP 1290 22,10 @ana #transporte']) {
+    await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+    const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+    if (!(await campo.isVisible().catch(() => false))) await page.locator('[data-tour="fab"]').click()
+    await page.locator('input[placeholder*="mercado 150,90"]:visible').first().fill(texto)
+    await page.keyboard.press('Enter')
+    await expect(page.getByText(/^Salvo:/)).toBeVisible({ timeout: 10_000 })
+    await page.keyboard.press('Escape')
+  }
+  await irPara(page, 'settings')
+  await page.getByRole('button', { name: 'Procurar bagunça' }).click()
+  const robo = page.getByRole('dialog', { name: 'Robô de limpeza' })
+  await expect(robo).toContainText('UBER *TRIP')
+  await robo.getByRole('button', { name: /^Arrumar \d+/ }).click()
+  await expect(page.getByText(/Pronto: \d+ ajustes/)).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('button', { name: 'Procurar bagunça' }).click()
+  await expect(page.getByRole('dialog', { name: 'Robô de limpeza' })).toContainText('Tudo certo por aqui')
+})

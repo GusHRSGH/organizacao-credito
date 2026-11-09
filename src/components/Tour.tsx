@@ -61,6 +61,8 @@ const STEPS: Step[] = [
     example: <Example><Chips items={['Violeta', 'Verde-petróleo', 'Preto puro', 'Dourado']} /></Example> },
   { section: 'Dados', target: 'set-cloud', page: 'settings', icon: 'cloud', title: 'Sua conta na nuvem', text: 'Entre com o e-mail (sem senha, só um código) para guardar uma cópia segura e usar em outros aparelhos. É opcional, e o app continua funcionando sem internet.',
     example: <Example><div className="ex-code">Seu código de acesso: 123456</div></Example> },
+  { section: 'Dados', target: 'set-clean', page: 'settings', icon: 'sparkle', title: 'Robô de limpeza', text: 'Importou do banco e ficou tudo bagunçado? O robô acha os nomes sujos e os repetidos, mostra o antes e o depois, e só muda o que você aprovar. Antes de mexer, o app guarda uma cópia.',
+    example: <Example><div className="ex-code">UBER *TRIP 8842</div><div className="ex-arrow">→ Uber (e mais 3 iguais)</div></Example> },
   { section: 'Dados', target: 'set-copias', page: 'settings', icon: 'shield', title: 'Cópias automáticas', text: 'O app guarda sozinho uma cópia por dia e uma antes de qualquer restauração. Se algo der errado, “Voltar para esta” traz os dados de volta.',
     example: <Example><Row a="08/11 · cópia do dia" b="38 lançamentos" /><div className="ex-arrow">Voltar para esta</div></Example> },
   { section: 'Dados', target: 'set-export', page: 'settings', icon: 'download', title: 'Seus dados são seus', text: 'Baixe tudo em CSV (abre no Excel) ou em um backup JSON, e restaure quando quiser. De vez em quando, mande o backup para você mesmo.',

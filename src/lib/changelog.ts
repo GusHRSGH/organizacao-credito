@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 10, date: '2026-11-09', title: 'Robô de limpeza',
+    items: [
+      'Novo em Dados: o robô de limpeza acha descrições sujas do banco (“UBER *TRIP 8842” vira “Uber”) e tira códigos e letras maiúsculas.',
+      'Ele também junta responsáveis e categorias repetidas, como “Transporte” e “Transportes”.',
+      'Você vê tudo antes, desmarca o que não quiser e edita o nome novo. O app guarda uma cópia antes de mexer.',
+    ],
+  },
+  {
     n: 9, date: '2026-11-09', title: 'Entrada que entende você',
     items: [
       'O lançamento rápido agora entende frases: “gastei 50 reais no mercado ontem com a Ana”, “notebook 2,5 mil em 10 vezes”, “farmácia 40 sexta”, “padaria 12 dia 5”.',
