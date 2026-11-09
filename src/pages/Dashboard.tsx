@@ -66,32 +66,32 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
     </section>
 
     <div className="panel-grid">
-      <Panel title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
+      <Panel icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
         <HBarChart rows={peopleRows.map((row) => ({ label: row.name, values: other ? [row.a, row.b] : [row.a] }))} series={series} />
       </Panel>
-      <Panel title="Categorias" subtitle={labelA}><Donut slices={slices('a')} centerLabel="Total" /></Panel>
+      <Panel icon="pie" title="Categorias" subtitle={labelA}><Donut slices={slices('a')} centerLabel="Total" /></Panel>
     </div>
 
     <div className="panel-grid">
-      <Panel title="Situação dos pagamentos" subtitle={`${labelA}: pago x pendente por responsável`}>
+      <Panel icon="clock" title="Situação dos pagamentos" subtitle={`${labelA}: pago x pendente por responsável`}>
         <HBarChart stacked rows={data.people.filter((row) => row.a > 0).map((row) => ({ label: row.name, values: [row.a - row.pendingA, row.pendingA] }))} series={[withName(GREEN, 'Pago'), withName(RED, 'Pendente')]} />
       </Panel>
-      <Panel title={other ? 'Categorias' : 'Categorias no mês comparado'} subtitle={other ? labelB : 'Escolha um mês para comparar'}>
+      <Panel icon="pie" title={other ? 'Categorias' : 'Categorias no mês comparado'} subtitle={other ? labelB : 'Escolha um mês para comparar'}>
         {other ? <Donut slices={slices('b')} centerLabel="Total" /> : <p className="empty">Selecione “Comparar com” para ver este gráfico.</p>}
       </Panel>
     </div>
 
-    <Panel title="Fatura mês a mês" subtitle="Pago e pendente em cada fatura, com o total no topo">
+    <Panel icon="dashboard" title="Fatura mês a mês" subtitle="Pago e pendente em cada fatura, com o total no topo">
       <StackedColumns items={data.months.map((month) => ({ label: shortPeriodLabel(month.period), paid: month.paid, pending: month.pending }))} />
     </Panel>
 
     <div className="panel-grid wide">
-      <Panel title="Por responsável">
+      <Panel icon="users" title="Por responsável">
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Responsável</th><th className="num">{labelA}</th><th className="num">{labelB || '—'}</th><th className="num">Variação</th><th className="num">Pago</th><th className="num">Pendente</th><th className="num">% do mês</th></tr></thead>
           <tbody>{peopleRows.map((row) => <tr key={row.name}><td><b>{row.name}</b></td><td className="num">{money(row.a)}</td><td className="num">{other ? money(row.b) : '—'}</td><td className={`num ${other ? diffClass(row.diff) : ''}`}>{other ? signedMoney(row.diff) : '—'}</td><td className="num">{money(row.paidA)}</td><td className="num">{money(row.pendingA)}</td><td className="num">{data.a.total ? pct(row.a / data.a.total) : '—'}</td></tr>)}
             <tr className="total-row"><td>Total</td><td className="num">{money(data.a.total)}</td><td className="num">{other ? money(data.b.total) : '—'}</td><td className={`num ${other ? diffClass(data.a.total - data.b.total) : ''}`}>{other ? signedMoney(data.a.total - data.b.total) : '—'}</td><td className="num">{money(data.a.paid)}</td><td className="num">{money(data.a.pending)}</td><td className="num">{data.a.total ? '100,0%' : '—'}</td></tr></tbody></table></div>
       </Panel>
-      <Panel title="Por categoria">
+      <Panel icon="tag" title="Por categoria">
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Categoria</th><th className="num">{labelA}</th><th className="num">{labelB || '—'}</th><th className="num">Variação</th></tr></thead>
           <tbody>{data.categories.filter((row) => row.a > 0 || row.b > 0).map((row) => <tr key={row.name}><td><b>{row.name}</b></td><td className="num">{money(row.a)}</td><td className="num">{other ? money(row.b) : '—'}</td><td className={`num ${other ? diffClass(row.diff) : ''}`}>{other ? signedMoney(row.diff) : '—'}</td></tr>)}</tbody></table></div>
       </Panel>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useReveal } from '../hooks/useReveal'
-import { Icon, Logo, type IconName } from './Icon'
+import { Icon, Logo, PersonDot, type IconName } from './Icon'
+import { categoryIcon } from '../lib/categoryIcon'
 import { formatDate, money } from '../lib/format'
 import type { Transaction } from '../types'
 
@@ -12,9 +13,9 @@ export function Metric({ label, value, foot, tone, icon }: { label: string; valu
   return <article className="metric-card"><div className="metric-label">{icon && <span className={`metric-icon ${tone ?? ''}`}><Icon name={icon} size={16} /></span>}{label}</div><div className={`metric-value ${tone === 'bad' ? 'neg' : tone === 'good' ? 'pos' : ''}`}>{value}</div>{foot && <div className={`metric-foot ${tone === 'warning' ? 'warning' : ''}`}>{foot}</div>}</article>
 }
 
-export function Panel({ title, subtitle, children, action }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode }) {
+export function Panel({ title, subtitle, children, action, icon }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode; icon?: IconName }) {
   const [reveal, shown] = useReveal<HTMLElement>(0.04)
-  return <section ref={reveal} className={`panel rise ${shown ? 'in' : ''}`}><div className="panel-heading"><div><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
+  return <section ref={reveal} className={`panel rise ${shown ? 'in' : ''}`}><div className="panel-heading">{icon && <span className="panel-icon"><Icon name={icon} size={18} /></span>}<div className="panel-title"><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
 }
 
 export function EmptyState({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
@@ -47,7 +48,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
     {selected && <input type="checkbox" className="tx-check" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} />}
     <div className="tx-main">
       <div className="tx-top"><b>{row.description}</b><span className="tx-amount">{money(Number(row.amount))}</span></div>
-      <div className="tx-meta"><span>{formatDate(row.occurred_on).slice(0, 5)}</span><span>{row.person?.name || '—'}</span>{row.category?.name && <span className="tag">{row.category.name}</span>}{row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}</div>
+      <div className="tx-meta"><span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="person-cell">{row.person?.name ? <><PersonDot name={row.person.name} />{row.person.name}</> : '—'}</span>{row.category?.name && <span className="tag cat"><Icon name={categoryIcon(row.category.name)} size={13} />{row.category.name}</span>}{row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}</div>
       <div className="tx-foot">
         <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button>
         <span className="tx-actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento"><Icon name="edit" size={18} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento"><Icon name="trash" size={18} /></button></span>
@@ -60,8 +61,8 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
     {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
     <td>{formatDate(row.occurred_on)}</td>
     <td className="desc"><b>{row.description}</b></td>
-    <td>{row.person?.name || '—'}</td>
-    <td>{row.category?.name ? <span className="tag">{row.category.name}</span> : '—'}</td>
+    <td>{row.person?.name ? <span className="person-cell"><PersonDot name={row.person.name} />{row.person.name}</span> : '—'}</td>
+    <td>{row.category?.name ? <span className="tag cat"><Icon name={categoryIcon(row.category.name)} size={13} />{row.category.name}</span> : '—'}</td>
     <td>{row.installment_count ? <span className={`tag ${row.installment_number === row.installment_count ? 'last' : ''}`}>{row.installment_number}/{row.installment_count}</span> : <span className="muted">À vista</span>}</td>
     <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
     <td className="num">{money(Number(row.amount))}</td>

@@ -110,7 +110,7 @@ export default function Settings({ kind, google, local, invoices, transactions, 
   return <>
     <PageHeading title="Dados e configurações" subtitle="Escolha onde ficam os dados, importe sua planilha e faça backups." />
 
-    <Panel title="Fonte de dados" subtitle="Você pode alternar quando quiser; cada fonte guarda seus próprios dados.">
+    <Panel icon="database" title="Fonte de dados" subtitle="Você pode alternar quando quiser; cada fonte guarda seus próprios dados.">
       <div className="source-switch">
         <button className={`source-option ${isLocal ? 'active' : ''}`} onClick={() => onKind('local')}><Icon name="database" size={22} /><b>Banco local</b><span>Neste computador, sem conta e sem internet.</span></button>
         <button className={`source-option ${!isLocal ? 'active' : ''}`} onClick={() => onKind('supabase')} disabled={!hasSupabaseConfig}><Icon name="cloud" size={22} /><b>Nuvem (Supabase)</b><span>{hasSupabaseConfig ? 'Sincroniza entre aparelhos, com login.' : 'Indisponível: falta configurar o Supabase neste build.'}</span></button>
@@ -121,7 +121,7 @@ export default function Settings({ kind, google, local, invoices, transactions, 
     <SecurityPanel notify={notify} />
     <UpdatePanel onCheck={onCheckUpdate} />
 
-    {isLocal && <Panel title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">
+    {isLocal && <Panel icon="shield" title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">
       {snapshots.length ? <ul className="snapshot-list">{snapshots.map((snapshot) => <li key={snapshot.id}>
         <span><b>{new Date(snapshot.savedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</b> · {snapshot.reason === 'antes' ? 'antes de restaurar/limpar' : 'cópia do dia'} · {snapshot.transactions} lançamentos</span>
         <button className="text-button" onClick={() => void restoreSnapshot(snapshot)}>Voltar para esta</button></li>)}</ul>
@@ -131,7 +131,7 @@ export default function Settings({ kind, google, local, invoices, transactions, 
 
     <GoogleAccountPanel google={google} local={isLocal ? local : null} onChanged={onChanged} notify={notify} />
 
-    <Panel title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
+    <Panel icon="download" title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
       <div className="button-row">
         <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`organizacao-credito-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}><Icon name="download" size={16} />Baixar CSV (Excel)</button>
         {isLocal && <button className="secondary-button" onClick={() => void backup()}><Icon name="download" size={16} />Baixar backup (JSON)</button>}
@@ -140,7 +140,7 @@ export default function Settings({ kind, google, local, invoices, transactions, 
       </div>
     </Panel>
 
-    {isLocal ? <Panel title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
+    {isLocal ? <Panel icon="upload" title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
       <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
         <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
         <button className="secondary-button" onClick={() => void downloadAsset('modelo-fatura.xlsx', 'modelo-fatura.xlsx').catch((cause) => notify('error', messageOf(cause)))}><Icon name="download" size={16} />Baixar modelo de planilha</button>
@@ -163,6 +163,6 @@ export default function Settings({ kind, google, local, invoices, transactions, 
       </div>}
     </Panel> : <Panel title="Importar planilha .xlsx"><p className="empty">A importação funciona no banco local. Troque a fonte de dados acima.</p></Panel>}
 
-    {isLocal && <Panel title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}><Icon name="trash" size={16} />Apagar todos os dados locais</button></div></Panel>}
+    {isLocal && <Panel icon="trash" title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}><Icon name="trash" size={16} />Apagar todos os dados locais</button></div></Panel>}
   </>
 }

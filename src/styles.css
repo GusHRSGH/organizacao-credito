@@ -666,3 +666,15 @@ th { font-size: 12px; }
 .th-button { text-transform: inherit; letter-spacing: inherit; font-size: inherit; font-weight: inherit; }
 .hero-card { border-bottom: 0; margin-bottom: 0; }
 @media (max-width: 820px) { .breadcrumb { visibility: hidden; } }
+
+/* ícones e logo em vários tamanhos */
+.panel-heading { justify-content: flex-start; gap: 12px; }
+.panel-heading > :last-child:not(.panel-title):not(.panel-icon) { margin-left: auto; }
+.panel-title { flex: 1; min-width: 0; }
+.panel-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--primary-soft); color: var(--primary-strong); flex: none; }
+.tag.cat { gap: 6px; background: var(--surface-2); color: var(--muted); }
+.tag.cat .icon { color: var(--primary-strong); }
+.person-cell { display: inline-flex; align-items: center; gap: 8px; }
+.person-dot { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; color: #0d0d10; flex: none; }
+.logo-mark { flex: none; display: block; }
+.brand { gap: 12px; }
