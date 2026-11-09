@@ -27,7 +27,7 @@ export function parseDate(value: unknown): string | null {
   }
   if (typeof value === 'string') {
     const text = value.trim()
-    let match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/)
+    let match = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/)
     if (match) return validDate(Number(match[3].length === 2 ? `20${match[3]}` : match[3]), Number(match[2]), Number(match[1]))
     match = text.match(/^(\d{4})-(\d{2})-(\d{2})/)
     if (match) return validDate(Number(match[1]), Number(match[2]), Number(match[3]))
