@@ -225,3 +225,40 @@ test('o radar avisa cobrança duplicada e deixa ignorar', async ({ page }) => {
   await expect(radar).not.toContainText('Possível cobrança duplicada')
   await expect(page.locator('.panel', { has: page.locator('[data-tour="dash-subs"]') })).toContainText('Assinaturas e custos fixos')
 })
+
+async function abrirColar(page: Page) {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Colar fatura' }).click()
+}
+
+test('importa uma fatura em PDF pelo leitor', async ({ page }) => {
+  const outra = await page.context().newPage()
+  await outra.setContent('<body style="font:16px sans-serif"><h1>Fatura</h1><p>05 NOV  SUPERMERCADO PDF TESTE  152,30</p><p>06 NOV  PADARIA PDF TESTE  23,40</p><p>Total da fatura  175,70</p></body>')
+  const pdf = await outra.pdf()
+  await outra.close()
+  await abrirColar(page)
+  await page.getByLabel('Arquivo da fatura').setInputFiles({ name: 'fatura.pdf', mimeType: 'application/pdf', buffer: pdf })
+  await expect(page.getByText('SUPERMERCADO PDF TESTE').first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('PADARIA PDF TESTE').first()).toBeVisible()
+})
+
+test('lê o texto de uma foto da fatura', async ({ page }) => {
+  test.setTimeout(120_000)
+  const outra = await page.context().newPage()
+  await outra.setContent('<canvas id="c" width="1100" height="260"></canvas>')
+  const url = await outra.evaluate(() => {
+    const canvas = document.getElementById('c') as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1100, 260)
+    ctx.fillStyle = '#000'; ctx.font = '44px Arial, Helvetica, sans-serif'
+    ctx.fillText('05/11 SUPERMERCADO FOTO 152,30', 30, 90)
+    ctx.fillText('06/11 PADARIA FOTO 23,40', 30, 180)
+    return canvas.toDataURL('image/png')
+  })
+  await outra.close()
+  await abrirColar(page)
+  await page.getByLabel('Arquivo da fatura').setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: Buffer.from(url.split(',')[1], 'base64') })
+  await expect(page.locator('textarea')).toHaveValue(/152[,.]30/, { timeout: 90_000 })
+})

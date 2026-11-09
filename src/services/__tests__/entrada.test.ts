@@ -106,3 +106,20 @@ describe('colar notificação e conversa', () => {
     expect(r.skipped).toHaveLength(1)
   })
 })
+
+import { groupLines } from '../pdfText'
+
+describe('PDF e datas por extenso', () => {
+  it('lê data "05 NOV" e "5 de novembro" da fatura em PDF', () => {
+    const r = parsePastedBill('05 NOV  SUPERMERCADO XYZ  152,30\n6 de novembro de 2026 UBER 23,40\nTotal da fatura 175,70', '2026-11-09')
+    expect(r.rows.map((x) => [x.date, x.description, x.amount])).toEqual([['2026-11-05', 'SUPERMERCADO XYZ', 152.3], ['2026-11-06', 'UBER', 23.4]])
+    expect(r.skipped).toHaveLength(1)
+  })
+  it('monta linhas do PDF de cima para baixo e da esquerda para a direita', () => {
+    const lines = groupLines([
+      { str: '152,30', x: 400, y: 700 }, { str: 'MERCADO', x: 100, y: 701 }, { str: '05 NOV', x: 20, y: 700 },
+      { str: 'UBER', x: 100, y: 680 }, { str: '23,40', x: 400, y: 680 }, { str: ' ', x: 1, y: 10 },
+    ])
+    expect(lines).toEqual(['05 NOV  MERCADO  152,30', 'UBER  23,40'])
+  })
+})

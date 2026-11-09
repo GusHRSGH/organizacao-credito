@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { formatDate, messageOf, money } from '../lib/format'
 import { parsePastedBill } from '../lib/pasteImport'
+import { parseInstallment } from '../services/importXlsx'
 import { suggestFor, type Suggestion } from '../lib/suggest'
 import { periodLabel, periodOfDate } from '../services/installments'
 import type { LocalSource } from '../services/localSource'
@@ -24,6 +25,11 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
   const [off, setOff] = useState<Set<number>>(new Set())
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [busy, setBusy] = useState(false)
+  const [reading, setReading] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+  const usedOcr = useRef(false)
+  useEffect(() => () => { if (usedOcr.current) void import('../services/ocr').then((m) => m.stopOcr()) }, [])
 
   const parsed = useMemo(() => parsePastedBill(text, new Date().toISOString().slice(0, 10), people, categories), [text, people, categories])
   const picked = parsed.rows.filter((row) => !off.has(row.line))
@@ -35,7 +41,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       const hint = suggestFor(row.description, suggestions)
       const period = periodOfDate(row.date)
       const list = groups.get(period) ?? []
-      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: null, installmentCount: null })
+      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })
       groups.set(period, list)
     }
     return [...groups].map(([period, rows]) => ({ period, label: periodLabel(period), rows }))
@@ -43,6 +49,28 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
 
   const ready = picked.length > 0 && person.trim() !== '' && category.trim() !== ''
   const reset = () => { setPreview(null) }
+
+  async function readFile(file: File | undefined) {
+    if (!file) return
+    setReading('Abrindo o arquivo…')
+    try {
+      let result: string
+      if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+        const { readPdfText } = await import('../services/pdfText')
+        usedOcr.current = true
+        result = await readPdfText(file, (info) => setReading(info.mode === 'texto' ? `Lendo a página ${info.page} de ${info.pages}…` : `Página ${info.page} de ${info.pages} é imagem, reconhecendo o texto (pode levar um pouco)…`),
+          (info) => setReading(`Reconhecendo o texto… ${Math.round(info.progress * 100)}%`))
+      } else {
+        const { readImageText } = await import('../services/ocr')
+        usedOcr.current = true
+        setReading('Preparando o leitor de fotos…')
+        result = await readImageText(file, (info) => setReading(info.status === 'recognizing text' ? `Reconhecendo o texto… ${Math.round(info.progress * 100)}%` : 'Preparando o leitor de fotos…'))
+      }
+      if (!result.trim()) throw new Error('Não consegui ler texto nesse arquivo. Tente uma foto mais nítida, de frente e com boa luz.')
+      setText(result); setOff(new Set()); reset()
+      notify('notice', 'Li o arquivo. Confira as linhas abaixo antes de importar.')
+    } catch (cause) { notify('error', messageOf(cause)) } finally { setReading(''); if (fileRef.current) fileRef.current.value = ''; if (cameraRef.current) cameraRef.current.value = '' }
+  }
 
   async function check() {
     try { setPreview(await local.importInvoices(batch(), { dryRun: true })) } catch (cause) { notify('error', messageOf(cause)) }
@@ -60,6 +88,13 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
 
   return <section className="panel paste-panel">
     <div className="panel-heading"><div><h2>Colar do banco ou da conversa</h2><p className="panel-sub">Cole linhas da fatura, notificações do banco ou mensagens do WhatsApp (“gastei 50 no mercado”). O robô separa os gastos e você confere.</p></div><button className="text-button" onClick={onClose}>Fechar</button></div>
+    <div className="button-row paste-files">
+      <button className="secondary-button" disabled={!!reading} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Anexar PDF ou foto da fatura</button>
+      <button className="secondary-button" disabled={!!reading} onClick={() => cameraRef.current?.click()}><Icon name="receipt" size={16} />Tirar foto</button>
+      <input ref={fileRef} type="file" accept=".pdf,application/pdf,image/*" hidden aria-label="Arquivo da fatura" onChange={(event) => void readFile(event.target.files?.[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(event) => void readFile(event.target.files?.[0])} />
+      {reading && <span className="muted" role="status">{reading}</span>}
+    </div>
     <textarea value={text} onChange={(event) => { setText(event.target.value); setOff(new Set()); reset() }} rows={6} placeholder={'05/11 SUPERMERCADO XYZ 152,30\nCompra aprovada de R$ 23,40 em UBER hoje\n[08/11/2026 14:32] Ana: gastei 50 no mercado'} aria-label="Texto da fatura" />
     <div className="paste-defaults">
       <label>Responsável padrão<input value={person} onChange={(event) => { setPerson(event.target.value); reset() }} list="paste-people" placeholder="Quem paga o que eu não reconhecer" /></label>
