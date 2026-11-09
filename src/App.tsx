@@ -10,6 +10,7 @@ import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/na
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
+import Legal from './components/Legal'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -19,6 +20,8 @@ import Settings from './pages/Settings'
 import type { Invoice, Transaction } from './types'
 
 const ENTRY_KEY = 'oc:entry'
+const NUDGE_KEY = 'oc:nudge-until'
+const NUDGE_DAYS = 7
 type Page = 'dashboard' | 'invoices' | 'billing' | 'settings'
 const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', billing: 'Quem deve quanto', settings: 'Dados' }
 
@@ -41,6 +44,8 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [updateSignal, setUpdateSignal] = useState(0)
+  const [legalOpen, setLegalOpen] = useState(false)
+  const [nudgeHidden, setNudgeHidden] = useState(() => { try { return Number(localStorage.getItem(NUDGE_KEY) ?? 0) > Date.now() } catch { return false } })
 
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
   const localSource = source
@@ -84,6 +89,9 @@ export default function App() {
   const closeMenu = useCallback(() => setMenuOpen(false), [])
   const closeSheet = useCallback(() => setSheetOpen(false), [])
   useBackHandler(menuOpen, closeMenu)
+  const closeLegal = useCallback(() => setLegalOpen(false), [])
+  useBackHandler(legalOpen, closeLegal)
+  const hideNudge = () => { try { localStorage.setItem(NUDGE_KEY, String(Date.now() + NUDGE_DAYS * 86400000)) } catch { /* ignora */ } setNudgeHidden(true) }
   useEffect(() => {
     if (page === 'dashboard') return
     return registerBack(() => { setPage('dashboard'); return true })
@@ -142,7 +150,7 @@ export default function App() {
   const counts = useMemo(() => ({ invoices: invoices.length, rows: transactions.length }), [invoices, transactions])
 
   if (!google.ready || !cloud.ready) return <main className="center-screen" />
-  if (!signedIn && !guest && !cloud.session) return <Welcome google={google} cloud={cloud} theme={theme} onToggleTheme={toggleTheme} onGuest={continueAsGuest} alert={alert} onDismissAlert={() => setAlert(null)} />
+  if (!signedIn && !guest && !cloud.session) return <><Welcome google={google} cloud={cloud} theme={theme} onToggleTheme={toggleTheme} onGuest={continueAsGuest} onLegal={() => setLegalOpen(true)} alert={alert} onDismissAlert={() => setAlert(null)} />{legalOpen && <Legal onClose={closeLegal} />}</>
 
   const local = source
   const googleUi = { ...google, signOut: signOutGoogle }
@@ -166,17 +174,19 @@ export default function App() {
         <div className="topbar-actions">
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       <UpdateBanner manualSignal={updateSignal} />
+      {guest && !cloud.session && !signedIn && loaded && !nudgeHidden && page !== 'settings' && <div className="restore-offer" role="status"><span><b>Seus dados estão só neste aparelho.</b> Crie uma conta com o e-mail para ter uma cópia segura na nuvem e usar em outros aparelhos.</span><div className="button-row"><button className="primary-button" onClick={() => setPage('settings')}>Criar conta</button><button className="text-button" onClick={hideNudge}>Depois</button></div></div>}
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
-        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} />}
+        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} />}
       </>}
     </main>
     <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
     {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
+    {legalOpen && <Legal onClose={closeLegal} />}
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }

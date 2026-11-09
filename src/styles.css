@@ -729,3 +729,11 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .cloud-conflict { border: 1px solid var(--bad); border-radius: 12px; padding: 14px; margin: 8px 0 12px; background: color-mix(in srgb, var(--bad) 8%, transparent); }
 .cloud-conflict p { margin: 6px 0 12px; }
 .welcome-card .cloud-login { max-width: none; text-align: left; }
+
+/* Termos e privacidade */
+.link-button { background: none; border: 0; padding: 0; color: var(--primary); font: inherit; text-decoration: underline; cursor: pointer; }
+.modal.legal { gap: 8px; line-height: 1.55; }
+.modal.legal h3 { margin: 14px 0 2px; font-size: 15px; }
+.modal.legal p, .modal.legal ul { margin: 0; color: var(--muted); font-size: 14px; }
+.modal.legal ul { padding-left: 18px; display: grid; gap: 4px; }
+.modal.legal b { color: var(--text); }

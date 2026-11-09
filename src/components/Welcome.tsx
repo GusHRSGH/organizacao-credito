@@ -12,11 +12,12 @@ interface Props {
   theme: Theme
   onToggleTheme: () => void
   onGuest: () => void
+  onLegal: () => void
   alert: { kind: 'notice' | 'error'; text: string } | null
   onDismissAlert: () => void
 }
 
-export default function Welcome({ google, cloud, theme, onToggleTheme, onGuest, alert, onDismissAlert }: Props) {
+export default function Welcome({ google, cloud, theme, onToggleTheme, onGuest, onLegal, alert, onDismissAlert }: Props) {
   const { available, status, busy } = google
   const [setup, setSetup] = useState(false)
   const [email, setEmail] = useState(false)
@@ -60,6 +61,7 @@ export default function Welcome({ google, cloud, theme, onToggleTheme, onGuest, 
           <li><Icon name="check" size={16} />Seus dados ficam também neste aparelho e funcionam sem internet</li>
           <li><Icon name="check" size={16} />Sem conta, tudo funciona igual e você entra depois em Dados</li>
         </ul>
+        <p className="hint center">Ao continuar, você concorda com os <button className="link-button" onClick={onLegal}>termos de uso e a privacidade</button>.</p>
       </>}
     </section>
   </main>

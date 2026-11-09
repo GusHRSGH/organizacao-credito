@@ -23,6 +23,7 @@ interface Props {
   onCheckUpdate: () => void
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
+  onLegal: () => void
 }
 
 function AppearancePanel() {
@@ -49,7 +50,7 @@ function AppearancePanel() {
   </Panel>
 }
 
-export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify }: Props) {
+export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -137,7 +138,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
 
     <AppearancePanel />
 
-    <CloudPanel cloud={cloud} notify={notify} />
+    <CloudPanel cloud={cloud} notify={notify} onLegal={onLegal} />
 
     <SecurityPanel notify={notify} />
     <UpdatePanel onCheck={onCheckUpdate} />
