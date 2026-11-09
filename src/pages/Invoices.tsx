@@ -152,7 +152,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
     {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
 
-    {showForm && <Panel title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
+    {showForm && <Panel icon="plus" title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
       <form className="entry-form" onSubmit={(event) => void saveEntry(event)}>
         <label>Descrição<input ref={descriptionField} name="description" maxLength={160} required list="descriptions-list" autoComplete="off" onBlur={fillFromHistory} /></label>
         <label>Valor total (R$)<input name="amount" type="number" min="0.01" step="0.01" required /></label>

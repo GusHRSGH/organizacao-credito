@@ -3,7 +3,7 @@ import { hasSupabaseConfig, supabase } from './lib/supabase'
 import { messageOf } from './lib/format'
 import { useGoogleAccount } from './hooks/useGoogleAccount'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
-import { Icon, Logo, type IconName } from './components/Icon'
+import { Icon, Logo, LogoMark, type IconName } from './components/Icon'
 import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
@@ -169,7 +169,7 @@ export default function App() {
   return <div className={`app-shell ${menuOpen ? 'menu-open' : ''}`}>
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
     <aside className="sidebar">
-      <div className="brand"><Logo size={38} /><span>Organização<br />do Crédito</span></div>
+      <div className="brand"><LogoMark size={36} /><span>Organização<br />do Crédito</span></div>
       {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('billing', 'users', 'Quem deve quanto')}{nav('settings', 'settings', 'Dados e backup')}
       <div className="sidebar-footer">
         {kind === 'local' && google.status?.signedIn
