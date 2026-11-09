@@ -43,7 +43,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">
         <Metric label="Total da fatura" value={money(total)} icon="wallet" foot={`${bills.length} ${bills.length === 1 ? 'responsável' : 'responsáveis'}`} />
-        <Metric label="Falta receber" value={money(pending)} icon="clock" tone={pending > 0 ? 'warning' : 'good'} />
+        <Metric label="Falta receber" value={money(pending)} icon="clock" tone={pending > 0 ? 'bad' : 'good'} />
         <Metric label="Já pago" value={money(total - pending)} icon="check" tone="good" />
       </section>
       <section className="bill-list">

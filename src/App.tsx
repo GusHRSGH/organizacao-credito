@@ -170,9 +170,7 @@ export default function App() {
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
     <aside className="sidebar">
       <div className="brand"><Logo size={38} /><span>Organização<br />do Crédito</span></div>
-      <div className="nav-label">Workspace</div>
       {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{nav('billing', 'users', 'Quem deve quanto')}{nav('settings', 'settings', 'Dados e backup')}
-      <div className="sidebar-note">Responsável é a pessoa a quem o gasto é atribuído.</div>
       <div className="sidebar-footer">
         {kind === 'local' && google.status?.signedIn
           ? <>{google.status.picture ? <img className="avatar-img" src={google.status.picture} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{(google.status.email ?? '?')[0].toUpperCase()}</span>}<span>{google.status.name ?? google.status.email}<br /><small>Google conectado · {counts.invoices} faturas</small></span></>
@@ -180,7 +178,7 @@ export default function App() {
       </div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb">Workspace <span>/</span> <b>{TITLES[page]}</b></div></div>
+      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb"><b>{TITLES[page]}</b></div></div>
         <div className="topbar-actions">{kind === 'supabase' && <button className="text-button" onClick={() => void supabase?.auth.signOut()}>Sair</button>}
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       <UpdateBanner manualSignal={updateSignal} />
@@ -193,6 +191,7 @@ export default function App() {
         {page === 'settings' && (local ? <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
+    <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
     {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>

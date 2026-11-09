@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useReveal } from '../hooks/useReveal'
 import { money, moneyShort, pct } from '../lib/format'
 
 import { GREEN, RED, type Series } from './palette'
@@ -21,6 +22,7 @@ interface HBarProps {
 
 export function HBarChart({ rows, series, stacked = false }: HBarProps) {
   const uid = useId().replace(/:/g, '')
+  const [reveal, shown] = useReveal<HTMLDivElement>()
   const W = 620
   const labelW = 112
   const right = 78
@@ -31,7 +33,7 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
   if (!rows.length || max === 0) return <ChartEmpty />
   const scale = (W - labelW - right) / max
   const H = 8 + rows.length * rowH
-  return <>
+  return <div ref={reveal} className={`reveal ${shown ? 'in' : ''}`}>
     <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Gráfico de barras por responsável">
       <defs>{series.map((s, i) => <linearGradient key={s.name + i} id={`${uid}g${i}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor={s.light} /><stop offset="1" stopColor={s.color} /></linearGradient>)}</defs>
       {rows.map((row, r) => {
@@ -63,25 +65,27 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
       })}
     </svg>
     <Legend items={series.map((s) => ({ name: s.name, color: s.color }))} />
-  </>
+  </div>
 }
 
 export interface Slice { name: string; value: number; color: string }
 
 export function Donut({ slices, centerLabel }: { slices: Slice[]; centerLabel: string }) {
+  const [reveal, shown] = useReveal<HTMLDivElement>()
   const visible = slices.filter((slice) => slice.value > 0)
   const total = visible.reduce((sum, slice) => sum + slice.value, 0)
   if (!total) return <ChartEmpty />
   const r = 74
   const C = 2 * Math.PI * r
   let offset = 0
-  return <div className="donut-wrap">
+  return <div ref={reveal} className={`donut-wrap reveal ${shown ? 'in' : ''}`}>
     <svg viewBox="0 0 200 200" className="donut-svg" role="img" aria-label="Gráfico de rosca por categoria">
       <circle cx="100" cy="100" r={r} fill="none" className="donut-track" strokeWidth="26" />
       {visible.map((slice) => {
         const length = (slice.value / total) * C
         const gap = visible.length > 1 ? 2.5 : 0
-        const node = <circle key={slice.name} cx="100" cy="100" r={r} fill="none" stroke={slice.color} strokeWidth="26" strokeDasharray={`${Math.max(length - gap, 0.5)} ${C}`} strokeDashoffset={-offset} transform="rotate(-90 100 100)" />
+        const shownLength = Math.max(length - gap, 0.5)
+        const node = <circle key={slice.name} className="donut-seg" style={{ '--len': shownLength, '--c': C, '--d': `${Math.round((offset / C) * 700)}ms` } as React.CSSProperties} cx="100" cy="100" r={r} fill="none" stroke={slice.color} strokeWidth="26" strokeDasharray={`${shownLength} ${C}`} strokeDashoffset={-offset} transform="rotate(-90 100 100)" />
         offset += length
         return node
       })}
@@ -98,6 +102,7 @@ export interface Column { label: string; paid: number; pending: number }
 
 export function StackedColumns({ items }: { items: Column[] }) {
   const uid = useId().replace(/:/g, '')
+  const [reveal, shown] = useReveal<HTMLDivElement>()
   if (!items.length) return <ChartEmpty />
   const W = 760
   const H = 270
@@ -109,7 +114,7 @@ export function StackedColumns({ items }: { items: Column[] }) {
   const max = Math.max(...items.map((item) => item.paid + item.pending), 1)
   const scale = (H - padT - padB) / max
   const base = H - padB
-  return <>
+  return <div ref={reveal} className={`reveal ${shown ? 'in' : ''}`}>
     <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Evolução das faturas mês a mês">
       <defs>
         <linearGradient id={`${uid}p`} x1="0" x2="0" y1="1" y2="0"><stop offset="0" stopColor={GREEN.color} /><stop offset="1" stopColor={GREEN.light} /></linearGradient>
@@ -132,5 +137,5 @@ export function StackedColumns({ items }: { items: Column[] }) {
       })}
     </svg>
     <Legend items={[{ name: 'Pago', color: GREEN.color }, { name: 'Pendente', color: RED.color }]} />
-  </>
+  </div>
 }

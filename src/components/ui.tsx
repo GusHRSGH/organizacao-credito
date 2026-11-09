@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useReveal } from '../hooks/useReveal'
 import { Icon, Logo, type IconName } from './Icon'
 import { formatDate, money } from '../lib/format'
 import type { Transaction } from '../types'
@@ -12,7 +13,8 @@ export function Metric({ label, value, foot, tone, icon }: { label: string; valu
 }
 
 export function Panel({ title, subtitle, children, action }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode }) {
-  return <section className="panel"><div className="panel-heading"><div><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
+  const [reveal, shown] = useReveal<HTMLElement>(0.04)
+  return <section ref={reveal} className={`panel rise ${shown ? 'in' : ''}`}><div className="panel-heading"><div><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
 }
 
 export function EmptyState({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
@@ -41,27 +43,27 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
   const head = (key: SortKey, label: string, className = '') => onSort
     ? <th className={className}><button className="th-button" onClick={() => onSort(key)}>{label}{sort?.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>
     : <th className={className}>{label}</th>
-  const cards = <ul className="tx-cards">{rows.map((row) => <li key={row.id} className={`tx-card ${selected?.has(row.id) ? 'selected' : ''}`}>
+  const cards = <ul className="tx-cards">{rows.map((row) => <li key={row.id} className={`tx-card ${row.status === 'paid' ? '' : 'is-pending'} ${selected?.has(row.id) ? 'selected' : ''}`}>
     {selected && <input type="checkbox" className="tx-check" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} />}
     <div className="tx-main">
       <div className="tx-top"><b>{row.description}</b><span className="tx-amount">{money(Number(row.amount))}</span></div>
       <div className="tx-meta"><span>{formatDate(row.occurred_on).slice(0, 5)}</span><span>{row.person?.name || '—'}</span>{row.category?.name && <span className="tag">{row.category.name}</span>}{row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}</div>
       <div className="tx-foot">
-        <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button>
+        <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button>
         <span className="tx-actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento"><Icon name="edit" size={18} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento"><Icon name="trash" size={18} /></button></span>
       </div>
     </div>
   </li>)}</ul>
   return <><div className="table-scroll tx-table"><table><thead><tr>
     {selected && <th className="check"><input type="checkbox" aria-label="Selecionar todos" checked={rows.length > 0 && rows.every((row) => selected.has(row.id))} onChange={(event) => onSelectAll?.(event.target.checked)} /></th>}{head('date', 'Data')}<th>Descrição</th>{head('person', 'Responsável')}<th>Categoria</th><th>Parcela</th><th>Status</th>{head('amount', 'Valor', 'num')}<th />
-  </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={selected?.has(row.id) ? 'selected' : ''}>
+  </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={`${row.status === 'paid' ? '' : 'is-pending'} ${selected?.has(row.id) ? 'selected' : ''}`}>
     {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
     <td>{formatDate(row.occurred_on)}</td>
     <td className="desc"><b>{row.description}</b></td>
     <td>{row.person?.name || '—'}</td>
     <td>{row.category?.name ? <span className="tag">{row.category.name}</span> : '—'}</td>
     <td>{row.installment_count ? <span className={`tag ${row.installment_number === row.installment_count ? 'last' : ''}`}>{row.installment_number}/{row.installment_count}</span> : <span className="muted">À vista</span>}</td>
-    <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Não pago'}</button></td>
+    <td><button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)} title="Clique para alternar"><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
     <td className="num">{money(Number(row.amount))}</td>
     <td className="actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento" title="Editar"><Icon name="edit" size={16} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
   </tr>)}</tbody></table></div>{cards}</>
@@ -79,11 +81,14 @@ export interface HeroProps {
 
 export function Hero({ label, total, count, paid, pending, paidShare, badge }: HeroProps) {
   const share = Math.max(0, Math.min(1, paidShare))
-  return <article className="hero-card">
+  const clear = count === 0 || share >= 0.9999
+  const [reveal, shown] = useReveal<HTMLElement>(0.1)
+  return <article ref={reveal} className={`hero-card reveal ${shown ? 'in' : ''}`}>
     <div className="hero-top"><span className="hero-label">{label}</span>{badge && <span className={`hero-badge ${badge.tone}`}><Icon name={badge.trend} size={14} />{badge.text}</span>}</div>
-    <div className="hero-total">{total}</div>
-    <div className="hero-sub">{count} lançamentos nesta fatura</div>
+    <div className="hero-kicker">{clear ? 'Tudo pago' : 'Falta pagar'}</div>
+    <div className={`hero-total ${clear ? 'clear' : ''}`}>{clear ? total : pending}</div>
+    <div className="hero-sub">{clear ? `${count} lançamentos nesta fatura` : `de ${total} · ${count} lançamentos · ${paid} já pago`}</div>
     <div className="hero-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
-    <div className="hero-split"><span><b>{paid}</b> pago</span><span><b>{pending}</b> pendente</span></div>
+    <div className="hero-split"><span>{Math.round(share * 100)}% pago</span></div>
   </article>
 }
