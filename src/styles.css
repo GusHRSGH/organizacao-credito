@@ -825,3 +825,14 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .assistant-table td{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .check{display:flex!important;grid-template-columns:none!important;gap:8px;align-items:center;font-size:13px;font-weight:500!important;color:var(--text)!important}
 .check input{width:auto}
+
+.receiving{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 16px;display:grid;gap:10px;background:var(--surface)}
+.receiving-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.receiving-line>div{flex:1;min-width:180px;display:grid;gap:2px}
+.receiving-line small{color:var(--faint);overflow-wrap:anywhere}
+.receiving-grid{display:grid;grid-template-columns:2fr 1.4fr 1fr;gap:10px}
+.receiving label{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--faint)}
+.receiving input:not([type=checkbox]),.receiving textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:15px;min-width:0;font-family:inherit}
+.receiving-preview{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0;padding:10px;border-radius:10px;background:color-mix(in srgb,var(--text) 5%,transparent);font-size:12px}
+.hint.ok{color:var(--good,#16a34a)}
+@media (max-width:700px){.receiving-grid{grid-template-columns:1fr}}

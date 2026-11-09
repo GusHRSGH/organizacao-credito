@@ -50,6 +50,8 @@ const STEPS: Step[] = [
 
   { section: 'Cobrança', target: 'nav-billing', page: 'billing', icon: 'users', title: 'Cobrança: quem deve quanto', text: 'O app soma o que cada pessoa deve na fatura, com uma barra de progresso do que já foi pago.',
     example: <Example><Row a="Ana" b={<>R$ 412,00 <Bad>Deve</Bad></>} /><Row a="Bruno" b={<>R$ 0,00 <Ok>Em dia</Ok></>} /></Example> },
+  { section: 'Cobrança', target: 'bill-receive', page: 'billing', icon: 'wallet', title: 'Diga como você recebe', text: 'Coloque sua chave Pix (CPF, e-mail, celular ou aleatória) e um recado. O app reconhece o tipo e coloca isso no fim de cada cobrança. Com o seu nome, ele ainda gera o Pix copia e cola já com o valor certo de cada pessoa.',
+    example: <Example><div className="ex-code">Pix (e-mail): ana@email.com · Ana</div><div className="ex-arrow">Pix copia e cola (já com o valor): 00020126…</div></Example> },
   { section: 'Cobrança', target: 'bill-card', page: 'billing', icon: 'copy', title: 'Cobrar sem digitar nada', text: '“Copiar cobrança” gera uma mensagem pronta para colar no WhatsApp. Quando a pessoa pagar, “Marcar tudo como pago” dá baixa em todos os lançamentos dela.',
     example: <Example><div className="ex-code">Oi Ana! Sua parte na fatura de novembro: R$ 412,00</div><div className="ex-arrow">é só colar no WhatsApp</div></Example> },
 
