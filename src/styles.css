@@ -720,3 +720,12 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .theme-preview .body .row { display: flex; gap: 5px; }
 .theme-name { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
 .theme-name .icon { color: var(--primary); }
+
+/* Conta na nuvem */
+.cloud-login { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+.cloud-login .wide, .welcome-actions .wide { width: 100%; justify-content: center; }
+.code-input { font-size: 26px; letter-spacing: 8px; text-align: center; font-variant-numeric: tabular-nums; }
+.cloud-line { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.cloud-conflict { border: 1px solid var(--bad); border-radius: 12px; padding: 14px; margin: 8px 0 12px; background: color-mix(in srgb, var(--bad) 8%, transparent); }
+.cloud-conflict p { margin: 6px 0 12px; }
+.welcome-card .cloud-login { max-width: none; text-align: left; }
