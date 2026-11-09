@@ -9,6 +9,8 @@ import { downloadAsset, downloadText, stamp, toCsv } from '../services/exporters
 import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
 import { readRawSheets, type RawSheet } from '../services/smartImport'
 import ImportAssistant from '../components/ImportAssistant'
+import CleanupAssistant from '../components/CleanupAssistant'
+import type { CleanupPlan } from '../lib/cleanup'
 import { useInsightVisible } from '../lib/prefs'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
 import type { ImportResult, Invoice, Transaction } from '../types'
@@ -65,6 +67,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [fileName, setFileName] = useState('')
   const [raw, setRaw] = useState<RawSheet[] | null>(null)
+  const [cleaning, setCleaning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([])
   const [lastFile, setLastFile] = useState<string | null>(() => { try { return localStorage.getItem('orc-last-file-backup') } catch { return null } })
@@ -126,6 +129,15 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     } catch (cause) { notify('error', messageOf(cause)) } finally { setBusy(false) }
   }
 
+  async function applyCleanup(plan: CleanupPlan) {
+    setBusy(true)
+    try {
+      const changed = await local.applyCleanup(plan)
+      await onChanged(); await loadSnapshots(); setCleaning(false)
+      notify('notice', `Pronto: ${changed} ajustes feitos. Se não gostar, volte pela cópia “antes” em Cópias automáticas.`)
+    } catch (cause) { notify('error', messageOf(cause)) } finally { setBusy(false) }
+  }
+
   async function restore(file: File | undefined) {
     if (!file) return
     try {
@@ -153,6 +165,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   }
 
   return <>
+    {cleaning && <CleanupAssistant transactions={transactions} busy={busy} onApply={(plan) => void applyCleanup(plan)} onCancel={() => setCleaning(false)} />}
     {raw && <ImportAssistant raw={raw} onCancel={() => { setRaw(null); setFileName('') }} onConfirm={(list) => { setRaw(null); setBusy(true); void acceptParsed(list).catch((cause) => notify('error', messageOf(cause))).finally(() => setBusy(false)) }} />}
     <PageHeading title="Dados e configurações" subtitle="Conta, aparência, backups e importação da sua planilha." />
 
@@ -203,6 +216,11 @@ export default function Settings({ google, cloud, local, invoices, transactions,
         <p className="hint">Primeiro lançamento: {sheets[0].rows[0] ? `${formatDate(sheets[0].rows[0].date)} · ${sheets[0].rows[0].description}` : '—'}. Lançamentos idênticos já existentes são ignorados, então reimportar é seguro.</p>
         <div className="button-row"><button className="primary-button" disabled={busy || !preview?.added} onClick={() => void confirmImport()}>Importar {preview?.added ?? 0} lançamentos</button><button className="text-button" onClick={() => { setSheets([]); setPreview(null) }}>Cancelar</button></div>
       </div>}
+    </Panel>
+
+    <Panel tour="set-clean" icon="sparkle" title="Robô de limpeza" subtitle="Arruma descrições sujas do banco e junta nomes repetidos. Você aprova antes.">
+      <div className="button-row"><button className="secondary-button" disabled={!transactions.length} onClick={() => setCleaning(true)}><Icon name="sparkle" size={16} />Procurar bagunça</button></div>
+      <p className="hint">Exemplo: “UBER *TRIP 8842” e “UBER *TRIP 1290” viram “Uber”. “Transporte” e “Transportes” viram uma categoria só.</p>
     </Panel>
 
     <Panel icon="sparkle" title="Ajuda" subtitle="Um passo a passo rápido de como usar o app."><div className="button-row"><button className="secondary-button" onClick={onTour}>Ver o tutorial</button><button className="secondary-button" onClick={onNews}>Novidades do app</button></div></Panel>

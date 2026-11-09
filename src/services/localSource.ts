@@ -290,6 +290,34 @@ export class LocalSource implements DataSource {
     })
   }
 
+  /** Aplica a limpeza aprovada: renomeia descrições e junta pessoas/categorias repetidas. Guarda uma cópia antes, então dá para voltar. */
+  async applyCleanup(plan: { descriptions: Array<{ from: string[]; to: string }>; people: Array<{ from: string[]; to: string }>; categories: Array<{ from: string[]; to: string }> }) {
+    await this.snapshot(await this.read(), 'antes')
+    return this.mutate((db) => {
+      let changed = 0
+      for (const fix of plan.descriptions) {
+        const to = fix.to.trim().slice(0, 160)
+        if (!to) continue
+        const from = new Set(fix.from)
+        for (const row of db.transactions) if (from.has(row.description) && row.description !== to) { row.description = to; changed += 1 }
+      }
+      const merge = (list: Person[] | Category[], key: 'person_id' | 'category_id', fixes: Array<{ from: string[]; to: string }>) => {
+        for (const fix of fixes) {
+          const target = ensureNamed(list, fix.to)
+          if (!target) continue
+          const ids = new Set(list.filter((item) => fix.from.some((name) => norm(name) === norm(item.name)) && item.id !== target).map((item) => item.id))
+          for (const row of db.transactions) if (row[key] && ids.has(row[key]!)) { row[key] = target; changed += 1 }
+          const keep = list.filter((item) => !ids.has(item.id))
+          list.length = 0
+          list.push(...keep)
+        }
+      }
+      merge(db.people, 'person_id', plan.people)
+      merge(db.categories, 'category_id', plan.categories)
+      return changed
+    })
+  }
+
   /** Remove e devolve as linhas, para a interface poder oferecer "Desfazer". */
   async removeTransactions(ids: string[]) {
     const wanted = new Set(ids)
