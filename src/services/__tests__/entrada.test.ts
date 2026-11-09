@@ -65,3 +65,44 @@ describe('suggest', () => {
     expect(suggestFor('zz', s)).toBeNull()
   })
 })
+
+describe('linguagem natural', () => {
+  const nat = { people: ['Ana Lima', 'Bruno'], categories: ['Mercado', 'Transporte'], today: '2026-11-09' } // segunda
+  it('entende uma frase falada', () => {
+    const r = parseQuickLine('gastei 50 reais no mercado ontem com a Ana', nat)
+    expect(r).toMatchObject({ amount: 50, person: 'Ana Lima', category: 'Mercado', date: '2026-11-08', description: 'mercado' })
+  })
+  it('entende parcelas faladas e valor em mil', () => {
+    expect(parseQuickLine('comprei um notebook de 2,5 mil em 10 vezes pra Bruno', nat)).toMatchObject({ description: 'notebook', amount: 2500, installments: 10, person: 'Bruno' })
+    expect(parseQuickLine('tênis 300 parcelado em 3x', nat)).toMatchObject({ description: 'tênis', amount: 300, installments: 3 })
+  })
+  it('entende dia do mês e dia da semana', () => {
+    expect(parseQuickLine('farmácia 40 dia 5', nat).date).toBe('2026-11-05')
+    expect(parseQuickLine('farmácia 40 dia 20', nat).date).toBe('2026-10-20')
+    expect(parseQuickLine('padaria 12 sexta', nat).date).toBe('2026-11-06')
+    expect(parseQuickLine('padaria 12 segunda passada', nat).date).toBe('2026-11-02')
+    expect(parseQuickLine('padaria 12 semana passada', nat).date).toBe('2026-11-02')
+  })
+  it('não inventa responsável que não existe', () => {
+    expect(parseQuickLine('presente da Marta 80', nat)).toMatchObject({ person: null, description: 'presente da Marta' })
+  })
+})
+
+describe('colar notificação e conversa', () => {
+  const people = ['Ana Lima', 'Bruno']
+  it('lê notificação do banco', () => {
+    const r = parsePastedBill('Compra aprovada no cartão final 1234 de R$ 45,90 em PADARIA CENTRAL hoje às 14:32', '2026-11-09', people)
+    expect(r.rows).toHaveLength(1)
+    expect(r.rows[0]).toMatchObject({ amount: 45.9, description: 'PADARIA CENTRAL', date: '2026-11-09', origin: 'notificação' })
+  })
+  it('lê conversa de WhatsApp e usa quem mandou como responsável', () => {
+    const r = parsePastedBill('[08/11/2026 14:32] Ana: gastei 50 no mercado ontem\n08/11/2026 15:00 - Bruno: paguei 30 de uber', '2026-11-09', people, ['Mercado'])
+    expect(r.rows.map((x) => [x.description, x.amount, x.person, x.date])).toEqual([['mercado', 50, 'Ana Lima', '2026-11-08'], ['uber', 30, 'Bruno', '2026-11-09']])
+  })
+  it('continua lendo linha de fatura e ignora conversa sem gasto', () => {
+    const r = parsePastedBill('05/11 SUPERMERCADO XYZ 152,30\n[08/11/2026 14:32] Ana: bom dia pessoal', '2026-11-09', people)
+    expect(r.rows).toHaveLength(1)
+    expect(r.rows[0].origin).toBeUndefined()
+    expect(r.skipped).toHaveLength(1)
+  })
+})

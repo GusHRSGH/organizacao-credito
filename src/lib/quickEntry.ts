@@ -55,9 +55,50 @@ function matchKnown(word: string, known: string[], allowFirstWord: boolean) {
   return known.find((name) => plain(name) === target) ?? (allowFirstWord ? known.find((name) => plain(name).split(/\s+/)[0] === target) ?? null : null)
 }
 
+const WEEKDAYS: Record<string, number> = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 }
+const FILLER = new Set(['gastei', 'paguei', 'comprei', 'gasto', 'compra', 'foi', 'fui', 'de', 'do', 'da', 'no', 'na', 'em', 'com', 'a', 'o', 'um', 'uma', 'pra', 'para', 'por', 'e', 'la', 'reais', 'real', 'conto', 'contos', 'pila', 'pilas', 'parcelado', 'parcelada'])
+
+const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).getUTCDay()
+
+/** Entende o jeito de falar: "1,5 mil", "em 3 vezes", "dia 5", "sexta passada", "com a Ana". Devolve o texto limpo e o que achou. */
+function understandSpeech(text: string, ctx: QuickContext) {
+  let rest = ` ${text} `
+  const found: { installments?: number; date?: string } = {}
+  rest = rest.replace(/\b(\d+(?:[.,]\d+)?)\s*(mil|k)\b/gi, (_, n: string) => String(Math.round(Number(n.replace(',', '.')) * 1000)))
+  rest = rest.replace(/\b(?:parcelad[oa]\s+)?(?:em\s+)?(\d{1,2})\s*(?:vezes|x)\b/gi, (all, n: string) => { const count = Number(n); if (count < 1 || count > 48) return all; found.installments = count; return ' ' })
+  rest = rest.replace(/\bsemana passada\b/gi, () => { found.date = addDays(ctx.today, -7); return ' ' })
+  rest = rest.replace(/\bdia\s+(\d{1,2})\b/gi, (all, d: string) => {
+    const day = Number(d)
+    const [y, m] = ctx.today.split('-').map(Number)
+    const thisMonth = makeDate(day, m, y)
+    const iso = thisMonth && thisMonth <= ctx.today ? thisMonth : makeDate(day, m === 1 ? 12 : m - 1, m === 1 ? y - 1 : y)
+    if (!iso) return all
+    found.date = iso
+    return ' '
+  })
+  rest = rest.replace(/\b(domingo|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado)(?:-feira)?(\s+passad[oa])?\b/gi, (_, name: string, past?: string) => {
+    const target = WEEKDAYS[plain(name)]
+    let back = (weekdayOf(ctx.today) - target + 7) % 7
+    if (back === 0 && past) back = 7
+    found.date = addDays(ctx.today, -back)
+    return ' '
+  })
+  // "com a Ana", "pra Bia", "da Ana": só vira responsável se o nome já existe
+  for (const person of ctx.people) {
+    const first = person.split(/\s+/)[0]
+    if (first.length < 2) continue
+    const safe = first.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    rest = rest.replace(new RegExp(`\\b(?:com|pra|para|da|do|de)\\s+(?:a\\s+|o\\s+)?${safe}(?![\\p{L}\\d])`, 'iu'), ` @${first} `)
+  }
+  return { text: rest.replace(/\s+/g, ' ').trim(), found }
+}
+
 export function parseQuickLine(text: string, ctx: QuickContext): QuickParsed {
   const out: QuickParsed = { description: '', amount: null, installments: 1, date: ctx.today, person: null, category: null }
-  const tokens = text.trim().split(/\s+/).filter(Boolean)
+  const speech = understandSpeech(text, ctx)
+  if (speech.found.installments) out.installments = speech.found.installments
+  if (speech.found.date) out.date = speech.found.date
+  const tokens = speech.text.split(/\s+/).filter(Boolean)
   const kept: Array<string | null> = tokens.map((token) => token)
   let amountIndex = -1
 
@@ -81,14 +122,24 @@ export function parseQuickLine(text: string, ctx: QuickContext): QuickParsed {
 
   if (amountIndex >= 0) { out.amount = parseMoney(tokens[amountIndex]); kept[amountIndex] = null }
 
+  let looseCategory = ''
   // Palavras soltas que são exatamente uma pessoa ou categoria já cadastrada.
   kept.forEach((token, index) => {
     if (token === null) return
     if (out.person === null) { const person = matchKnown(token, ctx.people, true); if (person) { out.person = person; kept[index] = null; return } }
-    if (out.category === null) { const category = matchKnown(token, ctx.categories, false); if (category) { out.category = category; kept[index] = null } }
+    if (out.category === null) { const category = matchKnown(token, ctx.categories, false); if (category) { out.category = category; kept[index] = null; looseCategory = token } }
   })
 
-  out.description = kept.filter((token): token is string => token !== null).join(' ').trim()
+  const words = kept.filter((token): token is string => token !== null)
+  // tira as palavrinhas das pontas ("gastei", "no", "com a") sem esvaziar a descrição
+  const isFiller = (word: string) => FILLER.has(plain(word))
+  let from = 0
+  let to = words.length
+  while (from < to && isFiller(words[from])) from++
+  while (to > from && isFiller(words[to - 1])) to--
+  out.description = words.slice(from, to).join(' ').trim()
+  if (!out.description && looseCategory) out.description = looseCategory
+  if (!out.description && out.amount !== null) out.description = words.join(' ').trim()
   if (out.amount !== null && !(out.amount > 0)) out.amount = null
   return out
 }

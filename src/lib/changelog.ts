@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 9, date: '2026-11-09', title: 'Entrada que entende você',
+    items: [
+      'O lançamento rápido agora entende frases: “gastei 50 reais no mercado ontem com a Ana”, “notebook 2,5 mil em 10 vezes”, “farmácia 40 sexta”, “padaria 12 dia 5”.',
+      'Colar do banco agora também lê notificações (“Compra aprovada de R$ 45,90 em PADARIA hoje”) e conversas do WhatsApp, usando quem mandou a mensagem como responsável.',
+      'Tudo passa por uma conferência antes de entrar: você vê o que o robô entendeu e desmarca o que não quiser.',
+    ],
+  },
+  {
     n: 8, date: '2026-11-09', title: 'Pix na cobrança e acerto de contas',
     items: [
       'Em Cobrança, informe sua chave Pix e um recado. Eles vão no fim de toda cobrança copiada, e ficam só neste aparelho.',
