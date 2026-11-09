@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 8, date: '2026-11-09', title: 'Pix na cobrança e acerto de contas',
+    items: [
+      'Em Cobrança, informe sua chave Pix e um recado. Eles vão no fim de toda cobrança copiada, e ficam só neste aparelho.',
+      'Com o seu nome preenchido, cada cobrança leva o Pix copia e cola já com o valor exato de cada pessoa.',
+      'Novo “Tudo em aberto”: soma as faturas pendentes de cada pessoa em uma cobrança só, separada por mês.',
+      'Novo “Copiar acerto do grupo”: uma mensagem com quanto cada um deve, pronta para a conversa.',
+    ],
+  },
+  {
     n: 7, date: '2026-11-09', title: 'Robô de importação',
     items: [
       'Importe planilhas .xlsx ou .csv de qualquer formato, sem arrumar colunas: o robô descobre sozinho o que é data, título, valor, responsável e parcela.',

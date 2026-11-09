@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { personToken, type DrillFilter } from '../lib/drill'
 import { EmptyState, Metric, PageHeading } from '../components/ui'
-import { billsByPerson, buildMessage, type PersonBill } from '../lib/billing'
+import ReceivingPanel from '../components/ReceivingPanel'
+import { billsByPerson, buildGroupMessage, buildMessage, type PersonBill } from '../lib/billing'
+import { readReceiving } from '../lib/receiving'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { DataSource, Invoice, Transaction } from '../types'
 
@@ -19,16 +21,26 @@ interface Props {
 
 export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, onDrill }: Props) {
   const [open, setOpen] = useState<string | null>(null)
+  const [scope, setScope] = useState<'month' | 'all'>('month')
+  const [receiving, setReceiving] = useState(readReceiving)
   const invoice = invoices.find((item) => item.id === invoiceId)
-  const bills = useMemo(() => billsByPerson(transactions.filter((row) => row.invoice_id === invoiceId)), [transactions, invoiceId])
+  const all = scope === 'all'
+  const bills = useMemo(() => billsByPerson(transactions.filter((row) => (all ? row.status !== 'paid' : row.invoice_id === invoiceId))), [transactions, invoiceId, all])
+  const labels = useMemo(() => new Map(invoices.map((item) => [item.id, item.label])), [invoices])
+  const openInvoices = new Set(transactions.filter((row) => row.status !== 'paid').map((row) => row.invoice_id)).size
+  const scopeLabel = all ? `${openInvoices} ${openInvoices === 1 ? 'fatura' : 'faturas'}` : invoice?.label ?? 'este mês'
   const total = bills.reduce((sum, bill) => sum + Math.round(bill.total * 100), 0) / 100
   const pending = bills.reduce((sum, bill) => sum + Math.round(bill.pending * 100), 0) / 100
 
   async function copy(bill: PersonBill) {
     try {
-      await navigator.clipboard.writeText(buildMessage(bill, invoice?.label ?? 'este mês'))
+      await navigator.clipboard.writeText(buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined }))
       notify('notice', `Mensagem de ${bill.name} copiada. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui copiar. Libere o acesso à área de transferência e tente de novo.') }
+  }
+
+  async function copyGroup() {
+    try { await navigator.clipboard.writeText(buildGroupMessage(bills, scopeLabel, receiving)); notify('notice', 'Acerto do grupo copiado. É só colar na conversa.') } catch { notify('error', 'Não consegui copiar. Libere o acesso à área de transferência e tente de novo.') }
   }
 
   async function settle(bill: PersonBill) {
@@ -39,15 +51,18 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
 
   return <>
     <PageHeading title="Quem deve quanto" subtitle="Veja a parte de cada responsável, copie a cobrança e marque como paga.">
+      <div className="mode-switch" role="radiogroup" aria-label="O que cobrar"><button role="radio" aria-checked={!all} className={!all ? 'on' : ''} onClick={() => setScope('month')}>Esta fatura</button><button role="radio" aria-checked={all} className={all ? 'on' : ''} onClick={() => setScope('all')}>Tudo em aberto</button></div>
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
     </PageHeading>
+    <ReceivingPanel value={receiving} onChange={setReceiving} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined }).split('\n\n').slice(-1)[0] : ''} />
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">
-        <Metric label="Total da fatura" value={money(total)} icon="wallet" foot={`${bills.length} ${bills.length === 1 ? 'responsável' : 'responsáveis'}`} />
+        <Metric label={all ? 'Total em aberto' : 'Total da fatura'} value={money(total)} icon="wallet" foot={`${bills.length} ${bills.length === 1 ? 'responsável' : 'responsáveis'}`} />
         <Metric label="Falta receber" value={money(pending)} icon="clock" tone={pending > 0 ? 'bad' : 'good'} />
         <Metric label="Já pago" value={money(total - pending)} icon="check" tone="good" />
       </section>
+      <div className="button-row"><button className="secondary-button" onClick={() => void copyGroup()}><Icon name="copy" size={16} />Copiar acerto do grupo</button></div>
       <section className="bill-list">
         {bills.map((bill, position) => {
           const share = bill.total ? bill.paid / bill.total : 0
