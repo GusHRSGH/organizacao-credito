@@ -20,7 +20,7 @@ async function irPara(page: Page, area: 'dashboard' | 'invoices' | 'billing' | '
 
 async function importarModelo(page: Page) {
   await irPara(page, 'settings')
-  await page.locator('input[type=file][accept=".xlsx"]').setInputFiles(MODELO)
+  await page.locator('input[type=file][accept^=".xlsx"]').setInputFiles(MODELO)
   await page.getByRole('button', { name: /^Importar \d+ lançamentos/ }).click()
   await expect(page.getByRole('button', { name: /^Importar \d+ lançamentos/ })).toHaveCount(0, { timeout: 10_000 })
 }
@@ -130,4 +130,23 @@ test('o resumo em texto aparece na visão geral', async ({ page }) => {
   await importarModelo(page)
   await irPara(page, 'dashboard')
   await expect(page.locator('[data-tour="dash-insight"]')).toContainText('você gastou')
+})
+
+test('o robô entende um CSV fora do padrão e o resumo pode ser ocultado', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'settings')
+  const csv = 'Estabelecimento;Quando;Quanto;Quem\nPadaria Central;05/11/2026;R$ 23,90;Ana\nPosto Shell;07/11/2026;180,00;Bia\nPagamento recebido;08/11/2026;-500,00;Ana\n'
+  await page.locator('input[type=file][accept^=".xlsx"]').setInputFiles({ name: 'extrato.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const robo = page.getByRole('dialog', { name: 'Robô de importação' })
+  await expect(robo).toBeVisible()
+  await expect(robo).toContainText('2 lançamentos')
+  await robo.getByRole('button', { name: 'Está certo, continuar' }).click()
+  await page.getByRole('button', { name: /^Importar 2 lançamentos/ }).click()
+  await expect(page.getByRole('button', { name: /^Importar \d+ lançamentos/ })).toHaveCount(0, { timeout: 10_000 })
+  await irPara(page, 'dashboard')
+  await expect(page.locator('[data-tour="dash-insight"]')).toContainText('você gastou')
+  await page.getByRole('button', { name: 'Ocultar o resumo' }).click()
+  await expect(page.locator('[data-tour="dash-insight"]')).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('[data-tour="dash-insight"]')).toHaveCount(0)
 })

@@ -7,6 +7,9 @@ import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
 import { downloadAsset, downloadText, stamp, toCsv } from '../services/exporters'
 import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
+import { readRawSheets, type RawSheet } from '../services/smartImport'
+import ImportAssistant from '../components/ImportAssistant'
+import { useInsightVisible } from '../lib/prefs'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
 import type { ImportResult, Invoice, Transaction } from '../types'
 import CloudPanel from '../components/CloudPanel'
@@ -31,6 +34,7 @@ interface Props {
 function AppearancePanel() {
   const { mode, palette, theme, setMode, setPalette } = useAppearance()
   const modes: { id: ThemeMode; label: string; icon: 'sun' | 'moon' | 'sparkle' }[] = [{ id: 'auto', label: 'Automático', icon: 'sparkle' }, { id: 'light', label: 'Claro', icon: 'sun' }, { id: 'dark', label: 'Escuro', icon: 'moon' }]
+  const [insight, setInsight] = useInsightVisible()
   return <Panel tour="set-theme" icon="sparkle" title="Aparência" subtitle="Escolha o visual do app. A mudança vale na hora e fica salva neste aparelho.">
     <div className="mode-switch" role="radiogroup" aria-label="Modo">
       {modes.map((item) => <button key={item.id} role="radio" aria-checked={mode === item.id} className={mode === item.id ? 'on' : ''} onClick={() => setMode(item.id)}><Icon name={item.icon} size={16} />{item.label}</button>)}
@@ -48,6 +52,7 @@ function AppearancePanel() {
         </button>
       })}
     </div>
+    <label className="check"><input type="checkbox" checked={insight} onChange={(event) => setInsight(event.target.checked)} />Mostrar o resumo em texto na Visão geral (“Em novembro você gastou…”)</label>
     <p className="hint">{theme === 'light' && palette === 'amoled' ? 'O preto puro só aparece no modo escuro; no claro, o app usa o branco. ' : ''}O vermelho dos pendentes é sempre o mesmo, em qualquer tema.</p>
   </Panel>
 }
@@ -59,6 +64,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   const [picked, setPicked] = useState<Record<string, boolean>>({})
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [fileName, setFileName] = useState('')
+  const [raw, setRaw] = useState<RawSheet[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([])
   const [lastFile, setLastFile] = useState<string | null>(() => { try { return localStorage.getItem('orc-last-file-backup') } catch { return null } })
@@ -83,12 +89,23 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     if (!file) return
     setBusy(true); setPreview(null); setSheets([])
     try {
-      const parsed = await readWorkbook(file)
-      if (!parsed.length) throw new Error('Não encontrei nenhuma aba com as colunas Data, Título e Valor.')
-      const selection = Object.fromEntries(parsed.map((s) => [s.sheetName, !!s.period]))
-      setSheets(parsed); setPicked(selection); setFileName(file.name)
-      await refreshPreview(parsed, selection)
+      const parsed = /\.xlsx$/i.test(file.name) ? await readWorkbook(file) : []
+      setFileName(file.name)
+      if (!parsed.length) {
+        // Formato fora do padrão: o robô tenta entender e a pessoa confirma
+        const found = await readRawSheets(file)
+        if (!found.length) throw new Error('A planilha está vazia.')
+        setRaw(found)
+        return
+      }
+      await acceptParsed(parsed)
     } catch (cause) { notify('error', messageOf(cause)) } finally { setBusy(false); if (fileRef.current) fileRef.current.value = '' }
+  }
+
+  async function acceptParsed(parsed: ParsedSheet[]) {
+    const selection = Object.fromEntries(parsed.map((s) => [s.sheetName, !!s.period]))
+    setSheets(parsed); setPicked(selection)
+    await refreshPreview(parsed, selection)
   }
 
   async function toggleSheet(name: string) {
@@ -136,6 +153,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   }
 
   return <>
+    {raw && <ImportAssistant raw={raw} onCancel={() => { setRaw(null); setFileName('') }} onConfirm={(list) => { setRaw(null); setBusy(true); void acceptParsed(list).catch((cause) => notify('error', messageOf(cause))).finally(() => setBusy(false)) }} />}
     <PageHeading title="Dados e configurações" subtitle="Conta, aparência, backups e importação da sua planilha." />
 
     <AppearancePanel />
@@ -164,12 +182,12 @@ export default function Settings({ google, cloud, local, invoices, transactions,
       </div>
     </Panel>
 
-    <Panel tour="set-import" icon="upload" title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
+    <Panel tour="set-import" icon="upload" title="Importar planilha" subtitle="Aceita .xlsx e .csv de qualquer formato. O arquivo é lido neste aparelho; nada é enviado para fora.">
       <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
-        <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
+        <input ref={fileRef} type="file" accept=".xlsx,.csv,.txt" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
         <button className="secondary-button" onClick={() => void downloadAsset('modelo-fatura.xlsx', 'modelo-fatura.xlsx').catch((cause) => notify('error', messageOf(cause)))}><Icon name="download" size={16} />Baixar modelo de planilha</button>
         {fileName && <span className="muted">{fileName}</span>}</div>
-      <p className="hint">Não tem planilha ainda? Baixe o modelo, preencha e importe. Uma aba por fatura; o nome da aba define o mês.</p>
+      <p className="hint">Sem se preocupar com colunas: se a planilha não seguir o modelo, o robô descobre sozinho o que é data, título e valor, e você confere antes de importar. Quer o caminho mais certo? Baixe o modelo (uma aba por fatura, o nome da aba define o mês).</p>
       {sheets.length > 0 && <div className="import-box">
         <div className="import-list"><table className="data-table import-table"><thead><tr><th /><th>Aba</th><th>Fatura</th><th className="num">Linhas</th><th className="num">Total</th><th>Resultado</th></tr></thead><tbody>
           {sheets.map((sheet) => {

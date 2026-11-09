@@ -6,6 +6,7 @@ import { EmptyState, Hero, Metric, PageHeading, Panel } from '../components/ui'
 import { money, pct, signedMoney } from '../lib/format'
 import { categoryToken, personToken, type DrillFilter } from '../lib/drill'
 import { shortPeriodLabel } from '../services/installments'
+import { useInsightVisible } from '../lib/prefs'
 import { summarize } from '../lib/insight'
 import { compareGroups, groupBy, monthlyTotals, totals, variation } from '../services/stats'
 import type { Invoice, Transaction } from '../types'
@@ -25,6 +26,7 @@ interface Props {
 const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? 'pos' : '')
 
 export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport }: Props) {
+  const [showInsight, setShowInsight] = useInsightVisible()
   const focus = invoices.find((invoice) => invoice.id === focusId)
   const other = invoices.find((invoice) => invoice.id === compareId)
   const data = useMemo(() => {
@@ -70,7 +72,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <Metric icon="receipt" label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
       <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
-    <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} />{insight}</p>
+    {showInsight && <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} /><span>{insight}</span><button className="insight-x" aria-label="Ocultar o resumo" title="Ocultar (volta em Dados > Aparência)" onClick={() => setShowInsight(false)}>×</button></p>}
 
     <div className="panel-grid">
       <Panel tour="dash-people" icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>

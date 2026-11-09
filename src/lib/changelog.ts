@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 7, date: '2026-11-09', title: 'Robô de importação',
+    items: [
+      'Importe planilhas .xlsx ou .csv de qualquer formato, sem arrumar colunas: o robô descobre sozinho o que é data, título, valor, responsável e parcela.',
+      'Antes de importar, você vê como ele entendeu e corrige qualquer coluna. Estornos e pagamentos são ignorados, e planilhas com vários meses viram uma fatura por mês.',
+      'O resumo em texto da Visão geral agora pode ser ocultado (× nele ou em Dados > Aparência).',
+    ],
+  },
+  {
     n: 6, date: '2026-11-09', title: 'Resumo em texto e categoria sozinha',
     items: [
       'A Visão geral agora tem uma frase que resume o mês: quanto gastou, como está contra o outro mês e o que puxou a diferença.',
