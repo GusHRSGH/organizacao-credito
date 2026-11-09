@@ -10,7 +10,7 @@
     "SplashScreen": {
       "launchShowDuration": 600,
       "launchAutoHide": true,
-      "backgroundColor": "#1f4fd8",
+      "backgroundColor": "#09090b",
       "showSpinner": false
     },
     "Keyboard": {
