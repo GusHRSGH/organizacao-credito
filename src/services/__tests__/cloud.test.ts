@@ -50,7 +50,7 @@ describe('friendlyAuthError', () => {
 
 describe('CloudApi.push', () => {
   const payload = { app: 'organizacao-credito', version: 1, exportedAt: '', data: { invoices: [], transactions: [], people: [], categories: [] } } as BackupFile
-  const make = (result: { data: unknown; error: { message: string } | null }) => new CloudApi({ rpc: async () => result } as never)
+  const make = (result: { data: unknown; error: { message: string } | null }) => new CloudApi(async () => ({ rpc: async () => result }) as never)
   it('devolve a nova versão', async () => {
     expect(await make({ data: 4, error: null }).push(payload, 3)).toBe(4)
   })

@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "desktop:dist": "npm run build && electron-builder --win nsis --publish never",
     "test": "vitest run",
-    "android:sync": "npm run build && cap sync android"
+    "android:sync": "npm run build && cap sync android",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^9.1.2",
@@ -33,6 +34,7 @@
     "@capacitor/android": "^7.6.10",
     "@capacitor/cli": "^7.6.10",
     "@eslint/js": "^9.20.0",
+    "@playwright/test": "^1.49.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",

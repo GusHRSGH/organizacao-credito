@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import type { BackupFile, LocalData } from '../types'
 
 export interface CloudRecord { payload: BackupFile; version: number; updatedAt: string }
@@ -59,29 +59,48 @@ export function friendlyAuthError(cause: unknown): string {
 
 /** Conversa com o Supabase: login por código de e-mail e a cópia dos dados da conta. */
 export class CloudApi {
-  constructor(private readonly client: SupabaseClient) {}
+  private handler: ((session: Session | null) => void) | null = null
+  private started: Promise<void> | null = null
+
+  constructor(private readonly load: () => Promise<SupabaseClient>) {}
+
+  /** Quem quer saber da sessão (entrou, saiu, renovou). */
+  onSession(handler: (session: Session | null) => void) { this.handler = handler }
+
+  /** Carrega a biblioteca da nuvem e começa a acompanhar a sessão. Só roda uma vez. */
+  start(): Promise<void> {
+    this.started ??= (async () => {
+      const client = await this.load()
+      const { data } = await client.auth.getSession()
+      this.handler?.(data.session)
+      client.auth.onAuthStateChange((_event, session) => this.handler?.(session))
+    })()
+    return this.started
+  }
 
   async sendCode(email: string) {
-    const { error } = await this.client.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } })
+    const client = await this.load()
+    const { error } = await client.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } })
     if (error) throw new Error(friendlyAuthError(error))
   }
 
   async verifyCode(email: string, code: string) {
-    const { error } = await this.client.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.replace(/\s/g, ''), type: 'email' })
+    const client = await this.load()
+    const { error } = await client.auth.verifyOtp({ email: email.trim().toLowerCase(), token: code.replace(/\s/g, ''), type: 'email' })
     if (error) throw new Error(friendlyAuthError(error))
   }
 
-  async signOut() { await this.client.auth.signOut() }
+  async signOut() { await (await this.load()).auth.signOut() }
 
   async pull(userId: string): Promise<CloudRecord | null> {
-    const { data, error } = await this.client.from('user_data').select('payload, version, updated_at').eq('user_id', userId).maybeSingle()
+    const { data, error } = await (await this.load()).from('user_data').select('payload, version, updated_at').eq('user_id', userId).maybeSingle()
     if (error) throw new Error(friendlyAuthError(error))
     return data ? { payload: data.payload as BackupFile, version: Number(data.version), updatedAt: String(data.updated_at) } : null
   }
 
   /** Devolve a nova versão. Lança VersionConflictError se outro aparelho salvou antes. */
   async push(payload: BackupFile, expectedVersion: number): Promise<number> {
-    const { data, error } = await this.client.rpc('save_user_data', { p_payload: payload, p_expected_version: expectedVersion })
+    const { data, error } = await (await this.load()).rpc('save_user_data', { p_payload: payload, p_expected_version: expectedVersion })
     if (error) {
       if (/version_conflict/.test(error.message)) throw new VersionConflictError()
       if (/payload_too_large/.test(error.message)) throw new Error('Os dados passaram do limite da nuvem (4 MB).')
@@ -91,8 +110,9 @@ export class CloudApi {
   }
 
   async deleteAccount() {
-    const { error } = await this.client.rpc('delete_my_account')
+    const client = await this.load()
+    const { error } = await client.rpc('delete_my_account')
     if (error) throw new Error(friendlyAuthError(error))
-    await this.client.auth.signOut()
+    await client.auth.signOut()
   }
 }

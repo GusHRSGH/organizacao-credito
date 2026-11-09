@@ -26,6 +26,7 @@ export default function CloudLogin({ api, onCancel }: Props) {
     return () => clearTimeout(timer)
   }, [wait])
   useEffect(() => { if (step === 'code') codeRef.current?.focus() }, [step])
+  useEffect(() => { void api.start().catch(() => undefined) }, [api])
 
   async function send(event?: FormEvent) {
     event?.preventDefault()

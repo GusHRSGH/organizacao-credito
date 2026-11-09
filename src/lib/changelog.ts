@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 4, date: '2026-11-09', title: 'Mais leve e mais seguro',
+    items: [
+      'O app abre mais rápido: o pacote principal ficou quase metade do tamanho.',
+      'Se algo inesperado acontecer, uma tela amigável permite recarregar ou baixar um backup, sem perder dados.',
+      'Ao voltar a ter internet, a sincronização da conta retoma sozinha.',
+      'Bastidores: testes automáticos que abrem o app no celular e no computador a cada alteração.',
+    ],
+  },
+  {
     n: 3, date: '2026-11-09', title: 'Tour completo do app',
     items: [
       'O tour agora tem 21 passos e apresenta o app inteiro: Início, Faturas, Cobrança e Dados.',
