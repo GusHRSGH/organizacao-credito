@@ -54,7 +54,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
   const invoiceOf = (index: number) => (index === 0 ? focusId : compareId)
 
   return <>
-    <PageHeading title="Visão geral" subtitle="Compare dois meses e acompanhe o que já foi pago.">
+    <PageHeading tour="dash-select" title="Visão geral" subtitle="Compare dois meses e acompanhe o que já foi pago.">
       <label className="select-group"><span>Mês foco</span>
         <select value={focusId} onChange={(event) => onFocus(event.target.value)}>{invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>)}</select></label>
       <label className="select-group"><span>Comparar com</span>
@@ -69,7 +69,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
     </section>
 
     <div className="panel-grid">
-      <Panel icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
+      <Panel tour="dash-people" icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
         <HBarChart rows={peopleRows.map((row) => ({ label: row.name, values: other ? [row.a, row.b] : [row.a] }))} series={series} onPick={(name, index) => onDrill({ invoiceId: invoiceOf(index), person: personToken(name) })} />
       </Panel>
       <Panel icon="pie" title="Categorias" subtitle={labelA}><Donut slices={slices('a')} centerLabel="Total" onPick={(name) => onDrill({ invoiceId: focusId, category: categoryToken(name) })} /></Panel>
@@ -84,7 +84,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       </Panel>
     </div>
 
-    <Panel icon="dashboard" title="Fatura mês a mês" subtitle="Pago e pendente em cada fatura, com o total no topo">
+    <Panel tour="dash-months" icon="dashboard" title="Fatura mês a mês" subtitle="Pago e pendente em cada fatura, com o total no topo">
       <StackedColumns items={data.months.map((month) => ({ id: month.id, label: shortPeriodLabel(month.period), paid: month.paid, pending: month.pending }))} onPick={(id, part) => onDrill({ invoiceId: id, status: part === 'all' ? undefined : part })} />
     </Panel>
 

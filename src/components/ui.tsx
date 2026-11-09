@@ -5,17 +5,17 @@ import { categoryIcon } from '../lib/categoryIcon'
 import { formatDate, money } from '../lib/format'
 import type { Transaction } from '../types'
 
-export function PageHeading({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {
-  return <div className="page-heading"><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{children && <div className="heading-actions">{children}</div>}</div>
+export function PageHeading({ title, subtitle, children, tour }: { title: string; subtitle?: string; children?: ReactNode; tour?: string }) {
+  return <div className="page-heading"><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{children && <div className="heading-actions" data-tour={tour}>{children}</div>}</div>
 }
 
 export function Metric({ label, value, foot, tone, icon }: { label: string; value: string; foot?: string; tone?: 'warning' | 'good' | 'bad'; icon?: IconName }) {
   return <article className="metric-card"><div className="metric-label">{icon && <span className={`metric-icon ${tone ?? ''}`}><Icon name={icon} size={16} /></span>}{label}</div><div className={`metric-value ${tone === 'bad' ? 'neg' : tone === 'good' ? 'pos' : ''}`}>{value}</div>{foot && <div className={`metric-foot ${tone === 'warning' ? 'warning' : ''}`}>{foot}</div>}</article>
 }
 
-export function Panel({ title, subtitle, children, action, icon }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode; icon?: IconName }) {
+export function Panel({ title, subtitle, children, action, icon, tour }: { title: string; subtitle?: string; children: ReactNode; action?: ReactNode; icon?: IconName; tour?: string }) {
   const [reveal, shown] = useReveal<HTMLElement>(0.04)
-  return <section ref={reveal} className={`panel rise ${shown ? 'in' : ''}`}><div className="panel-heading">{icon && <span className="panel-icon"><Icon name={icon} size={18} /></span>}<div className="panel-title"><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
+  return <section ref={reveal} className={`panel rise ${shown ? 'in' : ''}`}><div className="panel-heading" data-tour={tour}>{icon && <span className="panel-icon"><Icon name={icon} size={18} /></span>}<div className="panel-title"><h2>{title}</h2>{subtitle && <p className="panel-sub">{subtitle}</p>}</div>{action}</div>{children}</section>
 }
 
 export function EmptyState({ title, children, actions }: { title: string; children: ReactNode; actions?: ReactNode }) {
@@ -85,7 +85,7 @@ export function Hero({ label, total, count, paid, pending, paidShare, badge, onP
   const share = Math.max(0, Math.min(1, paidShare))
   const clear = count === 0 || share >= 0.9999
   const [reveal, shown] = useReveal<HTMLElement>(0.1)
-  return <article ref={reveal} className={`hero-card reveal ${shown ? 'in' : ''}`}>
+  return <article ref={reveal} data-tour="dash-hero" className={`hero-card reveal ${shown ? 'in' : ''}`}>
     <div className="hero-top"><span className="hero-label">{label}</span>{badge && <span className={`hero-badge ${badge.tone}`}><Icon name={badge.trend} size={14} />{badge.text}</span>}</div>
     <div className="hero-kicker">{clear ? 'Tudo pago' : 'Falta pagar'}</div>
     <div className={`hero-total ${clear ? 'clear' : ''}`}>{clear ? total : pending}</div>

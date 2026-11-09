@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 3, date: '2026-11-09', title: 'Tour completo do app',
+    items: [
+      'O tour agora tem 21 passos e apresenta o app inteiro: Início, Faturas, Cobrança e Dados.',
+      'Cada passo acende a parte real da tela e traz um exemplo de uso.',
+      'Aprenda o lançamento rápido numa linha (mercado 150,90 3x @ana #casa ontem), os filtros, as ações em lote e a cobrança pelo WhatsApp.',
+      'No fim, escolha entre lançar o primeiro gasto ou importar a planilha. Reveja quando quiser em Dados > Ajuda.',
+    ],
+  },
+  {
     n: 2, date: '2026-11-08', title: 'Mais clareza e ajuda no começo',
     items: [
       'Tour interativo na primeira abertura: ele destaca os botões do app na tela e mostra exemplos. Dá para rever em Dados > Ajuda.',

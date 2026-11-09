@@ -49,10 +49,10 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
         <Metric label="Já pago" value={money(total - pending)} icon="check" tone="good" />
       </section>
       <section className="bill-list">
-        {bills.map((bill) => {
+        {bills.map((bill, position) => {
           const share = bill.total ? bill.paid / bill.total : 0
           const expanded = open === bill.name
-          return <article key={bill.name} className="bill-card">
+          return <article key={bill.name} data-tour={position === 0 ? 'bill-card' : undefined} className="bill-card">
             <div className="bill-head">
               <span className="avatar">{bill.name[0].toUpperCase()}</span>
               <div className="bill-name"><b>{bill.name}</b><small>{bill.rows.length} {bill.rows.length === 1 ? 'lançamento' : 'lançamentos'} · total {money(bill.total)}</small></div>

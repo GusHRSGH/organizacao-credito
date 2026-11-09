@@ -8,22 +8,61 @@ interface Props {
   onAction: (action: 'add' | 'import') => void
 }
 
-interface Step { target?: string; page?: TourPage; icon: IconName; title: string; text: string; example?: ReactNode }
+interface Step { target?: string; page?: TourPage; section: string; icon: IconName; title: string; text: string; example?: ReactNode }
 
 const Example = ({ children }: { children: ReactNode }) => <div className="tour-example"><span className="tour-tag">Exemplo</span>{children}</div>
+const Row = ({ a, b }: { a: ReactNode; b?: ReactNode }) => <div className="ex-row"><b>{a}</b>{b !== undefined && <span>{b}</span>}</div>
+const Bad = ({ children }: { children: ReactNode }) => <span className="ex-badge bad">{children}</span>
+const Ok = ({ children }: { children: ReactNode }) => <span className="ex-badge ok">{children}</span>
+const Chips = ({ items }: { items: string[] }) => <div className="ex-chips">{items.map((item) => <span key={item}>{item}</span>)}</div>
 
 const STEPS: Step[] = [
-  { icon: 'sparkle', page: 'dashboard', title: 'Vamos fazer um tour de 1 minuto', text: 'Vou acender, na própria tela, cada botão importante e mostrar um exemplo de como usar. Você pode pular quando quiser.',
-    example: <Example><div className="ex-row"><b>Mercado Extra</b><span>R$ 189,90</span></div><div className="ex-meta">Ana · Alimentação · 3x</div></Example> },
-  { target: 'fab', page: 'dashboard', icon: 'plus', title: 'Este botão lança um gasto', text: 'Toque no + e preencha a descrição, o valor, quem gastou e a categoria. Se foi parcelado, o app espalha as parcelas pelas próximas faturas sozinho.',
-    example: <Example><div className="ex-row"><b>Mercado Extra</b><span>R$ 189,90</span></div><div className="ex-meta">Ana · Alimentação · em 3x</div><div className="ex-arrow">vira 3 lançamentos de R$ 63,30: nov, dez e jan</div></Example> },
-  { target: 'nav-invoices', page: 'invoices', icon: 'invoices', title: 'Faturas: um mês de cada vez', text: 'Cada mês é uma fatura. Toque num lançamento para editar, marcar como pago ou desfazer. Dá para filtrar por pessoa, categoria e situação.',
-    example: <Example><div className="ex-row"><b>Fatura de novembro</b><span>R$ 1.240,00</span></div><div className="ex-meta">14 lançamentos · <span className="ex-badge bad">3 pendentes</span></div></Example> },
-  { target: 'nav-billing', page: 'billing', icon: 'users', title: 'Cobrança: quem deve quanto', text: 'Aqui o app soma o que cada pessoa deve na fatura. Tudo o que está pendente fica em vermelho, e tocar num gráfico leva direto aos lançamentos.',
-    example: <Example><div className="ex-row"><b>Ana</b><span>R$ 412,00 <span className="ex-badge bad">Pendente</span></span></div><div className="ex-row"><b>Bruno</b><span>R$ 96,50 <span className="ex-badge ok">Pago</span></span></div></Example> },
-  { target: 'nav-settings', page: 'settings', icon: 'settings', title: 'Dados: importar, backup e conta', text: 'Traga a sua planilha, baixe o modelo, faça backup, troque o visual do app e crie sua conta para guardar tudo na nuvem.',
-    example: <Example><div className="ex-chips"><span>Importar planilha .xlsx</span><span>Baixar modelo</span><span>Backup</span><span>Temas</span><span>Conta na nuvem</span></div></Example> },
-  { page: 'dashboard', icon: 'check', title: 'Pronto! Por onde começar?', text: 'Escolha a primeira ação. Depois você pode rever este tour em Dados > Ajuda.' },
+  { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Vamos conhecer o app inteiro', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. O app tem 4 áreas: Início, Faturas, Cobrança e Dados. Você pode pular quando quiser.',
+    example: <Example><Chips items={['Início', 'Faturas', 'Cobrança', 'Dados']} /></Example> },
+
+  { section: 'Início', target: 'nav-dashboard', page: 'dashboard', icon: 'dashboard', title: 'Início: o resumo do mês', text: 'Aqui você bate o olho e sabe quanto gastou, quanto já foi pago e quanto ainda falta. Tudo é calculado sozinho a partir dos seus lançamentos.',
+    example: <Example><Row a="Falta pagar" b={<Bad>R$ 1.240,00</Bad>} /><div className="ex-meta">de R$ 3.180,00 · 38 lançamentos · R$ 1.940,00 já pago</div></Example> },
+  { section: 'Início', target: 'dash-select', page: 'dashboard', icon: 'repeat', title: 'Escolha o mês e compare', text: 'Selecione a fatura que quer ver e outra para comparar. O app mostra a diferença entre os dois meses em valor e em porcentagem.',
+    example: <Example><Row a="Nov/2026 x Out/2026" b="+8%" /><div className="ex-meta">Você gastou R$ 236,00 a mais que no mês anterior</div></Example> },
+  { section: 'Início', target: 'dash-hero', page: 'dashboard', icon: 'clock', title: 'O que falta pagar, em vermelho', text: 'O total pendente aparece grande e em vermelho. Toque nele para abrir só os lançamentos que ainda faltam pagar naquela fatura.',
+    example: <Example><Row a="Falta pagar" b={<Bad>R$ 1.240,00</Bad>} /><div className="ex-arrow">toque: abre os 12 lançamentos pendentes</div></Example> },
+  { section: 'Início', target: 'dash-people', page: 'dashboard', icon: 'pie', title: 'Os gráficos são clicáveis', text: 'Toque numa barra, numa fatia ou numa coluna e o app abre os lançamentos exatos por trás dela, já filtrados, para você resolver ali mesmo.',
+    example: <Example><Row a="Toque na barra da Ana" b="R$ 412,00" /><div className="ex-arrow">abre só os lançamentos da Ana nessa fatura</div></Example> },
+  { section: 'Início', target: 'dash-months', page: 'dashboard', icon: 'trend-up', title: 'Mês a mês', text: 'Cada coluna é uma fatura, com a parte paga e a parte pendente. Dá para ver de relance em que mês o gasto subiu.',
+    example: <Example><Chips items={['Set R$ 2.900', 'Out R$ 2.944', 'Nov R$ 3.180']} /></Example> },
+  { section: 'Início', target: 'fab', page: 'dashboard', icon: 'plus', title: 'Este botão lança um gasto', text: 'Em qualquer tela, toque no + para lançar uma compra. Se foi parcelada, o app espalha as parcelas pelas próximas faturas sozinho.',
+    example: <Example><Row a="Mercado Extra" b="R$ 189,90" /><div className="ex-meta">Ana · Alimentação · em 3x</div><div className="ex-arrow">vira 3 lançamentos de R$ 63,30: nov, dez e jan</div></Example> },
+
+  { section: 'Faturas', target: 'nav-invoices', page: 'invoices', icon: 'invoices', title: 'Faturas: um mês de cada vez', text: 'Aqui ficam todos os lançamentos da fatura escolhida. É a área onde você cadastra, confere, edita e dá baixa nos pagamentos.',
+    example: <Example><Row a="Fatura de novembro" b="R$ 3.180,00" /><div className="ex-meta">38 lançamentos · <Bad>12 pendentes</Bad></div></Example> },
+  { section: 'Faturas', target: 'quick-add', page: 'invoices', icon: 'sparkle', title: 'Lançamento rápido numa linha', text: 'Digite tudo de uma vez e aperte Enter. O app entende: o valor, 3x para parcelas, @ para quem gastou, # para a categoria e palavras como ontem para a data.',
+    example: <Example><div className="ex-code">mercado 150,90 3x @ana #casa ontem</div><div className="ex-arrow">Mercado · R$ 150,90 · 3 parcelas · Ana · Casa · ontem</div></Example> },
+  { section: 'Faturas', target: 'inv-top', page: 'invoices', icon: 'upload', title: 'Colar a fatura do banco', text: 'Copie as linhas da fatura no app do banco (data, descrição e valor) e use “Colar fatura”. O app separa tudo, sugere o responsável e a categoria, e você só confere. Para um lançamento completo, use “Formulário completo”.',
+    example: <Example><div className="ex-code">12/11  PADARIA CENTRAL  18,50</div><div className="ex-arrow">vira um lançamento pronto para conferir</div></Example> },
+  { section: 'Faturas', target: 'filters', page: 'invoices', icon: 'tag', title: 'Busque e filtre', text: 'Procure por palavra ou filtre por responsável, categoria e situação. Com um filtro ativo, aparece um botão para marcar todos os pendentes visíveis como pagos de uma vez.',
+    example: <Example><Chips items={['Ana', 'Pendentes']} /><div className="ex-arrow">5 lançamentos · R$ 412,00 · Marcar 5 como pagos</div></Example> },
+  { section: 'Faturas', target: 'tx-list', page: 'invoices', icon: 'edit', title: 'Cada lançamento tem ações', text: 'Toque no status para marcar pago ou pendente, use o lápis para editar (inclusive todas as parcelas de uma vez) e a lixeira para excluir. Se errar, o botão Desfazer aparece na hora. Marque várias caixinhas para agir em lote.',
+    example: <Example><Row a="Mercado Extra 1/3" b={<>R$ 63,30 <Bad>Pendente</Bad></>} /><Chips items={['Editar', 'Marcar pago', 'Excluir', 'Desfazer']} /></Example> },
+
+  { section: 'Cobrança', target: 'nav-billing', page: 'billing', icon: 'users', title: 'Cobrança: quem deve quanto', text: 'O app soma o que cada pessoa deve na fatura, com uma barra de progresso do que já foi pago.',
+    example: <Example><Row a="Ana" b={<>R$ 412,00 <Bad>Deve</Bad></>} /><Row a="Bruno" b={<>R$ 0,00 <Ok>Em dia</Ok></>} /></Example> },
+  { section: 'Cobrança', target: 'bill-card', page: 'billing', icon: 'copy', title: 'Cobrar sem digitar nada', text: '“Copiar cobrança” gera uma mensagem pronta para colar no WhatsApp. Quando a pessoa pagar, “Marcar tudo como pago” dá baixa em todos os lançamentos dela.',
+    example: <Example><div className="ex-code">Oi Ana! Sua parte na fatura de novembro: R$ 412,00</div><div className="ex-arrow">é só colar no WhatsApp</div></Example> },
+
+  { section: 'Dados', target: 'nav-settings', page: 'settings', icon: 'settings', title: 'Dados: o painel de controle', text: 'Aparência, conta, backups e importação ficam aqui. Vou mostrar cada painel.',
+    example: <Example><Chips items={['Aparência', 'Conta', 'Cópias', 'Exportar', 'Importar']} /></Example> },
+  { section: 'Dados', target: 'set-theme', page: 'settings', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 9 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
+    example: <Example><Chips items={['Violeta', 'Verde-petróleo', 'Preto puro', 'Dourado']} /></Example> },
+  { section: 'Dados', target: 'set-cloud', page: 'settings', icon: 'cloud', title: 'Sua conta na nuvem', text: 'Entre com o e-mail (sem senha, só um código) para guardar uma cópia segura e usar em outros aparelhos. É opcional, e o app continua funcionando sem internet.',
+    example: <Example><div className="ex-code">Seu código de acesso: 123456</div></Example> },
+  { section: 'Dados', target: 'set-copias', page: 'settings', icon: 'shield', title: 'Cópias automáticas', text: 'O app guarda sozinho uma cópia por dia e uma antes de qualquer restauração. Se algo der errado, “Voltar para esta” traz os dados de volta.',
+    example: <Example><Row a="08/11 · cópia do dia" b="38 lançamentos" /><div className="ex-arrow">Voltar para esta</div></Example> },
+  { section: 'Dados', target: 'set-export', page: 'settings', icon: 'download', title: 'Seus dados são seus', text: 'Baixe tudo em CSV (abre no Excel) ou em um backup JSON, e restaure quando quiser. De vez em quando, mande o backup para você mesmo.',
+    example: <Example><Chips items={['Baixar CSV', 'Baixar backup', 'Restaurar backup']} /></Example> },
+  { section: 'Dados', target: 'set-import', page: 'settings', icon: 'upload', title: 'Traga a sua planilha', text: 'Importe o .xlsx que você já usa: uma aba por fatura, e o nome da aba define o mês. Não tem planilha? Baixe o modelo pronto. Reimportar é seguro, porque lançamentos repetidos são ignorados.',
+    example: <Example><Chips items={['Novembro', 'Outubro', 'Setembro']} /><div className="ex-arrow">3 faturas · 112 lançamentos novos</div></Example> },
+
+  { section: 'Pronto', page: 'dashboard', icon: 'check', title: 'Pronto! Por onde começar?', text: 'Você conheceu o app todo. Escolha a primeira ação. O tour fica guardado em Dados > Ajuda para quando quiser rever.' },
 ]
 
 const PAD = 8
@@ -48,16 +87,23 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     const node = step.target ? findTarget(step.target) : null
     if (!node) { setBox(null); return }
     const rect = node.getBoundingClientRect()
-    setBox({ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 })
+    setBox({ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: Math.min(rect.height, window.innerHeight * 0.26) + PAD * 2 })
   }, [step.target])
 
+  // Leva o elemento para a parte de cima da tela (o cartão fica embaixo) e mede de novo.
   useLayoutEffect(() => {
     measure()
-    const again = setTimeout(measure, 120)
+    const timers = [120, 400, 800].map((delay) => setTimeout(measure, delay))
+    const scrollTimer = setTimeout(() => {
+      const node = step.target && !/^(fab|nav-)/.test(step.target) ? findTarget(step.target) : null
+      if (!node) return
+      const top = node.getBoundingClientRect().top
+      if (top < window.innerHeight * 0.04 || top > window.innerHeight * 0.2) window.scrollTo({ top: Math.max(0, window.scrollY + top - window.innerHeight * 0.12), behavior: 'smooth' })
+    }, 180)
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
-    return () => { clearTimeout(again); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
-  }, [measure, index])
+    return () => { timers.forEach(clearTimeout); clearTimeout(scrollTimer); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+  }, [measure, index, step.target])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -69,12 +115,12 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const cardAtTop = !!box && box.top > window.innerHeight / 2
+  const cardAtTop = !!box && box.top > window.innerHeight * 0.5
   return <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Tour do app">
     {box ? <div className="tour-spot" style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true"><i /></div> : <div className="tour-dim" aria-hidden="true" />}
     <div key={index} className={`tour-card ${cardAtTop ? 'top' : 'bottom'}`}>
       <div className="tour-progress" aria-hidden="true"><i style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} /></div>
-      <div className="tour-head"><span className="tour-icon"><Icon name={step.icon} size={24} /></span><small>{index + 1} de {STEPS.length}</small></div>
+      <div className="tour-head"><span className="tour-icon"><Icon name={step.icon} size={24} /></span><span className="tour-section">{step.section}</span><small>{index + 1} de {STEPS.length}</small></div>
       <h2>{step.title}</h2>
       <p>{step.text}</p>
       {step.example}
