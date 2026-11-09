@@ -10,6 +10,7 @@ import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
 import { readRawSheets, type RawSheet } from '../services/smartImport'
 import ImportAssistant from '../components/ImportAssistant'
 import CleanupAssistant from '../components/CleanupAssistant'
+import CardPanel from '../components/CardPanel'
 import type { CleanupPlan } from '../lib/cleanup'
 import { useInsightVisible } from '../lib/prefs'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
@@ -169,6 +170,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     {raw && <ImportAssistant raw={raw} onCancel={() => { setRaw(null); setFileName('') }} onConfirm={(list) => { setRaw(null); setBusy(true); void acceptParsed(list).catch((cause) => notify('error', messageOf(cause))).finally(() => setBusy(false)) }} />}
     <PageHeading title="Dados e configurações" subtitle="Conta, aparência, backups e importação da sua planilha." />
 
+    <CardPanel notify={notify} />
     <AppearancePanel />
 
     <CloudPanel cloud={cloud} notify={notify} onLegal={onLegal} />

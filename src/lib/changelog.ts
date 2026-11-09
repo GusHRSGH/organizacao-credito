@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 14, date: '2026-11-09', title: 'Fatura certa pelo fechamento do cartão',
+    items: [
+      'Novo em Dados: “Meu cartão”. Informe o dia do vencimento e quantos dias antes a fatura fecha.',
+      'Com isso, cada compra vai para a fatura certa pela data: se a fatura de Novembro já fechou, uma compra de 09/11 entra em Dezembro.',
+      'Vale para o lançamento rápido, para o colar fatura (inclusive PDF e foto) e para a importação inteligente. No lançamento rápido aparece “Fatura de Dezembro 2026” e dá para escolher a fatura aberta se preferir.',
+    ],
+  },
+  {
     n: 13, date: '2026-11-09', title: 'Lançar em vários meses',
     items: [
       'No lançamento rápido, escolha em quais faturas o gasto entra: toque em “Lançar em vários meses” e marque Novembro, Janeiro, Fevereiro… Cada mês recebe o valor cheio.',
