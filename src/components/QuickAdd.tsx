@@ -55,7 +55,7 @@ export default function QuickAdd({ source, invoice, people, categories, suggesti
     if (event.key === 'Escape') setText('')
   }
 
-  return <section className={`quick-add ${sheet ? 'sheet' : 'inline'}`} aria-label="Lançamento rápido">
+  return <section data-tour={sheet ? undefined : 'quick-add'} className={`quick-add ${sheet ? 'sheet' : 'inline'}`} aria-label="Lançamento rápido">
     <div className="quick-row">
       <span className="quick-icon"><Icon name="sparkle" size={18} /></span>
       <input ref={input} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={onKey} disabled={busy} maxLength={200}

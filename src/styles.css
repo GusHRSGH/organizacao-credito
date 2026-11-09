@@ -741,7 +741,7 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 /* Tour interativo */
 .tour-layer { position: fixed; inset: 0; z-index: 70; }
 .tour-dim { position: absolute; inset: 0; background: rgba(8, 8, 14, .74); animation: fade .2s ease both; }
-.tour-spot { position: fixed; border-radius: 16px; box-shadow: 0 0 0 100vmax rgba(8, 8, 14, .74); transition: top .38s cubic-bezier(.3,.8,.3,1), left .38s cubic-bezier(.3,.8,.3,1), width .38s cubic-bezier(.3,.8,.3,1), height .38s cubic-bezier(.3,.8,.3,1); pointer-events: none; }
+.tour-spot { position: fixed; z-index: 1; border-radius: 16px; box-shadow: 0 0 0 100vmax rgba(8, 8, 14, .74); transition: top .38s cubic-bezier(.3,.8,.3,1), left .38s cubic-bezier(.3,.8,.3,1), width .38s cubic-bezier(.3,.8,.3,1), height .38s cubic-bezier(.3,.8,.3,1); pointer-events: none; }
 .tour-spot i { position: absolute; inset: -2px; border-radius: 18px; border: 2px solid var(--primary); animation: tourpulse 1.4s ease-out infinite; }
 @keyframes tourpulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 65%, transparent); } 100% { box-shadow: 0 0 0 16px transparent; } }
 .tour-card { position: fixed; left: 50%; transform: translateX(-50%); width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 20px; padding: 18px 20px 16px; box-shadow: 0 24px 70px #0a112666; display: grid; gap: 10px; animation: tourin .35s cubic-bezier(.3,.8,.3,1) both; }
@@ -751,7 +751,10 @@ tr.row-link:hover td:first-child b { color: var(--primary-strong); text-decorati
 .tour-progress { height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .tour-progress i { display: block; height: 100%; background: var(--primary); border-radius: 99px; transition: width .35s ease; }
 .tour-head { display: flex; align-items: center; justify-content: space-between; }
-.tour-head small { color: var(--faint); font-weight: 600; }
+.tour-head { gap: 10px; }
+.tour-head small { color: var(--faint); font-weight: 600; margin-left: auto; }
+.tour-section { background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 12px; padding: 4px 11px; border-radius: 99px; }
+.ex-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; overflow-wrap: anywhere; }
 .tour-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: var(--primary-soft); color: var(--primary); flex: none; }
 .tour-card h2 { margin: 0; font-size: 19px; letter-spacing: -.3px; }
 .tour-card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14.5px; }

@@ -149,7 +149,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   }
 
   return <>
-    <PageHeading title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
+    <PageHeading tour="inv-top" title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
       {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
@@ -181,7 +181,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><input type="month" value={newPeriod} onChange={(event) => setNewPeriod(event.target.value)} aria-label="Mês da nova fatura" /><button className="secondary-button" onClick={() => void addInvoice()}>Criar</button></div><div className="metric-foot">Sem mês, cria o seguinte à última.</div></article>
     </section>
 
-    <div className="toolbar">
+    <div className="toolbar" data-tour="filters">
       <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento" />
       <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.person) && <option value={NO_PERSON}>Sem responsável</option>}</select>
       <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Categoria"><option value="">Todas as categorias</option>{categories.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.category) && <option value={NO_CATEGORY}>Sem categoria</option>}</select>
@@ -206,7 +206,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <datalist id="bulk-categories">{categories.map((name) => <option key={name} value={name} />)}</datalist>
     </div>}
 
-    <section className="panel">
+    <section className="panel" data-tour="tx-list">
       <TransactionTable rows={visible} busy={false} sort={sort} onSort={toggleSort}
         onToggle={(row) => void run(() => source.setTransactionStatus(row.id, row.status === 'paid' ? 'pending' : 'paid'))}
         selected={local ? selected : undefined} onSelect={toggleSelect} onSelectAll={selectAll} onEdit={local ? setEditing : undefined}

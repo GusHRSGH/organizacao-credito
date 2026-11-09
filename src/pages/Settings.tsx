@@ -31,7 +31,7 @@ interface Props {
 function AppearancePanel() {
   const { mode, palette, theme, setMode, setPalette } = useAppearance()
   const modes: { id: ThemeMode; label: string; icon: 'sun' | 'moon' | 'sparkle' }[] = [{ id: 'auto', label: 'Automático', icon: 'sparkle' }, { id: 'light', label: 'Claro', icon: 'sun' }, { id: 'dark', label: 'Escuro', icon: 'moon' }]
-  return <Panel icon="sparkle" title="Aparência" subtitle="Escolha o visual do app. A mudança vale na hora e fica salva neste aparelho.">
+  return <Panel tour="set-theme" icon="sparkle" title="Aparência" subtitle="Escolha o visual do app. A mudança vale na hora e fica salva neste aparelho.">
     <div className="mode-switch" role="radiogroup" aria-label="Modo">
       {modes.map((item) => <button key={item.id} role="radio" aria-checked={mode === item.id} className={mode === item.id ? 'on' : ''} onClick={() => setMode(item.id)}><Icon name={item.icon} size={16} />{item.label}</button>)}
     </div>
@@ -145,7 +145,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     <SecurityPanel notify={notify} />
     <UpdatePanel onCheck={onCheckUpdate} />
 
-    <Panel icon="shield" title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">
+    <Panel tour="set-copias" icon="shield" title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">
       {snapshots.length ? <ul className="snapshot-list">{snapshots.map((snapshot) => <li key={snapshot.id}>
         <span><b>{new Date(snapshot.savedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</b> · {snapshot.reason === 'antes' ? 'antes de restaurar/limpar' : 'cópia do dia'} · {snapshot.transactions} lançamentos</span>
         <button className="text-button" onClick={() => void restoreSnapshot(snapshot)}>Voltar para esta</button></li>)}</ul>
@@ -155,7 +155,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
 
     <GoogleAccountPanel google={google} local={local} onChanged={onChanged} notify={notify} />
 
-    <Panel icon="download" title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
+    <Panel tour="set-export" icon="download" title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
       <div className="button-row">
         <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`organizacao-credito-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}><Icon name="download" size={16} />Baixar CSV (Excel)</button>
         <button className="secondary-button" onClick={() => void backup()}><Icon name="download" size={16} />Baixar backup (JSON)</button>
@@ -164,7 +164,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
       </div>
     </Panel>
 
-    <Panel icon="upload" title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
+    <Panel tour="set-import" icon="upload" title="Importar planilha .xlsx" subtitle="O arquivo é lido neste computador; nada é enviado para fora.">
       <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
         <input ref={fileRef} type="file" accept=".xlsx" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
         <button className="secondary-button" onClick={() => void downloadAsset('modelo-fatura.xlsx', 'modelo-fatura.xlsx').catch((cause) => notify('error', messageOf(cause)))}><Icon name="download" size={16} />Baixar modelo de planilha</button>

@@ -20,12 +20,12 @@ export default function CloudPanel({ cloud, notify, onLegal }: Props) {
     try { await cloud.deleteAccount(); notify('notice', 'Conta excluída. Os dados deste aparelho continuam aqui.') } catch (cause) { notify('error', messageOf(cause)) }
   }
 
-  if (!session) return <Panel icon="cloud" title="Conta na nuvem" subtitle="Entre com o e-mail para guardar seus dados com segurança e usar em outros aparelhos. É opcional.">
+  if (!session) return <Panel tour="set-cloud" icon="cloud" title="Conta na nuvem" subtitle="Entre com o e-mail para guardar seus dados com segurança e usar em outros aparelhos. É opcional.">
     <CloudLogin api={cloud.api} />
     <p className="hint">Ao entrar, você concorda com os <button className="link-button" onClick={onLegal}>termos de uso e a privacidade</button>.</p>
   </Panel>
 
-  return <Panel icon="cloud" title="Conta na nuvem" subtitle="Seus dados ficam numa área só sua e sincronizam sozinhos quando você mexe neles.">
+  return <Panel tour="set-cloud" icon="cloud" title="Conta na nuvem" subtitle="Seus dados ficam numa área só sua e sincronizam sozinhos quando você mexe neles.">
     <p className="cloud-line"><Icon name="user" size={16} /><b>{session.user.email}</b></p>
     {conflict ? <div className="cloud-conflict" role="alert">
       <b>Este aparelho e a nuvem têm dados diferentes.</b>
