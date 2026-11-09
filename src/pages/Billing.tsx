@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Icon } from '../components/Icon'
+import { personToken, type DrillFilter } from '../lib/drill'
 import { EmptyState, Metric, PageHeading } from '../components/ui'
 import { billsByPerson, buildMessage, type PersonBill } from '../lib/billing'
 import { formatDate, messageOf, money } from '../lib/format'
@@ -13,9 +14,10 @@ interface Props {
   onInvoice: (id: string) => void
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
+  onDrill: (filter: DrillFilter) => void
 }
 
-export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify }: Props) {
+export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, onDrill }: Props) {
   const [open, setOpen] = useState<string | null>(null)
   const invoice = invoices.find((item) => item.id === invoiceId)
   const bills = useMemo(() => billsByPerson(transactions.filter((row) => row.invoice_id === invoiceId)), [transactions, invoiceId])
@@ -60,6 +62,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
             <div className="bill-actions">
               <button className="secondary-button" onClick={() => void copy(bill)}><Icon name="copy" size={16} />Copiar cobrança</button>
               <button className="secondary-button" disabled={bill.pending <= 0} onClick={() => void settle(bill)}><Icon name="check" size={16} />Marcar tudo como pago</button>
+              {bill.pending > 0 && <button className="text-button" onClick={() => onDrill({ invoiceId, person: personToken(bill.name), status: 'pending' })}>Ver o que falta →</button>}
               <button className="text-button" onClick={() => setOpen(expanded ? null : bill.name)} aria-expanded={expanded}>{expanded ? 'Ocultar detalhes' : 'Ver detalhes'}</button>
             </div>
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>

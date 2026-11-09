@@ -5,6 +5,7 @@ import PasteBill from '../components/PasteBill'
 import EditDialog from '../components/EditDialog'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
+import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
 import { Hero, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money } from '../lib/format'
 import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
@@ -21,9 +22,10 @@ interface Props {
   notify: (kind: 'notice' | 'error', text: string) => void
   local: LocalSource | null
   quickSignal: number
+  drill: { filter: DrillFilter; nonce: number } | null
 }
 
-export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, quickSignal }: Props) {
+export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, quickSignal, drill }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [person, setPerson] = useState('')
@@ -39,6 +41,11 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const [bulkCategory, setBulkCategory] = useState('')
   const descriptionField = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    if (!drill) return
+    setPerson(drill.filter.person ?? ''); setCategory(drill.filter.category ?? ''); setStatus(drill.filter.status ?? ''); setQuery(''); setSelected(new Set())
+  }, [drill])
+
   const rows = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId), [transactions, invoiceId])
   const people = useMemo(() => [...new Set(transactions.map((row) => row.person?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
   const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
@@ -50,7 +57,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     const text = query.toLocaleLowerCase('pt-BR')
     const filtered = rows.filter((row) =>
       (!text || `${row.description} ${row.person?.name ?? ''} ${row.category?.name ?? ''}`.toLocaleLowerCase('pt-BR').includes(text)) &&
-      (!status || row.status === status) && (!person || row.person?.name === person) && (!category || row.category?.name === category))
+      (!status || row.status === status) && (!person || (person === NO_PERSON ? !row.person : row.person?.name === person)) && (!category || (category === NO_CATEGORY ? !row.category : row.category?.name === category)))
     const sign = sort.dir === 'asc' ? 1 : -1
     return [...filtered].sort((a, b) => {
       if (sort.key === 'amount') return (Number(a.amount) - Number(b.amount)) * sign
@@ -176,12 +183,16 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
 
     <div className="toolbar">
       <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento" />
-      <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}</select>
-      <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Categoria"><option value="">Todas as categorias</option>{categories.map((name) => <option key={name}>{name}</option>)}</select>
+      <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.person) && <option value={NO_PERSON}>Sem responsável</option>}</select>
+      <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Categoria"><option value="">Todas as categorias</option>{categories.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.category) && <option value={NO_CATEGORY}>Sem categoria</option>}</select>
       <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status"><option value="">Todos os status</option><option value="paid">Pago</option><option value="pending">Pendente</option></select>
       {pendingVisible.length > 0 && (person || category || query || status) && <button className="secondary-button" onClick={markVisiblePaid}>Marcar {pendingVisible.length} como pagos</button>}
       <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
     </div>
+
+    {(person || category || status) && <div className="filter-chip" role="status">
+      <span>Mostrando: <b>{[person === NO_PERSON ? 'Sem responsável' : person, category === NO_CATEGORY ? 'Sem categoria' : category, status === 'pending' ? 'Pendentes' : status === 'paid' ? 'Pagos' : ''].filter(Boolean).join(' · ')}</b></span>
+      <button className="text-button" onClick={() => { setPerson(''); setCategory(''); setStatus(''); setQuery('') }}>Limpar filtros</button></div>}
 
     {local && chosen.length > 0 && <div className="bulk-bar" role="region" aria-label="Ações em lote">
       <b>{chosen.length} selecionados · {money(chosen.reduce((sum, row) => sum + Number(row.amount), 0))}</b>

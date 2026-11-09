@@ -4,6 +4,7 @@ import { messageOf } from './lib/format'
 import { useGoogleAccount } from './hooks/useGoogleAccount'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { Icon, Logo, LogoMark, type IconName } from './components/Icon'
+import type { DrillFilter } from './lib/drill'
 import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
@@ -39,6 +40,8 @@ export default function App() {
   const [alert, setAlert] = useState<{ kind: 'notice' | 'error'; text: string } | null>(null)
   const [authNotice, setAuthNotice] = useState('')
   const [quickSignal, setQuickSignal] = useState(0)
+  const [drill, setDrill] = useState<{ filter: DrillFilter; nonce: number } | null>(null)
+  const goDrill = useCallback((filter: DrillFilter) => { setInvoiceId(filter.invoiceId); setDrill({ filter, nonce: Date.now() }); setPage('invoices'); window.scrollTo({ top: 0 }) }, [])
   const [menuOpen, setMenuOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [updateSignal, setUpdateSignal] = useState(0)
@@ -185,9 +188,9 @@ export default function App() {
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={() => setAlert(null)}>Fechar</button></div>}
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <>
-        {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} canImport={!!local} />}
-        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} />}
-        {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} />}
+        {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
+        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
+        {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'settings' && (local ? <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={local} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} /> : <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} kind={kind} google={googleUi} local={getSource('local') as never} invoices={invoices} transactions={transactions} onKind={changeKind} onChanged={refresh} notify={notify} />)}
       </>}
     </main>
