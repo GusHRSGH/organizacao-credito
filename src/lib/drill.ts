@@ -4,6 +4,8 @@ export interface DrillFilter {
   person?: string
   category?: string
   status?: 'paid' | 'pending'
+  /** Texto para a busca da lista (usado pela busca global). */
+  query?: string
 }
 
 export const NO_PERSON = '__sem_responsavel__'
