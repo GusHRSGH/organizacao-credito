@@ -1,12 +1,11 @@
 export interface Series { name: string; color: string; light: string }
 
-// Paleta preto e roxo. Nomes antigos mantidos para não quebrar imports:
-// TEAL = série principal (violeta), AMBER = série de comparação (ciano),
-// GREEN = pago (verde), RED = pendente (vermelho).
-export const TEAL: Series = { name: '', color: '#8b5cf6', light: '#a78bfa' }
-export const AMBER: Series = { name: '', color: '#22b8d4', light: '#4fd0e6' }
-export const GREEN: Series = { name: '', color: '#22b55e', light: '#4cc97c' }
-export const RED: Series = { name: '', color: '#e5484d', light: '#ef6a6e' }
-export const SLICE_COLORS = ['#8b5cf6', '#22b8d4', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#c084fc', '#fb923c', '#a3e635', '#94a3b8']
-export const NEUTRAL_SLICE = '#8a8a99'
+// As cores dos gráficos seguem o tema escolhido (variáveis CSS definidas em styles.css).
+// Nomes antigos mantidos: TEAL = série principal, AMBER = comparação, GREEN = pago, RED = pendente.
+export const TEAL: Series = { name: '', color: 'var(--chart-main)', light: 'var(--chart-main-light)' }
+export const AMBER: Series = { name: '', color: 'var(--chart-alt)', light: 'var(--chart-alt-light)' }
+export const GREEN: Series = { name: '', color: 'var(--chart-paid)', light: 'var(--chart-paid-light)' }
+export const RED: Series = { name: '', color: 'var(--chart-pending)', light: 'var(--chart-pending-light)' }
+export const SLICE_COLORS = Array.from({ length: 10 }, (_, index) => `var(--slice-${index + 1})`)
+export const NEUTRAL_SLICE = 'var(--faint)'
 export const withName = (series: Series, name: string): Series => ({ ...series, name })
