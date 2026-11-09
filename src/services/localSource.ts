@@ -225,6 +225,32 @@ export class LocalSource implements DataSource {
     })
   }
 
+  /** Lança o mesmo gasto (valor cheio, não dividido) em várias faturas, criando as que não existem. A data cai no mesmo dia de cada mês. */
+  createRepeated(input: EntryInput, periods: string[]) {
+    const description = input.description.trim()
+    const total = cents(input.amount)
+    const unique = [...new Set(periods)].sort()
+    if (description.length < 1 || description.length > 160) return Promise.reject(new Error('A descrição deve ter entre 1 e 160 caracteres.'))
+    if (!Number.isFinite(input.amount) || total <= 0) return Promise.reject(new Error('Informe um valor maior que zero.'))
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.occurredOn)) return Promise.reject(new Error('Informe a data da compra.'))
+    if (!unique.length || unique.length > 24 || unique.some((period) => !isValidPeriod(period))) return Promise.reject(new Error('Escolha de 1 a 24 meses válidos.'))
+    if (input.personName.trim().length > 80 || input.categoryName.trim().length > 60) return Promise.reject(new Error('Nome de responsável ou categoria muito longo.'))
+    return this.mutate((db) => {
+      const person = ensureNamed(db.people, input.personName)
+      const category = ensureNamed(db.categories, input.categoryName)
+      const origin = periodOfDate(input.occurredOn)
+      for (const period of unique) {
+        const invoice = ensureInvoice(db, period)
+        const [fy, fm] = origin.split('-').map(Number)
+        const [ty, tm] = period.split('-').map(Number)
+        db.transactions.push({
+          id: uuid(), user_id: LOCAL_USER, invoice_id: invoice.id, occurred_on: addMonthsToDate(input.occurredOn, (ty - fy) * 12 + (tm - fm)), description, amount: total / 100,
+          person_id: person, category_id: category, status: 'pending', installment_group: null, installment_number: null, installment_count: null, created_at: new Date().toISOString(),
+        })
+      }
+    })
+  }
+
   setTransactionStatus(id: string, status: TransactionStatus) { return this.setStatusMany([id], status) }
 
   setStatusMany(ids: string[], status: TransactionStatus) {

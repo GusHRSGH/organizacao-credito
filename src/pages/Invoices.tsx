@@ -159,7 +159,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
     </PageHeading>
 
-    <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
+    <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
     {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
 
     {showForm && <Panel icon="plus" title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
