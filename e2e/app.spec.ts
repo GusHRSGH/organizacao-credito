@@ -124,3 +124,10 @@ test('salvar um filtro cria um atalho que funciona e pode ser removido', async (
   await page.getByRole('button', { name: 'Remover o filtro Só pendentes' }).click()
   await expect(page.getByRole('button', { name: 'Só pendentes', exact: true })).toHaveCount(0)
 })
+
+test('o resumo em texto aparece na visão geral', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'dashboard')
+  await expect(page.locator('[data-tour="dash-insight"]')).toContainText('você gastou')
+})

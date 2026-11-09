@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 6, date: '2026-11-09', title: 'Resumo em texto e categoria sozinha',
+    items: [
+      'A Visão geral agora tem uma frase que resume o mês: quanto gastou, como está contra o outro mês e o que puxou a diferença.',
+      'Ao digitar um gasto novo, o app sugere a categoria sozinho: primeiro pelo seu histórico, depois por palavras comuns (mercado, uber, farmácia...).',
+    ],
+  },
+  {
     n: 5, date: '2026-11-09', title: 'Busca global e filtros salvos',
     items: [
       'Nova lupa no topo (ou Ctrl+K e /): busca em todas as faturas de uma vez, por nome, pessoa, categoria, mês ou valor.',

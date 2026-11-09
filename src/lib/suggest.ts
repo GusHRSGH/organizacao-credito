@@ -1,4 +1,5 @@
 import { plain } from './quickEntry'
+import { guessCategory } from './keywords'
 import type { Transaction } from '../types'
 
 export interface Suggestion { person: string | null; category: string | null }
@@ -19,7 +20,7 @@ export function buildSuggestions(transactions: Transaction[]) {
 }
 
 /** Acha pelo texto igual ou, na falta, por uma descrição conhecida que comece com ele (mínimo de 3 letras). */
-export function suggestFor(text: string, suggestions: Map<string, Suggestion>): Suggestion | null {
+function byHistory(text: string, suggestions: Map<string, Suggestion>): Suggestion | null {
   const key = clean(text)
   if (key.length < 2) return null
   const exact = suggestions.get(key)
@@ -27,6 +28,15 @@ export function suggestFor(text: string, suggestions: Map<string, Suggestion>): 
   if (key.length < 3) return null
   for (const [known, value] of suggestions) if (known.startsWith(key)) return value
   return null
+}
+
+/** Primeiro o histórico da pessoa; se não achar, tenta adivinhar a categoria por palavras comuns. */
+export function suggestFor(text: string, suggestions: Map<string, Suggestion>): Suggestion | null {
+  const history = byHistory(text, suggestions)
+  if (history) return history
+  const categories = [...new Set([...suggestions.values()].map((value) => value.category).filter((name): name is string => !!name))]
+  const category = guessCategory(text, categories)
+  return category ? { person: null, category } : null
 }
 
 export function knownDescriptions(transactions: Transaction[], limit = 200) {
