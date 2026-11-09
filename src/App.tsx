@@ -11,6 +11,7 @@ import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
 import Legal from './components/Legal'
+import Tour from './components/Tour'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -21,6 +22,7 @@ import type { Invoice, Transaction } from './types'
 
 const ENTRY_KEY = 'oc:entry'
 const NUDGE_KEY = 'oc:nudge-until'
+const TOUR_KEY = 'oc:tour'
 const NUDGE_DAYS = 7
 type Page = 'dashboard' | 'invoices' | 'billing' | 'settings'
 const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', billing: 'Quem deve quanto', settings: 'Dados' }
@@ -45,6 +47,7 @@ export default function App() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [updateSignal, setUpdateSignal] = useState(0)
   const [legalOpen, setLegalOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
   const [nudgeHidden, setNudgeHidden] = useState(() => { try { return Number(localStorage.getItem(NUDGE_KEY) ?? 0) > Date.now() } catch { return false } })
 
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
@@ -90,6 +93,7 @@ export default function App() {
   const closeSheet = useCallback(() => setSheetOpen(false), [])
   useBackHandler(menuOpen, closeMenu)
   const closeLegal = useCallback(() => setLegalOpen(false), [])
+  const closeTour = useCallback(() => { try { localStorage.setItem(TOUR_KEY, 'done') } catch { /* ignora */ } setTourOpen(false) }, [])
   useBackHandler(legalOpen, closeLegal)
   const hideNudge = () => { try { localStorage.setItem(NUDGE_KEY, String(Date.now() + NUDGE_DAYS * 86400000)) } catch { /* ignora */ } setNudgeHidden(true) }
   useEffect(() => {
@@ -141,6 +145,12 @@ export default function App() {
 
   const cloud = useCloud({ local: source, dataKey: transactions, loaded, onDownloaded: refresh, notify })
 
+  const entered = guest || signedIn || !!cloud.session
+  useEffect(() => {
+    if (!entered || !loaded) return
+    try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ }
+  }, [entered, loaded])
+
   useEffect(() => {
     if (!alert) return
     const timer = setTimeout(() => setAlert(null), alert.kind === 'notice' ? 5000 : 12000)
@@ -181,12 +191,13 @@ export default function App() {
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
-        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} />}
+        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} />}
       </>}
     </main>
     <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
     {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
     {legalOpen && <Legal onClose={closeLegal} />}
+    {tourOpen && <Tour onClose={closeTour} />}
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }

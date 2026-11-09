@@ -24,6 +24,7 @@ interface Props {
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
   onLegal: () => void
+  onTour: () => void
 }
 
 function AppearancePanel() {
@@ -50,7 +51,7 @@ function AppearancePanel() {
   </Panel>
 }
 
-export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal }: Props) {
+export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -184,6 +185,8 @@ export default function Settings({ google, cloud, local, invoices, transactions,
         <div className="button-row"><button className="primary-button" disabled={busy || !preview?.added} onClick={() => void confirmImport()}>Importar {preview?.added ?? 0} lançamentos</button><button className="text-button" onClick={() => { setSheets([]); setPreview(null) }}>Cancelar</button></div>
       </div>}
     </Panel>
+
+    <Panel icon="sparkle" title="Ajuda" subtitle="Um passo a passo rápido de como usar o app."><div className="button-row"><button className="secondary-button" onClick={onTour}>Ver o tutorial</button></div></Panel>
 
     <Panel icon="trash" title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}><Icon name="trash" size={16} />Apagar todos os dados locais</button></div></Panel>
   </>
