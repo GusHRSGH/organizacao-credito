@@ -123,3 +123,36 @@ describe('PDF e datas por extenso', () => {
     expect(lines).toEqual(['05 NOV  MERCADO  152,30', 'UBER  23,40'])
   })
 })
+
+describe('lançar em vários meses', () => {
+  const ctxM = { people: ['Ana'], categories: [], today: '2026-11-09', basePeriod: '2026-11-01' }
+  it('entende uma lista de meses por extenso', () => {
+    const r = parseQuickLine('netflix 55,90 em novembro, janeiro e fevereiro @ana', ctxM)
+    expect(r.months).toEqual(['2026-11-01', '2027-01-01', '2027-02-01'])
+    expect(r.description).toBe('netflix')
+    expect(r.amount).toBe(55.9)
+  })
+  it('entende próximos N meses e todo mês até', () => {
+    expect(parseQuickLine('academia 99 nos próximos 3 meses', ctxM).months).toEqual(['2026-11-01', '2026-12-01', '2027-01-01'])
+    expect(parseQuickLine('aluguel 1500 todo mês até fevereiro', ctxM).months).toEqual(['2026-11-01', '2026-12-01', '2027-01-01', '2027-02-01'])
+  })
+  it('não confunde palavras comuns com meses', () => {
+    expect(parseQuickLine('compra no mercado 50', ctxM).months).toEqual([])
+    expect(parseQuickLine('presente em outro lugar 30', ctxM).months).toEqual([])
+    expect(parseQuickLine('tênis 300 em 3x', ctxM)).toMatchObject({ installments: 3, months: [] })
+  })
+})
+
+import { LocalSource } from '../localSource'
+import { MemoryPersistence } from '../persistence'
+
+describe('createRepeated', () => {
+  it('cria o valor cheio em cada fatura, criando as que faltam', async () => {
+    const local = new LocalSource(new MemoryPersistence())
+    await local.createRepeated({ invoiceId: '', occurredOn: '2026-11-31'.replace('31', '30'), description: 'Netflix', amount: 55.9, personName: 'Ana', categoryName: 'Lazer' }, ['2026-11-01', '2027-01-01', '2027-02-01'])
+    const rows = await local.listAllTransactions()
+    expect(rows.map((r) => [r.occurred_on, r.amount]).sort()).toEqual([['2026-11-30', 55.9], ['2027-01-30', 55.9], ['2027-02-28', 55.9]])
+    expect((await local.listInvoices()).map((i) => i.period).sort()).toEqual(['2026-11-01', '2027-01-01', '2027-02-01'])
+    await expect(local.createRepeated({ invoiceId: '', occurredOn: '2026-11-01', description: 'x', amount: 1, personName: '', categoryName: '' }, [])).rejects.toThrow()
+  })
+})

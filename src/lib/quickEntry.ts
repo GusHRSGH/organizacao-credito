@@ -1,7 +1,7 @@
 // Interpreta uma linha digitada, como "mercado 150,90 3x @ana #casa ontem".
 // Tudo é opcional, menos o valor. O que sobra do texto vira a descrição.
 
-export interface QuickContext { people: string[]; categories: string[]; today: string }
+export interface QuickContext { people: string[]; categories: string[]; today: string; /** Mês da fatura aberta (AAAA-MM-01). Base para "próximos 3 meses" e "em janeiro". */ basePeriod?: string }
 
 export interface QuickParsed {
   description: string
@@ -10,6 +10,8 @@ export interface QuickParsed {
   date: string
   person: string | null
   category: string | null
+  /** Faturas pedidas por extenso ("em novembro, janeiro e fevereiro", "nos próximos 3 meses"). Vazio = só a fatura aberta. */
+  months: string[]
 }
 
 const capital = (word: string) => word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
@@ -55,6 +57,13 @@ function matchKnown(word: string, known: string[], allowFirstWord: boolean) {
   return known.find((name) => plain(name) === target) ?? (allowFirstWord ? known.find((name) => plain(name).split(/\s+/)[0] === target) ?? null : null)
 }
 
+const MONTH_WORDS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const MONTH_RE = '(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:[cç]o)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)'
+const addPeriod = (period: string, months: number) => {
+  const [y, m] = period.split('-').map(Number)
+  const index = y * 12 + (m - 1) + months
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}-01`
+}
 const WEEKDAYS: Record<string, number> = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 }
 const FILLER = new Set(['gastei', 'paguei', 'comprei', 'gasto', 'compra', 'foi', 'fui', 'de', 'do', 'da', 'no', 'na', 'em', 'com', 'a', 'o', 'um', 'uma', 'pra', 'para', 'por', 'e', 'la', 'reais', 'real', 'conto', 'contos', 'pila', 'pilas', 'parcelado', 'parcelada'])
 
@@ -63,7 +72,37 @@ const weekdayOf = (iso: string) => new Date(`${iso}T00:00:00Z`).getUTCDay()
 /** Entende o jeito de falar: "1,5 mil", "em 3 vezes", "dia 5", "sexta passada", "com a Ana". Devolve o texto limpo e o que achou. */
 function understandSpeech(text: string, ctx: QuickContext) {
   let rest = ` ${text} `
-  const found: { installments?: number; date?: string } = {}
+  const found: { installments?: number; date?: string; months?: string[] } = {}
+  const base = ctx.basePeriod ?? `${ctx.today.slice(0, 7)}-01`
+  const monthOf = (name: string, year?: string) => {
+    const index = MONTH_WORDS.findIndex((word) => plain(name).startsWith(word))
+    if (index < 0) return null
+    const [baseYear, baseMonth] = base.split('-').map(Number)
+    const y = year ? Number(year) : index + 1 >= baseMonth ? baseYear : baseYear + 1
+    return `${y}-${String(index + 1).padStart(2, '0')}-01`
+  }
+  const monthsBetween = (from: string, to: string) => {
+    const list: string[] = []
+    for (let p = from; p <= to && list.length < 24; p = addPeriod(p, 1)) list.push(p)
+    return list
+  }
+  rest = rest.replace(new RegExp(`\\btodo m[eê]s\\s+at[eé]\\s+(${MONTH_RE})(?:\\s+de\\s+(\\d{4}))?`, 'i'), (all, name: string, year?: string) => {
+    const end = monthOf(name, year)
+    if (!end || end < base) return all
+    found.months = monthsBetween(base, end)
+    return ' '
+  })
+  rest = rest.replace(/\b(?:(?:nos|pelos|por|durante)\s+)?(?:(?:os\s+)?pr[oó]ximos?\s+)?(\d{1,2})\s+meses\b/i, (all, n: string) => {
+    const count = Number(n)
+    if (count < 2 || count > 24) return all
+    found.months = Array.from({ length: count }, (_, i) => addPeriod(base, i))
+    return ' '
+  })
+  rest = rest.replace(new RegExp(`\\b(?:em|no|nos meses de|nos meses|para)\\s+((?:${MONTH_RE})(?:\\s*(?:,|e)\\s*(?:${MONTH_RE}))*)(?!\\p{L})`, 'iu'), (_all, list: string) => {
+    const names = list.match(new RegExp(MONTH_RE, 'gi')) ?? []
+    found.months = [...new Set(names.map((name) => monthOf(name)).filter((p): p is string => !!p))].sort()
+    return ' '
+  })
   rest = rest.replace(/\b(\d+(?:[.,]\d+)?)\s*(mil|k)\b/gi, (_, n: string) => String(Math.round(Number(n.replace(',', '.')) * 1000)))
   rest = rest.replace(/\b(?:parcelad[oa]\s+)?(?:em\s+)?(\d{1,2})\s*(?:vezes|x)\b/gi, (all, n: string) => { const count = Number(n); if (count < 1 || count > 48) return all; found.installments = count; return ' ' })
   rest = rest.replace(/\bsemana passada\b/gi, () => { found.date = addDays(ctx.today, -7); return ' ' })
@@ -94,10 +133,11 @@ function understandSpeech(text: string, ctx: QuickContext) {
 }
 
 export function parseQuickLine(text: string, ctx: QuickContext): QuickParsed {
-  const out: QuickParsed = { description: '', amount: null, installments: 1, date: ctx.today, person: null, category: null }
+  const out: QuickParsed = { description: '', amount: null, installments: 1, date: ctx.today, person: null, category: null, months: [] }
   const speech = understandSpeech(text, ctx)
   if (speech.found.installments) out.installments = speech.found.installments
   if (speech.found.date) out.date = speech.found.date
+  if (speech.found.months) out.months = speech.found.months
   const tokens = speech.text.split(/\s+/).filter(Boolean)
   const kept: Array<string | null> = tokens.map((token) => token)
   let amountIndex = -1

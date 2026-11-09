@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 13, date: '2026-11-09', title: 'Lançar em vários meses',
+    items: [
+      'No lançamento rápido, escolha em quais faturas o gasto entra: toque em “Lançar em vários meses” e marque Novembro, Janeiro, Fevereiro… Cada mês recebe o valor cheio.',
+      'Ou escreva do jeito que fala: “netflix 55,90 em janeiro, fevereiro e março”, “academia 99 nos próximos 3 meses”, “aluguel 1500 todo mês até junho”.',
+      'Com parcelas (“2x”, “3x”), o app mostra na hora em quais meses cada parcela cai.',
+    ],
+  },
+  {
     n: 12, date: '2026-11-09', title: 'Fatura em PDF ou foto',
     items: [
       'Em Faturas > Colar fatura, anexe o PDF da fatura do banco ou tire uma foto dela. O app lê o texto no próprio aparelho, sem enviar nada para fora.',

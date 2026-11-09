@@ -83,6 +83,8 @@ export interface DataSource {
   listAllTransactions(): Promise<Transaction[]>
   createInvoice(period: string): Promise<void>
   createPurchase(input: EntryInput): Promise<void>
+  /** O mesmo gasto, com o valor cheio, em cada uma das faturas (meses) escolhidas. */
+  createRepeated(input: EntryInput, periods: string[]): Promise<void>
   setTransactionStatus(id: string, status: TransactionStatus): Promise<void>
   setStatusMany(ids: string[], status: TransactionStatus): Promise<void>
   removeTransaction(id: string): Promise<void>
