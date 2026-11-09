@@ -78,9 +78,10 @@ export interface HeroProps {
   pending: string
   paidShare: number
   badge?: { text: string; tone: 'bad' | 'good' | 'flat'; trend: 'trend-up' | 'trend-down' }
+  onPending?: () => void
 }
 
-export function Hero({ label, total, count, paid, pending, paidShare, badge }: HeroProps) {
+export function Hero({ label, total, count, paid, pending, paidShare, badge, onPending }: HeroProps) {
   const share = Math.max(0, Math.min(1, paidShare))
   const clear = count === 0 || share >= 0.9999
   const [reveal, shown] = useReveal<HTMLElement>(0.1)
@@ -90,6 +91,6 @@ export function Hero({ label, total, count, paid, pending, paidShare, badge }: H
     <div className={`hero-total ${clear ? 'clear' : ''}`}>{clear ? total : pending}</div>
     <div className="hero-sub">{clear ? `${count} lançamentos nesta fatura` : `de ${total} · ${count} lançamentos · ${paid} já pago`}</div>
     <div className="hero-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
-    <div className="hero-split"><span>{Math.round(share * 100)}% pago</span></div>
+    <div className="hero-split"><span>{Math.round(share * 100)}% pago</span>{onPending && !clear && <button className="hero-link" onClick={onPending}>Ver o que falta pagar →</button>}</div>
   </article>
 }

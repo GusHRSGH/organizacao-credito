@@ -4,6 +4,10 @@ import { money, moneyShort, pct } from '../lib/format'
 
 import { GREEN, RED, type Series } from './palette'
 
+const press = (action?: () => void, label?: string) => action
+  ? { 'data-pickable': true, role: 'button', tabIndex: 0, 'aria-label': label, onClick: action, onKeyDown: (event: React.KeyboardEvent) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); action() } } }
+  : {}
+const Hint = ({ show }: { show: boolean }) => (show ? <p className="drill-hint">Toque numa parte do gráfico para ver os lançamentos →</p> : null)
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
 
 function Legend({ items }: { items: { name: string; color: string }[] }) {
@@ -18,9 +22,10 @@ interface HBarProps {
   rows: { label: string; values: number[] }[]
   series: Series[]
   stacked?: boolean
+  onPick?: (rowLabel: string, seriesIndex: number) => void
 }
 
-export function HBarChart({ rows, series, stacked = false }: HBarProps) {
+export function HBarChart({ rows, series, stacked = false, onPick }: HBarProps) {
   const uid = useId().replace(/:/g, '')
   const [reveal, shown] = useReveal<HTMLDivElement>()
   const W = 620
@@ -40,14 +45,14 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
         const y0 = 8 + r * rowH
         let cursor = labelW
         return <g key={row.label}>
-          <text x={labelW - 12} y={y0 + groupH / 2 + 4} textAnchor="end" className="chart-label">{clip(row.label, 17)}</text>
+          <text x={labelW - 12} y={y0 + groupH / 2 + 4} textAnchor="end" className="chart-label" {...press(onPick && (() => onPick(row.label, 0)), `Ver lançamentos de ${row.label}`)}>{clip(row.label, 17)}</text>
           {stacked ? <>
             {row.values.map((value, i) => {
               const width = value * scale
               const x = cursor
               cursor += width
               if (value <= 0) return null
-              return <g key={i}>
+              return <g key={i} {...press(onPick && (() => onPick(row.label, i)), `Ver lançamentos de ${row.label}: ${series[i]?.name ?? ''}`)}>
                 <rect className="grow-x" style={{ animationDelay: `${r * 60}ms` }} x={x} y={y0} width={Math.max(width - 1.5, 1)} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
                 {width > 52 && <text x={x + width / 2} y={y0 + barH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(value)}</text>}
               </g>
@@ -56,7 +61,7 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
           </> : row.values.map((value, i) => {
             const y = y0 + i * (barH + 3)
             const width = value * scale
-            return <g key={i}>
+            return <g key={i} {...press(onPick && (() => onPick(row.label, i)), `Ver lançamentos de ${row.label}: ${series[i]?.name ?? ''}`)}>
               <rect className="grow-x" style={{ animationDelay: `${r * 60 + i * 40}ms` }} x={labelW} y={y} width={value > 0 ? Math.max(width, 3) : 0} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
               {value > 0 && <text x={labelW + Math.max(width, 3) + 6} y={y + barH - 2.5} className="chart-value">{moneyShort(value)}</text>}
             </g>
@@ -65,12 +70,13 @@ export function HBarChart({ rows, series, stacked = false }: HBarProps) {
       })}
     </svg>
     <Legend items={series.map((s) => ({ name: s.name, color: s.color }))} />
+    <Hint show={!!onPick} />
   </div>
 }
 
 export interface Slice { name: string; value: number; color: string }
 
-export function Donut({ slices, centerLabel }: { slices: Slice[]; centerLabel: string }) {
+export function Donut({ slices, centerLabel, onPick }: { slices: Slice[]; centerLabel: string; onPick?: (name: string) => void }) {
   const [reveal, shown] = useReveal<HTMLDivElement>()
   const visible = slices.filter((slice) => slice.value > 0)
   const total = visible.reduce((sum, slice) => sum + slice.value, 0)
@@ -85,7 +91,7 @@ export function Donut({ slices, centerLabel }: { slices: Slice[]; centerLabel: s
         const length = (slice.value / total) * C
         const gap = visible.length > 1 ? 2.5 : 0
         const shownLength = Math.max(length - gap, 0.5)
-        const node = <circle key={slice.name} className="donut-seg" style={{ '--len': shownLength, '--c': C, '--d': `${Math.round((offset / C) * 700)}ms` } as React.CSSProperties} cx="100" cy="100" r={r} fill="none" stroke={slice.color} strokeWidth="26" strokeDasharray={`${shownLength} ${C}`} strokeDashoffset={-offset} transform="rotate(-90 100 100)" />
+        const node = <circle key={slice.name} {...press(onPick && (() => onPick(slice.name)), `Ver lançamentos de ${slice.name}`)} className="donut-seg" style={{ '--len': shownLength, '--c': C, '--d': `${Math.round((offset / C) * 700)}ms` } as React.CSSProperties} cx="100" cy="100" r={r} fill="none" stroke={slice.color} strokeWidth="26" strokeDasharray={`${shownLength} ${C}`} strokeDashoffset={-offset} transform="rotate(-90 100 100)" />
         offset += length
         return node
       })}
@@ -93,14 +99,15 @@ export function Donut({ slices, centerLabel }: { slices: Slice[]; centerLabel: s
       <text x="100" y="116" textAnchor="middle" className="donut-total">{moneyShort(total)}</text>
     </svg>
     <ul className="donut-legend">
-      {visible.map((slice) => <li key={slice.name}><i style={{ background: slice.color }} /><span>{slice.name}</span><b>{pct(slice.value / total, 0)}</b><small>{money(slice.value)}</small></li>)}
+      {visible.map((slice) => <li key={slice.name} {...press(onPick && (() => onPick(slice.name)), `Ver lançamentos de ${slice.name}`)}><i style={{ background: slice.color }} /><span>{slice.name}</span><b>{pct(slice.value / total, 0)}</b><small>{money(slice.value)}</small></li>)}
     </ul>
+    <Hint show={!!onPick} />
   </div>
 }
 
-export interface Column { label: string; paid: number; pending: number }
+export interface Column { id?: string; label: string; paid: number; pending: number }
 
-export function StackedColumns({ items }: { items: Column[] }) {
+export function StackedColumns({ items, onPick }: { items: Column[]; onPick?: (id: string, part: 'paid' | 'pending' | 'all') => void }) {
   const uid = useId().replace(/:/g, '')
   const [reveal, shown] = useReveal<HTMLDivElement>()
   if (!items.length) return <ChartEmpty />
@@ -127,15 +134,16 @@ export function StackedColumns({ items }: { items: Column[] }) {
         const pendH = item.pending * scale
         const total = item.paid + item.pending
         return <g key={item.label + i}>
-          {item.paid > 0 && <rect className="grow-y" style={{ animationDelay: `${i * 50}ms` }} x={x} y={base - paidH} width={barW} height={paidH} rx={pendH > 0 ? 0 : 6} fill={`url(#${uid}p)`} />}
-          {item.pending > 0 && <rect className="grow-y" style={{ animationDelay: `${i * 50 + 120}ms` }} x={x} y={base - paidH - pendH} width={barW} height={pendH} rx={6} fill={`url(#${uid}n)`} />}
+          {item.paid > 0 && <rect {...press(onPick && item.id ? () => onPick(item.id!, 'paid') : undefined, `Ver pagos de ${item.label}`)} className="grow-y" style={{ animationDelay: `${i * 50}ms` }} x={x} y={base - paidH} width={barW} height={paidH} rx={pendH > 0 ? 0 : 6} fill={`url(#${uid}p)`} />}
+          {item.pending > 0 && <rect {...press(onPick && item.id ? () => onPick(item.id!, 'pending') : undefined, `Ver pendentes de ${item.label}`)} className="grow-y" style={{ animationDelay: `${i * 50 + 120}ms` }} x={x} y={base - paidH - pendH} width={barW} height={pendH} rx={6} fill={`url(#${uid}n)`} />}
           {paidH > 18 && <text x={x + barW / 2} y={base - paidH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(item.paid)}</text>}
           {pendH > 18 && <text x={x + barW / 2} y={base - paidH - pendH / 2 + 3.5} textAnchor="middle" className="chart-inside">{moneyShort(item.pending)}</text>}
           <text x={x + barW / 2} y={base - paidH - pendH - 8} textAnchor="middle" className="chart-total">{moneyShort(total)}</text>
-          <text x={x + barW / 2} y={H - 12} textAnchor="middle" className="chart-label">{item.label}</text>
+          <text x={x + barW / 2} y={H - 12} textAnchor="middle" className="chart-label" {...press(onPick && item.id ? () => onPick(item.id!, 'all') : undefined, `Ver fatura de ${item.label}`)}>{item.label}</text>
         </g>
       })}
     </svg>
     <Legend items={[{ name: 'Pago', color: GREEN.color }, { name: 'Pendente', color: RED.color }]} />
+    <Hint show={!!onPick} />
   </div>
 }
