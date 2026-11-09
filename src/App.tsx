@@ -12,6 +12,8 @@ import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
 import Legal from './components/Legal'
 import Tour from './components/Tour'
+import WhatsNew from './components/WhatsNew'
+import { ENTRIES, LATEST, pendingEntries, type ChangelogEntry } from './lib/changelog'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
 import Dashboard from './pages/Dashboard'
@@ -23,6 +25,7 @@ import type { Invoice, Transaction } from './types'
 const ENTRY_KEY = 'oc:entry'
 const NUDGE_KEY = 'oc:nudge-until'
 const TOUR_KEY = 'oc:tour'
+const NEWS_KEY = 'oc:news-seen'
 const NUDGE_DAYS = 7
 type Page = 'dashboard' | 'invoices' | 'billing' | 'settings'
 const TITLES: Record<Page, string> = { dashboard: 'Visão geral', invoices: 'Faturas', billing: 'Quem deve quanto', settings: 'Dados' }
@@ -48,6 +51,7 @@ export default function App() {
   const [updateSignal, setUpdateSignal] = useState(0)
   const [legalOpen, setLegalOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
+  const [news, setNews] = useState<ChangelogEntry[] | null>(null)
   const [nudgeHidden, setNudgeHidden] = useState(() => { try { return Number(localStorage.getItem(NUDGE_KEY) ?? 0) > Date.now() } catch { return false } })
 
   const notify = useCallback((type: 'notice' | 'error', text: string) => setAlert({ kind: type, text }), [])
@@ -93,6 +97,7 @@ export default function App() {
   const closeSheet = useCallback(() => setSheetOpen(false), [])
   useBackHandler(menuOpen, closeMenu)
   const closeLegal = useCallback(() => setLegalOpen(false), [])
+  const closeNews = useCallback(() => { try { localStorage.setItem(NEWS_KEY, String(LATEST)) } catch { /* ignora */ } setNews(null) }, [])
   const closeTour = useCallback(() => { try { localStorage.setItem(TOUR_KEY, 'done') } catch { /* ignora */ } setTourOpen(false) }, [])
   useBackHandler(legalOpen, closeLegal)
   const hideNudge = () => { try { localStorage.setItem(NUDGE_KEY, String(Date.now() + NUDGE_DAYS * 86400000)) } catch { /* ignora */ } setNudgeHidden(true) }
@@ -148,8 +153,16 @@ export default function App() {
   const entered = guest || signedIn || !!cloud.session
   useEffect(() => {
     if (!entered || !loaded) return
-    try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ }
-  }, [entered, loaded])
+    try {
+      const seenRaw = localStorage.getItem(NEWS_KEY)
+      const seen = seenRaw === null ? null : Number(seenRaw)
+      const firstRun = seen === null && localStorage.getItem(TOUR_KEY) !== 'done' && invoices.length === 0
+      if (firstRun) { localStorage.setItem(NEWS_KEY, String(LATEST)); setTourOpen(true); return }
+      const pending = pendingEntries(seen)
+      if (pending.length) setNews(pending)
+      else if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true)
+    } catch { /* ignora */ }
+  }, [entered, loaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!alert) return
@@ -164,7 +177,7 @@ export default function App() {
 
   const local = source
   const googleUi = { ...google, signOut: signOutGoogle }
-  const nav = (id: Page, icon: IconName, label: string) => <button className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setMenuOpen(false) }} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
+  const nav = (id: Page, icon: IconName, label: string) => <button data-tour={`nav-${id}`} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setMenuOpen(false) }} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
 
   return <div className={`app-shell ${menuOpen ? 'menu-open' : ''}`}>
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
@@ -191,13 +204,14 @@ export default function App() {
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
-        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} />}
+        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} />}
       </>}
     </main>
-    <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
-    {!sheetOpen && <button className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
+    <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
+    {!sheetOpen && <button data-tour="fab" className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
     {legalOpen && <Legal onClose={closeLegal} />}
-    {tourOpen && <Tour onClose={closeTour} />}
+    {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
+    {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }

@@ -25,6 +25,7 @@ interface Props {
   notify: (kind: 'notice' | 'error', text: string) => void
   onLegal: () => void
   onTour: () => void
+  onNews: () => void
 }
 
 function AppearancePanel() {
@@ -51,7 +52,7 @@ function AppearancePanel() {
   </Panel>
 }
 
-export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour }: Props) {
+export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -186,7 +187,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
       </div>}
     </Panel>
 
-    <Panel icon="sparkle" title="Ajuda" subtitle="Um passo a passo rápido de como usar o app."><div className="button-row"><button className="secondary-button" onClick={onTour}>Ver o tutorial</button></div></Panel>
+    <Panel icon="sparkle" title="Ajuda" subtitle="Um passo a passo rápido de como usar o app."><div className="button-row"><button className="secondary-button" onClick={onTour}>Ver o tutorial</button><button className="secondary-button" onClick={onNews}>Novidades do app</button></div></Panel>
 
     <Panel icon="trash" title="Zona de perigo"><div className="button-row"><button className="danger-button" onClick={() => void clearAll()}><Icon name="trash" size={16} />Apagar todos os dados locais</button></div></Panel>
   </>
