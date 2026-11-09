@@ -14,3 +14,6 @@ electron/google-client.json
 # Resultados dos testes de tela
 test-results/
 playwright-report/
+
+# Copiados dos pacotes pelo vite.config.ts (leitor de fotos)
+public/ocr/

@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 12, date: '2026-11-09', title: 'Fatura em PDF ou foto',
+    items: [
+      'Em Faturas > Colar fatura, anexe o PDF da fatura do banco ou tire uma foto dela. O app lê o texto no próprio aparelho, sem enviar nada para fora.',
+      'PDF escaneado ou foto também funcionam: o leitor de imagens reconhece o texto (na primeira vez pode levar alguns segundos).',
+      'O texto lido cai na tela de conferência: você vê cada linha, desmarca o que não for gasto e só então importa. Datas como “05 NOV” e parcelas como “02/05” são entendidas.',
+    ],
+  },
+  {
     n: 11, date: '2026-11-09', title: 'Radar e assinaturas',
     items: [
       'Novo Radar do mês na Visão geral: avisa cobrança duplicada, valor bem acima do seu normal, gasto novo e caro, e categoria que disparou. Toque em Ver para abrir os lançamentos, ou em Ignorar.',
