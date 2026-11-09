@@ -30,6 +30,8 @@ const STEPS: Step[] = [
     example: <Example><Row a="Toque na barra da Ana" b="R$ 412,00" /><div className="ex-arrow">abre só os lançamentos da Ana nessa fatura</div></Example> },
   { section: 'Início', target: 'dash-months', page: 'dashboard', icon: 'trend-up', title: 'Mês a mês', text: 'Cada coluna é uma fatura, com a parte paga e a parte pendente. Dá para ver de relance em que mês o gasto subiu.',
     example: <Example><Chips items={['Set R$ 2.900', 'Out R$ 2.944', 'Nov R$ 3.180']} /></Example> },
+  { section: 'Início', target: 'search', page: 'dashboard', icon: 'search', title: 'Busca em todas as faturas', text: 'A lupa (ou as teclas Ctrl+K e /) procura em todos os meses de uma vez. Digite várias palavras: o nome, a pessoa, a categoria, o mês ou o valor. Enter abre a fatura já filtrada.',
+    example: <Example><div className="ex-code">uber ana novembro</div><div className="ex-arrow">App de transporte · Ana · R$ 23,90 · Novembro 2026</div></Example> },
   { section: 'Início', target: 'fab', page: 'dashboard', icon: 'plus', title: 'Este botão lança um gasto', text: 'Em qualquer tela, toque no + para lançar uma compra. Se foi parcelada, o app espalha as parcelas pelas próximas faturas sozinho.',
     example: <Example><Row a="Mercado Extra" b="R$ 189,90" /><div className="ex-meta">Ana · Alimentação · em 3x</div><div className="ex-arrow">vira 3 lançamentos de R$ 63,30: nov, dez e jan</div></Example> },
 
@@ -39,8 +41,8 @@ const STEPS: Step[] = [
     example: <Example><div className="ex-code">mercado 150,90 3x @ana #casa ontem</div><div className="ex-arrow">Mercado · R$ 150,90 · 3 parcelas · Ana · Casa · ontem</div></Example> },
   { section: 'Faturas', target: 'inv-top', page: 'invoices', icon: 'upload', title: 'Colar a fatura do banco', text: 'Copie as linhas da fatura no app do banco (data, descrição e valor) e use “Colar fatura”. O app separa tudo, sugere o responsável e a categoria, e você só confere. Para um lançamento completo, use “Formulário completo”.',
     example: <Example><div className="ex-code">12/11  PADARIA CENTRAL  18,50</div><div className="ex-arrow">vira um lançamento pronto para conferir</div></Example> },
-  { section: 'Faturas', target: 'filters', page: 'invoices', icon: 'tag', title: 'Busque e filtre', text: 'Procure por palavra ou filtre por responsável, categoria e situação. Com um filtro ativo, aparece um botão para marcar todos os pendentes visíveis como pagos de uma vez.',
-    example: <Example><Chips items={['Ana', 'Pendentes']} /><div className="ex-arrow">5 lançamentos · R$ 412,00 · Marcar 5 como pagos</div></Example> },
+  { section: 'Faturas', target: 'filters', page: 'invoices', icon: 'tag', title: 'Busque e filtre', text: 'Procure por palavra ou filtre por responsável, categoria e situação. Gostou do resultado? Toque em “Salvar este filtro” e ele vira um atalho fixo, para usar de novo com um toque. Com um filtro ativo, dá para marcar todos os pendentes visíveis como pagos de uma vez.',
+    example: <Example><Chips items={['Ana', 'Pendentes']} /><div className="ex-arrow">Salvar este filtro: “Pendentes · Ana”</div></Example> },
   { section: 'Faturas', target: 'tx-list', page: 'invoices', icon: 'edit', title: 'Cada lançamento tem ações', text: 'Toque no status para marcar pago ou pendente, use o lápis para editar (inclusive todas as parcelas de uma vez) e a lixeira para excluir. Se errar, o botão Desfazer aparece na hora. Marque várias caixinhas para agir em lote.',
     example: <Example><Row a="Mercado Extra 1/3" b={<>R$ 63,30 <Bad>Pendente</Bad></>} /><Chips items={['Editar', 'Marcar pago', 'Excluir', 'Desfazer']} /></Example> },
 

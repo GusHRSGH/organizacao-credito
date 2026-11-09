@@ -4,9 +4,13 @@ export type IconName =
   | 'dashboard' | 'invoices' | 'settings' | 'sun' | 'moon' | 'plus' | 'check' | 'clock' | 'trash'
   | 'download' | 'upload' | 'database' | 'cloud' | 'trend-up' | 'trend-down' | 'wallet' | 'receipt' | 'sparkle'
   | 'edit' | 'copy' | 'users' | 'undo' | 'menu' | 'lock'
-  | 'food' | 'car' | 'bag' | 'heart' | 'ticket' | 'repeat' | 'bank' | 'tag' | 'user' | 'shield' | 'pie'
+  | 'food' | 'car' | 'bag' | 'heart' | 'ticket' | 'repeat' | 'bank' | 'tag' | 'user' | 'shield' | 'pie' | 'search'
 
 const PATHS: Record<IconName, ReactNode> = {
+  search: <>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="M16 16l4.5 4.5" />
+  </>,
   dashboard: <>
     <rect className="i-bar i-bar-1" x="4" y="12" width="4" height="8" rx="1.4" />
     <rect className="i-bar i-bar-2" x="10" y="4" width="4" height="16" rx="1.4" />

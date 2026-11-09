@@ -13,6 +13,7 @@ import UpdateBanner from './components/UpdateBanner'
 const Legal = lazy(() => import('./components/Legal'))
 const Tour = lazy(() => import('./components/Tour'))
 const WhatsNew = lazy(() => import('./components/WhatsNew'))
+const SearchOverlay = lazy(() => import('./components/SearchOverlay'))
 import { ENTRIES, LATEST, pendingEntries, type ChangelogEntry } from './lib/changelog'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
@@ -51,6 +52,7 @@ export default function App() {
   const [updateSignal, setUpdateSignal] = useState(0)
   const [legalOpen, setLegalOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [news, setNews] = useState<ChangelogEntry[] | null>(null)
   const [nudgeHidden, setNudgeHidden] = useState(() => { try { return Number(localStorage.getItem(NUDGE_KEY) ?? 0) > Date.now() } catch { return false } })
 
@@ -87,6 +89,8 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const typing = event.target instanceof HTMLElement && (/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) || event.target.isContentEditable)
+      if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') || (event.key === '/' && !typing && !event.ctrlKey && !event.metaKey)) { event.preventDefault(); setSearchOpen(true); return }
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'n') { event.preventDefault(); setPage('invoices'); setQuickSignal((n) => n + 1) }
     }
     window.addEventListener('keydown', onKey)
@@ -195,6 +199,7 @@ export default function App() {
     <main className="main">
       <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb"><b>{TITLES[page]}</b></div></div>
         <div className="topbar-actions">
+          <button className="theme-toggle" data-tour="search" onClick={() => setSearchOpen(true)} aria-label="Buscar em todas as faturas" title="Buscar (Ctrl+K ou /)"><Icon name="search" size={18} /></button>
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       <UpdateBanner manualSignal={updateSignal} />
       {guest && !cloud.session && !signedIn && loaded && !nudgeHidden && page !== 'settings' && <div className="restore-offer" role="status"><span><b>Seus dados estão só neste aparelho.</b> Crie uma conta com o e-mail para ter uma cópia segura na nuvem e usar em outros aparelhos.</span><div className="button-row"><button className="primary-button" onClick={() => setPage('settings')}>Criar conta</button><button className="text-button" onClick={hideNudge}>Depois</button></div></div>}
@@ -211,6 +216,7 @@ export default function App() {
     {!sheetOpen && <button data-tour="fab" className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
     <Suspense fallback={null}>
     {legalOpen && <Legal onClose={closeLegal} />}
+    {searchOpen && <SearchOverlay transactions={transactions} invoices={invoices} onClose={() => setSearchOpen(false)} onPick={(hit) => { setSearchOpen(false); goDrill({ invoiceId: hit.row.invoice_id, query: hit.row.description }) }} />}
     {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
     {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
     </Suspense>

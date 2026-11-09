@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 5, date: '2026-11-09', title: 'Busca global e filtros salvos',
+    items: [
+      'Nova lupa no topo (ou Ctrl+K e /): busca em todas as faturas de uma vez, por nome, pessoa, categoria, mês ou valor.',
+      'Toque num resultado para abrir a fatura dele, já filtrada.',
+      'Em Faturas, salve qualquer combinação de filtros e reuse com um toque. Exemplo: “Pendentes · Ana”.',
+    ],
+  },
+  {
     n: 4, date: '2026-11-09', title: 'Mais leve e mais seguro',
     items: [
       'O app abre mais rápido: o pacote principal ficou quase metade do tamanho.',

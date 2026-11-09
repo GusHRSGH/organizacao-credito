@@ -2,6 +2,7 @@ import { Icon } from '../components/Icon'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import QuickAdd from '../components/QuickAdd'
 import PasteBill from '../components/PasteBill'
+import { addFilter, isActive, readFilters, removeFilter, suggestName, writeFilters, type SavedFilter } from '../lib/savedFilters'
 import EditDialog from '../components/EditDialog'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
@@ -40,10 +41,12 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const [bulkPerson, setBulkPerson] = useState('')
   const [bulkCategory, setBulkCategory] = useState('')
   const descriptionField = useRef<HTMLInputElement>(null)
+  const [saved, setSaved] = useState<SavedFilter[]>(readFilters)
+  const [naming, setNaming] = useState<string | null>(null)
 
   useEffect(() => {
     if (!drill) return
-    setPerson(drill.filter.person ?? ''); setCategory(drill.filter.category ?? ''); setStatus(drill.filter.status ?? ''); setQuery(''); setSelected(new Set())
+    setPerson(drill.filter.person ?? ''); setCategory(drill.filter.category ?? ''); setStatus(drill.filter.status ?? ''); setQuery(drill.filter.query ?? ''); setSelected(new Set())
   }, [drill])
 
   const rows = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId), [transactions, invoiceId])
@@ -181,6 +184,11 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><input type="month" value={newPeriod} onChange={(event) => setNewPeriod(event.target.value)} aria-label="Mês da nova fatura" /><button className="secondary-button" onClick={() => void addInvoice()}>Criar</button></div><div className="metric-foot">Sem mês, cria o seguinte à última.</div></article>
     </section>
 
+    {saved.length > 0 && <div className="saved-filters" role="group" aria-label="Filtros salvos"><span className="saved-label">Filtros salvos</span>
+      {saved.map((item) => <span key={item.id} className="saved-chip">
+        <button onClick={() => { setPerson(item.person); setCategory(item.category); setStatus(item.status); setQuery(item.query); setSelected(new Set()) }}>{item.name}</button>
+        <button className="saved-x" aria-label={`Remover o filtro ${item.name}`} onClick={() => { const next = removeFilter(saved, item.id); setSaved(next); writeFilters(next) }}>×</button></span>)}
+    </div>}
     <div className="toolbar" data-tour="filters">
       <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lançamento" />
       <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.person) && <option value={NO_PERSON}>Sem responsável</option>}</select>
@@ -188,7 +196,11 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status"><option value="">Todos os status</option><option value="paid">Pago</option><option value="pending">Pendente</option></select>
       {pendingVisible.length > 0 && (person || category || query || status) && <button className="secondary-button" onClick={markVisiblePaid}>Marcar {pendingVisible.length} como pagos</button>}
       <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
+      {isActive({ person, category, status, query }) && naming === null && <button className="secondary-button" onClick={() => setNaming(suggestName({ person, category, status, query }))}><Icon name="tag" size={16} />Salvar este filtro</button>}
     </div>
+    {naming !== null && <form className="saved-form" onSubmit={(event) => { event.preventDefault(); const next = addFilter(saved, naming, { person, category, status, query }, crypto.randomUUID()); setSaved(next); writeFilters(next); setNaming(null); notify('notice', `Filtro “${naming.trim()}” salvo.`) }}>
+      <input value={naming} onChange={(event) => setNaming(event.target.value)} maxLength={40} aria-label="Nome do filtro" autoFocus placeholder="Nome do filtro" />
+      <button className="primary-button" disabled={!naming.trim()}>Salvar</button><button type="button" className="text-button" onClick={() => setNaming(null)}>Cancelar</button></form>}
 
     {(person || category || status) && <div className="filter-chip" role="status">
       <span>Mostrando: <b>{[person === NO_PERSON ? 'Sem responsável' : person, category === NO_CATEGORY ? 'Sem categoria' : category, status === 'pending' ? 'Pendentes' : status === 'paid' ? 'Pagos' : ''].filter(Boolean).join(' · ')}</b></span>
