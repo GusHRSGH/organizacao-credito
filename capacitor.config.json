@@ -1,6 +1,6 @@
 {
   "appId": "br.com.gushrs.organizacaocredito",
-  "appName": "Organização do Crédito",
+  "appName": "Cadence",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false,
@@ -10,7 +10,7 @@
     "SplashScreen": {
       "launchShowDuration": 600,
       "launchAutoHide": true,
-      "backgroundColor": "#09090b",
+      "backgroundColor": "#0a0a0a",
       "showSpinner": false
     },
     "Keyboard": {

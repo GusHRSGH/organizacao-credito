@@ -98,7 +98,7 @@ function registerGoogle({ ipcMain, app, shell, safeStorage, isTrustedSender }) {
         const okState = url.searchParams.get('state') === state
         const received = url.searchParams.get('code')
         response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-        response.end(`<!doctype html><meta charset="utf-8"><title>Organização do Crédito</title><body style="font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0;background:#0a1124;color:#e8eeff"><div style="text-align:center"><h1>${received && okState && !failure ? 'Tudo certo!' : 'Não foi possível entrar'}</h1><p>${received && okState && !failure ? 'Pode fechar esta aba e voltar ao app.' : 'Volte ao app e tente de novo.'}</p></div>`)
+        response.end(`<!doctype html><meta charset="utf-8"><title>Cadence</title><body style="font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0;background:#0a1124;color:#e8eeff"><div style="text-align:center"><h1>${received && okState && !failure ? 'Tudo certo!' : 'Não foi possível entrar'}</h1><p>${received && okState && !failure ? 'Pode fechar esta aba e voltar ao app.' : 'Volte ao app e tente de novo.'}</p></div>`)
         clearTimeout(timer)
         server.close()
         if (failure) reject(new Error(googleError({ error: failure }, 'O Google recusou o acesso.')))

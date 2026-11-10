@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Organização do Crédito</string>
-    <string name="title_activity_main">Organização do Crédito</string>
+    <string name="app_name">Cadence</string>
+    <string name="title_activity_main">Cadence</string>
     <string name="package_name">br.com.gushrs.organizacaocredito</string>
     <string name="custom_url_scheme">br.com.gushrs.organizacaocredito</string>
     <string name="shortcut_novo">Novo gasto</string>

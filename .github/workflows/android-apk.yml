@@ -59,6 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # O nome do arquivo continua o antigo: os apps já instalados procuram por ele para se atualizar.
           NAME="organizacao-credito-1.${{ github.run_number }}.apk"
           cp android/app/build/outputs/apk/release/app-release.apk "$NAME"
-          gh release create "v1.${{ github.run_number }}" "$NAME" --target "${{ github.sha }}" --title "Versão 1.${{ github.run_number }}" --notes "APK Android assinado. Instale por cima da versão anterior, sem perder dados." --latest
+          gh release create "v1.${{ github.run_number }}" "$NAME" --target "${{ github.sha }}" --title "Cadence 1.${{ github.run_number }}" --notes "APK Android assinado. Instale por cima da versão anterior, sem perder dados." --latest

@@ -17,8 +17,8 @@ const Ok = ({ children }: { children: ReactNode }) => <span className="ex-badge 
 const Chips = ({ items }: { items: string[] }) => <div className="ex-chips">{items.map((item) => <span key={item}>{item}</span>)}</div>
 
 const STEPS: Step[] = [
-  { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Vamos conhecer o app inteiro', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. O app tem 4 áreas: Início, Faturas, Cobrança e Dados. Você pode pular quando quiser.',
-    example: <Example><Chips items={['Início', 'Faturas', 'Cobrança', 'Dados']} /></Example> },
+  { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Bem-vindo à Cadence', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. Você pode pular quando quiser. Toque na parte destacada ou em Próximo para seguir.',
+    example: <Example><Chips items={['Início', 'Faturas', 'Cobrança', 'Metas', 'Configurações']} /></Example> },
 
   { section: 'Início', target: 'nav-dashboard', page: 'dashboard', icon: 'dashboard', title: 'Início: o resumo do mês', text: 'Aqui você bate o olho e sabe quanto gastou, quanto já foi pago e quanto ainda falta. Tudo é calculado sozinho a partir dos seus lançamentos.',
     example: <Example><Row a="Falta pagar" b={<Bad>R$ 1.240,00</Bad>} /><div className="ex-meta">de R$ 3.180,00 · 38 lançamentos · R$ 1.940,00 já pago</div></Example> },
@@ -71,7 +71,7 @@ const STEPS: Step[] = [
     example: <Example><Chips items={['Conta', 'Cópias', 'Exportar', 'Importar']} /></Example> },
   { section: 'Configurações', target: 'set-card', page: 'config', tab: 'lancamentos', icon: 'bank', title: 'Diga quando seu cartão fecha', text: 'Informe o dia do vencimento e quantos dias antes a fatura fecha. Aí cada compra vai sozinha para a fatura certa: uma compra de 09/11 com fatura vencendo dia 07 e fechando 7 dias antes entra em Dezembro, não em Novembro.',
     example: <Example><Row a="Vence dia 7 · fecha 7 dias antes" /><div className="ex-arrow">compra de 09/11 → fatura de Dezembro</div></Example> },
-  { section: 'Configurações', target: 'set-theme', page: 'config', tab: 'aparencia', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 9 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
+  { section: 'Configurações', target: 'set-theme', page: 'config', tab: 'aparencia', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 10 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
     example: <Example><Chips items={['Violeta', 'Verde-petróleo', 'Preto puro', 'Dourado']} /></Example> },
   { section: 'Dados', target: 'set-cloud', page: 'settings', icon: 'cloud', title: 'Sua conta na nuvem', text: 'Entre com o e-mail (sem senha, só um código) para guardar uma cópia segura e usar em outros aparelhos. É opcional, e o app continua funcionando sem internet.',
     example: <Example><div className="ex-code">Seu código de acesso: 123456</div></Example> },

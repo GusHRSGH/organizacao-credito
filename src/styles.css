@@ -1,11 +1,15 @@
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/500.css';
-@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter-tight/500.css';
+@import '@fontsource/inter-tight/600.css';
+@import '@fontsource/inter-tight/700.css';
 
 /* ---------- Tokens ---------- */
 :root {
-  --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  --font-display: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --accent: #c6f432;
 
   --bg: #f5f4fa;
   --sidebar: #ffffff;
@@ -960,3 +964,21 @@ kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-rad
 .tag.review { margin-left: 8px; background: #f59e0b24; color: #b45309; font-weight: 700; }
 .bank-recon { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 12px 0; }
 .bank-recon h3 { margin: 0 0 10px; font-size: 14px; }
+
+/* ---------- Marca Cadence ---------- */
+.wordmark { font-family: var(--font-display); font-weight: 700; letter-spacing: -.035em; }
+.brand .wordmark { font-size: 20px; line-height: 1; }
+.welcome-card h1.wordmark { font-size: 40px; letter-spacing: -.045em; margin: 14px 0 4px; }
+.welcome-tag { margin: 0 0 14px; font-family: var(--font-display); font-weight: 500; font-size: 17px; color: var(--text); letter-spacing: -.01em; }
+.welcome-tag::after { content: ''; display: block; width: 28px; height: 3px; border-radius: 3px; background: var(--accent); margin: 12px auto 0; }
+h1, h2, h3 { letter-spacing: -.02em; }
+.page-heading h1 { font-weight: 600; font-size: clamp(26px, 4vw, 34px); letter-spacing: -.035em; }
+.logo-mark { color: var(--text); }
+:root[data-theme='light'] .nav-item.active::before { background: var(--accent); width: 4px; box-shadow: 0 0 0 1px var(--text) inset; }
+.primary-button { letter-spacing: -.005em; }
+:root[data-theme='light'] .primary-button { background: #0a0a0a; color: #fff; }
+:root[data-theme='light'] .primary-button:hover { background: #262626; }
+.hero-progress i, .bill-progress i, .goal-bar i { background: var(--text); }
+:root[data-theme='dark'] .hero-progress i, :root[data-theme='dark'] .bill-progress i, :root[data-theme='dark'] .goal-bar i { background: var(--accent); }
+.goal.warn .goal-bar i { background: #f59e0b !important; }
+.goal.over .goal-bar i { background: var(--bad) !important; }

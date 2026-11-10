@@ -50,7 +50,7 @@ function createWindow() {
     height: 920,
     minWidth: 980,
     minHeight: 680,
-    title: 'Organização do Crédito',
+    title: 'Cadence',
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a1124' : '#f3f6fd',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,

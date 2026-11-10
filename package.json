@@ -24,7 +24,8 @@
     "@capacitor/share": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.5",
     "@capacitor/status-bar": "^7.0.6",
-    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/inter-tight": "^5.3.0",
     "@supabase/supabase-js": "^2.49.0",
     "@tesseract.js-data/por": "^1.0.0",
     "pdfjs-dist": "^5.4.149",
@@ -57,7 +58,7 @@
   "main": "electron/main.cjs",
   "build": {
     "appId": "com.organizacaocredito.desktop",
-    "productName": "Organização do Crédito",
+    "productName": "Cadence",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -75,7 +76,7 @@
     },
     "protocols": [
       {
-        "name": "Organização do Crédito",
+        "name": "Cadence",
         "schemes": [
           "organizacao-credito"
         ]

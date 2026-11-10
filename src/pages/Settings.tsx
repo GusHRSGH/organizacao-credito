@@ -123,7 +123,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
 
   async function backup() {
     try {
-      downloadText(`organizacao-credito-backup-${stamp()}.json`, JSON.stringify(await local.exportBackup(), null, 2), 'application/json')
+      downloadText(`cadence-backup-${stamp()}.json`, JSON.stringify(await local.exportBackup(), null, 2), 'application/json')
       const now = new Date().toISOString()
       try { localStorage.setItem('orc-last-file-backup', now) } catch { /* sem armazenamento: só não lembra a data */ }
       setLastFile(now)
@@ -157,7 +157,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
 
     <Panel tour="set-export" icon="download" title="Exportar" subtitle={`${transactions.length} lançamentos em ${invoices.length} faturas`}>
       <div className="button-row">
-        <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`organizacao-credito-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}><Icon name="download" size={16} />Baixar CSV (Excel)</button>
+        <button className="secondary-button" disabled={!transactions.length} onClick={() => downloadText(`cadence-${stamp()}.csv`, toCsv(transactions, invoices), 'text/csv')}><Icon name="download" size={16} />Baixar CSV (Excel)</button>
         <button className="secondary-button" onClick={() => void backup()}><Icon name="download" size={16} />Baixar backup (JSON)</button>
         <button className="secondary-button" onClick={() => backupRef.current?.click()}><Icon name="upload" size={16} />Restaurar backup…</button>
         <input ref={backupRef} type="file" accept=".json,application/json" hidden onChange={(event) => void restore(event.target.files?.[0])} />
