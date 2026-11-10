@@ -26,7 +26,7 @@ const colName = (index: number) => `Coluna ${String.fromCharCode(65 + (index % 2
 
 const SYNONYMS: Record<Exclude<Field, 'ignore'>, string[]> = {
   date: ['data', 'dia', 'date', 'data da compra', 'data compra', 'data lancamento', 'data do lancamento'],
-  desc: ['titulo', 'descricao', 'estabelecimento', 'lancamento', 'historico', 'nome', 'compra', 'detalhes', 'description', 'loja', 'memo'],
+  desc: ['titulo', 'title', 'descricao', 'estabelecimento', 'lancamento', 'historico', 'nome', 'compra', 'detalhes', 'description', 'loja', 'memo'],
   amount: ['valor', 'preco', 'total', 'quantia', 'montante', 'amount', 'valor (r$)', 'valor r$'],
   person: ['responsavel', 'pessoa', 'quem', 'titular', 'portador', 'dono', 'comprador'],
   category: ['categoria', 'tipo', 'grupo', 'category'],

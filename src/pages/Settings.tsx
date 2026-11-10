@@ -32,6 +32,7 @@ interface Props {
   onLegal: () => void
   onTour: () => void
   onNews: () => void
+  onBank: () => void
 }
 
 function AppearancePanel() {
@@ -60,7 +61,7 @@ function AppearancePanel() {
   </Panel>
 }
 
-export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews }: Props) {
+export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews, onBank }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -198,7 +199,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     </Panel>
 
     <Panel tour="set-import" icon="upload" title="Importar planilha" subtitle="Aceita .xlsx e .csv de qualquer formato. O arquivo é lido neste aparelho; nada é enviado para fora.">
-      <div className="button-row"><button className="primary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Escolher arquivo…</button>
+      <div className="button-row"><button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco (Nubank e outros)</button><button className="secondary-button" disabled={busy} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Outra planilha…</button>
         <input ref={fileRef} type="file" accept=".xlsx,.csv,.txt" hidden onChange={(event) => void chooseFile(event.target.files?.[0])} />
         <button className="secondary-button" onClick={() => void downloadAsset('modelo-fatura.xlsx', 'modelo-fatura.xlsx').catch((cause) => notify('error', messageOf(cause)))}><Icon name="download" size={16} />Baixar modelo de planilha</button>
         {fileName && <span className="muted">{fileName}</span>}</div>

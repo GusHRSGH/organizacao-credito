@@ -20,7 +20,7 @@ export function buildSuggestions(transactions: Transaction[]) {
 }
 
 /** Acha pelo texto igual ou, na falta, por uma descrição conhecida que comece com ele (mínimo de 3 letras). */
-function byHistory(text: string, suggestions: Map<string, Suggestion>): Suggestion | null {
+export function byHistory(text: string, suggestions: Map<string, Suggestion>): Suggestion | null {
   const key = clean(text)
   if (key.length < 2) return null
   const exact = suggestions.get(key)

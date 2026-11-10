@@ -302,3 +302,41 @@ test('com o cartão configurado, a compra vai para a fatura pelo fechamento', as
   await campo.fill('mercado fechamento 50 @ana #alimentacao 30/10/2026')
   await expect(page.getByText('Fatura de Novembro 2026')).toBeVisible()
 })
+
+const NUBANK_CSV = `date,category,title,amount
+2026-11-02,restaurante,Padaria Central,23.90
+2026-11-03,transporte,Uber *Trip 8842,31.40
+2026-11-06,casa,Loja Casa Bela - Parcela 2/6,150.00
+2026-11-08,pagamento,Pagamento recebido,-1200.00
+2026-11-10,saúde,Farmácia Pague Menos,48.30
+`
+
+test('importa a fatura do Nubank com classificação e conferência', async ({ page }, info) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'Nubank_2026-12-07.csv', mimeType: 'text/csv', buffer: Buffer.from(NUBANK_CSV) })
+  await expect(robo).toContainText('4 compras encontradas, 1 linha ignorada')
+  await expect(robo).toContainText('Dezembro 2026')
+  await expect(robo.getByRole('region', { name: 'Resumo da importação' })).toContainText('4 lançamentos')
+  await robo.getByLabel('Responsável padrão').fill('Gus')
+  await expect(robo.getByLabel('Descrição de Uber')).toBeVisible()
+  await expect(robo.getByLabel('Categoria de Uber')).toHaveValue('Transporte')
+  await page.screenshot({ path: `test-results/banco-${info.project.name}.png` })
+  await robo.getByRole('button', { name: /^Importar 4 lançamentos para Dezembro 2026/ }).click()
+  await expect(robo).toContainText('Fatura de Dezembro 2026 pronta')
+  await robo.getByRole('button', { name: 'Ver os lançamentos' }).click()
+  await expect(page.locator('b:visible', { hasText: 'Padaria Central' }).first()).toBeVisible()
+})
+
+test('cria a fatura de qualquer mês, inclusive passado', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Criar fatura de outro mês…' }).click()
+  const dialogo = page.getByRole('dialog', { name: 'Nova fatura' })
+  await dialogo.getByRole('button', { name: 'Ano anterior' }).click()
+  await dialogo.getByRole('button', { name: /^Março \d{4}$/ }).click()
+  await dialogo.getByRole('button', { name: /^Criar fatura de Março \d{4}$/ }).click()
+  await expect(page.getByText(/Fatura de Março \d{4} criada\./)).toBeVisible()
+})

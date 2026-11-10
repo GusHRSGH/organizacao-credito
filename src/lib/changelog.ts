@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 15, date: '2026-11-09', title: 'Importar a fatura do Nubank (e de outros bancos)',
+    items: [
+      'Novo botão “Importar fatura do banco” em Faturas e em Dados. Escolha o CSV, o PDF ou a foto da fatura exportada e o robô lê tudo.',
+      'Ele separa compras de pagamentos e estornos, acha as parcelas, descobre o mês da fatura (pelo nome do arquivo ou pelo fechamento do cartão) e classifica responsável e categoria: primeiro pelo seu histórico, depois pela categoria do banco, depois por palavras comuns.',
+      'Você vê o resumo (total, comparação com o mês anterior, maiores categorias), corrige qualquer linha e só então importa. Nada é duplicado se você importar de novo.',
+      'Agora dá para criar a fatura de qualquer mês, passado ou futuro, com “Criar fatura de outro mês”.',
+    ],
+  },
+  {
     n: 14, date: '2026-11-09', title: 'Fatura certa pelo fechamento do cartão',
     items: [
       'Novo em Dados: “Meu cartão”. Informe o dia do vencimento e quantos dias antes a fatura fecha.',
