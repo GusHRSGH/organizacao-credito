@@ -12,10 +12,18 @@ async function entrar(page: Page) {
 }
 
 /** Navega pela barra de baixo (celular) ou pelo menu lateral (computador). */
-async function irPara(page: Page, area: 'dashboard' | 'invoices' | 'billing' | 'settings') {
+async function irPara(page: Page, area: 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings') {
   const barra = page.locator('.tabbar')
-  const menu = (await barra.isVisible()) ? barra : page.locator('.sidebar')
-  await menu.locator(`[data-tour="nav-${area}"]`).click()
+  if (await barra.isVisible()) {
+    if (area !== 'config' && area !== 'settings') { await barra.locator(`[data-tour="nav-${area}"]`).click(); return }
+    await barra.locator('[data-tour="nav-more"]').click()
+  }
+  await page.locator('.sidebar').locator(`[data-tour="nav-${area}"]`).click()
+}
+
+async function abaConfig(page: Page, nome: string) {
+  await irPara(page, 'config')
+  await page.getByRole('tab', { name: nome, exact: true }).click()
 }
 
 async function importarModelo(page: Page) {
@@ -70,19 +78,19 @@ test('lançamento rápido cria o gasto na fatura', async ({ page }) => {
 
 test('o tema escolhido continua depois de recarregar', async ({ page }) => {
   await entrar(page)
-  await irPara(page, 'settings')
+  await abaConfig(page, 'Aparência')
   const tema = page.getByRole('radio', { name: /Verde-petróleo/ })
   await tema.click()
   await expect(tema).toHaveAttribute('aria-checked', 'true')
   await page.reload()
-  await irPara(page, 'settings')
+  await abaConfig(page, 'Aparência')
   await expect(page.getByRole('radio', { name: /Verde-petróleo/ })).toHaveAttribute('aria-checked', 'true')
 })
 
 test('nenhuma tela tem rolagem horizontal', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)
-  for (const area of ['dashboard', 'invoices', 'billing', 'settings'] as const) {
+  for (const area of ['dashboard', 'invoices', 'billing', 'goals', 'config', 'settings'] as const) {
     await irPara(page, area)
     await page.waitForTimeout(400)
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
@@ -288,7 +296,7 @@ test('lançar o mesmo gasto em vários meses, por frase e pelo seletor', async (
 test('com o cartão configurado, a compra vai para a fatura pelo fechamento', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)
-  await irPara(page, 'settings')
+  await abaConfig(page, 'Lançamentos')
   await page.getByLabel('Dia do vencimento').fill('7')
   await page.getByLabel('Dias antes do vencimento').fill('7')
   await page.getByRole('button', { name: 'Salvar', exact: true }).first().click()
@@ -339,4 +347,32 @@ test('cria a fatura de qualquer mês, inclusive passado', async ({ page }) => {
   await dialogo.getByRole('button', { name: /^Março \d{4}$/ }).click()
   await dialogo.getByRole('button', { name: /^Criar fatura de Março \d{4}$/ }).click()
   await expect(page.getByText(/Fatura de Março \d{4} criada\./)).toBeVisible()
+})
+
+test('metas: cria um limite e a barra avisa quando passa', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'goals')
+  await page.getByLabel('O que limitar').selectOption('total')
+  await page.getByLabel('Limite por fatura (R$)').fill('1')
+  await page.getByRole('button', { name: 'Criar meta' }).click()
+  await expect(page.getByRole('progressbar', { name: 'Total da fatura' })).toBeVisible()
+  await expect(page.getByText('Passou do limite').first()).toBeVisible()
+  await page.reload()
+  await irPara(page, 'goals')
+  await expect(page.getByRole('progressbar', { name: 'Total da fatura' })).toBeVisible()
+})
+
+test('configurações: esconder valores e itens do menu continuam depois de recarregar', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'dashboard')
+  await page.getByRole('button', { name: 'Ocultar os valores' }).click()
+  await expect(page.getByText('R$ ••••').first()).toBeVisible()
+  await abaConfig(page, 'Menu e início')
+  await page.getByLabel(/Mostrar .Metas e limites./).uncheck()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Mostrar os valores' })).toBeVisible()
+  const menu = (await page.locator('.tabbar').isVisible()) ? page.locator('.tabbar') : page.locator('.sidebar')
+  await expect(menu.locator('[data-tour="nav-goals"]')).toHaveCount(0)
 })

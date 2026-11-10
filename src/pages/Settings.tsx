@@ -1,5 +1,5 @@
 import GoogleAccountPanel from '../components/GoogleAccount'
-import SecurityPanel, { UpdatePanel } from '../components/SecurityPanel'
+import { UpdatePanel } from '../components/SecurityPanel'
 import { Icon } from '../components/Icon'
 import type { GoogleAccount } from '../hooks/useGoogleAccount'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -10,15 +10,11 @@ import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
 import { readRawSheets, type RawSheet } from '../services/smartImport'
 import ImportAssistant from '../components/ImportAssistant'
 import CleanupAssistant from '../components/CleanupAssistant'
-import CardPanel from '../components/CardPanel'
 import type { CleanupPlan } from '../lib/cleanup'
-import { useInsightVisible } from '../lib/prefs'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
 import type { ImportResult, Invoice, Transaction } from '../types'
 import CloudPanel from '../components/CloudPanel'
 import type { CloudState } from '../hooks/useCloud'
-import { useAppearance, type ThemeMode } from '../lib/theme'
-import { PALETTES, tokensFor } from '../lib/themes'
 
 interface Props {
   google: GoogleAccount
@@ -33,32 +29,6 @@ interface Props {
   onTour: () => void
   onNews: () => void
   onBank: () => void
-}
-
-function AppearancePanel() {
-  const { mode, palette, theme, setMode, setPalette } = useAppearance()
-  const modes: { id: ThemeMode; label: string; icon: 'sun' | 'moon' | 'sparkle' }[] = [{ id: 'auto', label: 'Automático', icon: 'sparkle' }, { id: 'light', label: 'Claro', icon: 'sun' }, { id: 'dark', label: 'Escuro', icon: 'moon' }]
-  const [insight, setInsight] = useInsightVisible()
-  return <Panel tour="set-theme" icon="sparkle" title="Aparência" subtitle="Escolha o visual do app. A mudança vale na hora e fica salva neste aparelho.">
-    <div className="mode-switch" role="radiogroup" aria-label="Modo">
-      {modes.map((item) => <button key={item.id} role="radio" aria-checked={mode === item.id} className={mode === item.id ? 'on' : ''} onClick={() => setMode(item.id)}><Icon name={item.icon} size={16} />{item.label}</button>)}
-    </div>
-    <div className="theme-grid" role="radiogroup" aria-label="Tema">
-      {PALETTES.map((item) => {
-        const t = tokensFor(item, theme)
-        const on = palette === item.id
-        return <button key={item.id} role="radio" aria-checked={on} className={`theme-card ${on ? 'on' : ''}`} onClick={() => setPalette(item.id)}>
-          <span className="theme-preview" style={{ background: t['--bg'] }}>
-            <span className="side" style={{ background: t['--sidebar'] }}><i style={{ background: t['--primary'] }} /><i style={{ background: t['--muted'] }} /><i style={{ background: t['--muted'] }} /></span>
-            <span className="body"><span className="row"><i style={{ background: t['--surface'], flex: 1, border: `1px solid ${t['--line']}` }} /><i style={{ background: t['--primary'], width: 22 }} /></span><i style={{ background: t['--bad'], width: '46%' }} /><i style={{ background: t['--surface-2'], width: '70%' }} /></span>
-          </span>
-          <span className="theme-name">{item.name}{on && <Icon name="check" size={16} />}</span>
-        </button>
-      })}
-    </div>
-    <label className="check"><input type="checkbox" checked={insight} onChange={(event) => setInsight(event.target.checked)} />Mostrar o resumo em texto na Visão geral (“Em novembro você gastou…”)</label>
-    <p className="hint">{theme === 'light' && palette === 'amoled' ? 'O preto puro só aparece no modo escuro; no claro, o app usa o branco. ' : ''}O vermelho dos pendentes é sempre o mesmo, em qualquer tema.</p>
-  </Panel>
 }
 
 export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews, onBank }: Props) {
@@ -169,14 +139,10 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   return <>
     {cleaning && <CleanupAssistant transactions={transactions} busy={busy} onApply={(plan) => void applyCleanup(plan)} onCancel={() => setCleaning(false)} />}
     {raw && <ImportAssistant raw={raw} onCancel={() => { setRaw(null); setFileName('') }} onConfirm={(list) => { setRaw(null); setBusy(true); void acceptParsed(list).catch((cause) => notify('error', messageOf(cause))).finally(() => setBusy(false)) }} />}
-    <PageHeading title="Dados e configurações" subtitle="Conta, aparência, backups e importação da sua planilha." />
-
-    <CardPanel notify={notify} />
-    <AppearancePanel />
+    <PageHeading title="Dados e backup" subtitle="Conta na nuvem, cópias, exportar, importar e limpeza. O visual, o cartão e os avisos ficam em Configurações." />
 
     <CloudPanel cloud={cloud} notify={notify} onLegal={onLegal} />
 
-    <SecurityPanel notify={notify} />
     <UpdatePanel onCheck={onCheckUpdate} />
 
     <Panel tour="set-copias" icon="shield" title="Cópias automáticas" subtitle="O app guarda sozinho neste aparelho uma cópia por dia e uma antes de restaurar ou limpar. Sem internet, sem conta.">

@@ -3,6 +3,16 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 16, date: '2026-11-09', title: 'Metas e limites, Configurações com abas e avisos',
+    items: [
+      'Nova tela “Metas e limites”: defina um limite por fatura para o total, uma categoria ou uma pessoa. A barra fica amarela perto do limite e vermelha quando passa, e o app sugere metas pela média dos meses anteriores.',
+      'Nova tela “Configurações” com abas: tamanho do texto, densidade das listas, menos animações, tela inicial, itens do menu, formato de data e centavos, responsável e categoria padrão, e backup das suas configurações.',
+      'Privacidade: o botão do cadeado no topo (ou Ctrl+H) esconde todos os valores em R$ quando alguém está olhando a sua tela.',
+      'Avisos no topo do app: fatura perto de vencer, pessoas que ainda não pagaram faturas anteriores e metas no limite. Você liga e desliga cada um em Configurações > Avisos.',
+      'O menu lateral ganhou seções e atalhos para Tutorial e Novidades. No celular, o botão “Mais” abre o menu completo. “Dados” agora se chama “Dados e backup” e fica só com nuvem, cópias, exportar e importar.',
+    ],
+  },
+  {
     n: 15, date: '2026-11-09', title: 'Importar a fatura do Nubank (e de outros bancos)',
     items: [
       'Novo botão “Importar fatura do banco” em Faturas e em Dados. Escolha o CSV, o PDF ou a foto da fatura exportada e o robô lê tudo.',
