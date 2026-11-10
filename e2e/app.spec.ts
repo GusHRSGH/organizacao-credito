@@ -47,7 +47,11 @@ test('o tour percorre todos os passos até as ações finais', async ({ page }) 
   await page.getByRole('button', { name: 'Continuar sem conta' }).click()
   await expect(page.getByRole('dialog', { name: 'Tour do app' })).toBeVisible()
   const proximo = page.getByRole('button', { name: 'Próximo' })
-  let passos = 1
+  await proximo.click()
+  const antes = await page.locator('.tour-card .tour-head small').innerText()
+  await page.locator('.tour-spot').first().tap().catch(() => page.locator('.tour-spot').first().click())
+  await expect(page.locator('.tour-card .tour-head small')).not.toHaveText(antes)
+  let passos = 3
   while (await proximo.count()) { await proximo.click(); passos += 1; expect(passos).toBeLessThan(40) }
   expect(passos).toBeGreaterThanOrEqual(20)
   await expect(page.getByRole('button', { name: 'Lançar meu primeiro gasto' })).toBeVisible()

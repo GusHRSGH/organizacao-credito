@@ -142,13 +142,14 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
 
   const cardAtTop = !!box && box.top > window.innerHeight * 0.5
   return <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Tour do app">
-    {box ? <div className="tour-spot" style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true"><i /></div> : <div className="tour-dim" aria-hidden="true" />}
+    {box ? <div className="tour-spot" style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true" onClick={() => { if (!last) setIndex((n) => n + 1) }}><i /></div> : <div className="tour-dim" aria-hidden="true" />}
     <div key={index} className={`tour-card ${cardAtTop ? 'top' : 'bottom'}`}>
       <div className="tour-progress" aria-hidden="true"><i style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} /></div>
       <div className="tour-head"><span className="tour-icon"><Icon name={step.icon} size={24} /></span><span className="tour-section">{step.section}</span><small>{index + 1} de {STEPS.length}</small></div>
       <h2>{step.title}</h2>
       <p>{step.text}</p>
       {step.example}
+      {box && !last && <p className="tour-tip">Dica: tocar na parte destacada também avança.</p>}
       <div className={`tour-actions ${last ? 'stack' : ''}`}>
         {last ? <>
           <button className="primary-button" onClick={() => onAction('add')}><Icon name="plus" size={16} />Lançar meu primeiro gasto</button>

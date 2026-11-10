@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 19, date: '2026-11-10', title: 'Tutorial responde ao toque',
+    items: [
+      'No tutorial, tocar na parte destacada da tela agora avança para o próximo passo (antes o toque não fazia nada no celular).',
+    ],
+  },
+  {
     n: 18, date: '2026-11-10', title: 'Limite por pessoa, com gráfico',
     items: [
       'Em Metas e limites, a meta de uma pessoa agora pode valer só para uma categoria. Exemplo: Ana em Lazer, R$ 200 por fatura.',
