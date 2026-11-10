@@ -955,3 +955,8 @@ kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-rad
 .quick-period-label { font-size: 13px; font-weight: 600; color: var(--muted); }
 .quick-period-label b { color: var(--primary); font-weight: 600; font-size: 12px; }
 .quick-period select { padding: 8px 10px; border-radius: 10px; font-size: 14px; }
+
+/* conciliação */
+.tag.review { margin-left: 8px; background: #f59e0b24; color: #b45309; font-weight: 700; }
+.bank-recon { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 12px 0; }
+.bank-recon h3 { margin: 0 0 10px; font-size: 14px; }

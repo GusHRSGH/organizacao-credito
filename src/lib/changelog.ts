@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 22, date: '2026-11-10', title: 'Conciliação com a fatura do banco',
+    items: [
+      'Ao importar a fatura do banco para um mês que você já lançou, o app compara as duas: o que bate (mesmo valor e nome ou data parecidos) não entra de novo, o que só o banco cobrou entra, e o que só você lançou aparece como “o banco não cobrou”.',
+      'Você vê a diferença de total entre o banco e o app, e as compras que entraram ficam com a etiqueta “Conferir” na fatura até você tocar em “Está tudo certo”.',
+    ],
+  },
+  {
     n: 21, date: '2026-11-10', title: 'Mês e ano da fatura sempre à vista',
     items: [
       'No lançamento rápido, agora há sempre a escolha de mês e ano da fatura (obrigatória, já vem preenchida com a sugerida). Dá para lançar em qualquer mês e ano antes de salvar.',

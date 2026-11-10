@@ -422,3 +422,30 @@ test('o lançamento rápido pede mês e ano da fatura e respeita a escolha', asy
   await page.keyboard.press('Enter')
   await expect(page.getByText(/Salvo: escolhida.*na fatura de Agosto 2027/)).toBeVisible({ timeout: 10_000 })
 })
+
+test('conciliação: o que o banco cobrou e eu não lancei entra para conferir', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  const abrir = async (csv: string) => {
+    await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+    const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+    await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'Nubank_2026-12-07.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+    await robo.getByLabel('Responsável padrão').fill('Gus')
+    return robo
+  }
+  let robo = await abrir(NUBANK_CSV)
+  await robo.getByRole('button', { name: /^Importar 4 lançamentos/ }).click()
+  await robo.getByRole('button', { name: 'Ver os lançamentos' }).click()
+  await expect(page.getByText(/4 lançamentos vieram do banco para você conferir/)).toBeVisible()
+  await page.getByRole('button', { name: 'Está tudo certo' }).click()
+  await expect(page.getByText(/vieram do banco para você conferir/)).toHaveCount(0)
+
+  const segundo = NUBANK_CSV.replace('2026-11-10,saúde,Farmácia Pague Menos,48.30', '2026-11-12,lazer,Cinema Centro,60.00')
+  robo = await abrir(segundo)
+  const conc = robo.getByRole('region', { name: 'Conciliação com o que você já lançou' })
+  await expect(conc).toContainText('Conferem')
+  await expect(conc).toContainText('entram para você conferir')
+  await expect(conc).toContainText('1 lançamento seu que o banco não cobrou')
+  await robo.getByRole('button', { name: /^Importar 1 lançamentos/ }).click()
+  await expect(robo).toContainText('pronta')
+})
