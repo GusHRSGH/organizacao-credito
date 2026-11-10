@@ -1,6 +1,7 @@
 import { Icon } from '../components/Icon'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import QuickAdd from '../components/QuickAdd'
+import NewInvoiceDialog from '../components/NewInvoiceDialog'
 import PasteBill from '../components/PasteBill'
 import { addFilter, isActive, readFilters, removeFilter, suggestName, writeFilters, type SavedFilter } from '../lib/savedFilters'
 import EditDialog from '../components/EditDialog'
@@ -9,7 +10,7 @@ import type { LocalSource } from '../services/localSource'
 import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
 import { Hero, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money } from '../lib/format'
-import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
+import { periodLabel } from '../services/installments'
 import { totals } from '../services/stats'
 import type { DataSource, Invoice, Transaction, TransactionRow } from '../types'
 
@@ -22,18 +23,19 @@ interface Props {
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
   local: LocalSource | null
+  onBank: () => void
   quickSignal: number
   drill: { filter: DrillFilter; nonce: number } | null
 }
 
-export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, quickSignal, drill }: Props) {
+export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [person, setPerson] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState<Sort>({ key: 'date', dir: 'desc' })
   const [showForm, setShowForm] = useState(false)
-  const [newPeriod, setNewPeriod] = useState('')
+  const [newOpen, setNewOpen] = useState(false)
   const [showPaste, setShowPaste] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<Transaction | null>(null)
@@ -140,10 +142,11 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     }
   }
 
-  async function addInvoice() {
-    const period = newPeriod ? `${newPeriod}-01` : addMonthsToPeriod(invoices[0]?.period ?? currentPeriod(), invoices.length ? 1 : 0)
+  async function addInvoice(period: string) {
     await run(async () => { await source.createInvoice(period) }, `Fatura de ${periodLabel(period)} criada.`)
-    setNewPeriod('')
+    setNewOpen(false)
+    const created = (await source.listInvoices()).find((item) => item.period === period)
+    if (created) onInvoice(created.id)
   }
 
   const markVisiblePaid = () => {
@@ -155,10 +158,12 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
     <PageHeading tour="inv-top" title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
+      {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
       {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
       <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
     </PageHeading>
 
+    {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
     {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
 
@@ -181,7 +186,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
 
     <section className="metric-grid">
       <Hero label={invoices.find((invoice) => invoice.id === invoiceId)?.label ?? 'Fatura'} total={money(summary.total)} count={summary.count} paid={money(summary.paid)} pending={money(summary.pending)} paidShare={summary.total ? summary.paid / summary.total : 0} />
-      <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><input type="month" value={newPeriod} onChange={(event) => setNewPeriod(event.target.value)} aria-label="Mês da nova fatura" /><button className="secondary-button" onClick={() => void addInvoice()}>Criar</button></div><div className="metric-foot">Sem mês, cria o seguinte à última.</div></article>
+      <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><button className="secondary-button" onClick={() => setNewOpen(true)}><Icon name="plus" size={16} />Criar fatura de outro mês…</button></div><div className="metric-foot">Qualquer mês, passado ou futuro.</div></article>
     </section>
 
     {saved.length > 0 && <div className="saved-filters" role="group" aria-label="Filtros salvos"><span className="saved-label">Filtros salvos</span>

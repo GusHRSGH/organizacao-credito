@@ -26,3 +26,22 @@ export function guessCategory(description: string, categories: string[]): string
   }
   return null
 }
+
+/** Categorias que os bancos usam (Nubank etc.) e os nomes que a pessoa costuma dar. Procura entre as categorias que ela já tem. */
+const BANK_CATEGORIES: Record<string, string[]> = {
+  restaurante: ['alimentacao', 'restaurante', 'comida', 'mercado'], supermercado: ['mercado', 'supermercado', 'alimentacao', 'comida'], alimentacao: ['alimentacao', 'comida', 'mercado'],
+  transporte: ['transporte', 'locomocao', 'carro'], veiculo: ['transporte', 'carro', 'locomocao'], lazer: ['lazer', 'entretenimento', 'diversao'], entretenimento: ['lazer', 'entretenimento', 'diversao'],
+  saude: ['saude', 'farmacia'], educacao: ['educacao', 'estudos'], casa: ['casa', 'moradia', 'contas'], vestuario: ['vestuario', 'roupas', 'compras'], compras: ['compras', 'vestuario', 'roupas'],
+  servicos: ['assinaturas', 'servicos'], assinatura: ['assinaturas', 'servicos'], viagem: ['viagem', 'lazer'], eletronicos: ['eletronicos', 'compras'], outros: ['outros'],
+}
+
+export function matchCategoryName(label: string, categories: string[]): string | null {
+  const key = plain(label)
+  if (!key) return null
+  const mine = new Map(categories.map((name) => [plain(name), name]))
+  if (mine.has(key)) return mine.get(key) ?? null
+  const stem = key.replace(/s$/, '')
+  for (const [name, original] of mine) if (name.replace(/s$/, '') === stem) return original
+  for (const candidate of BANK_CATEGORIES[key] ?? BANK_CATEGORIES[stem] ?? []) if (mine.has(candidate)) return mine.get(candidate) ?? null
+  return null
+}

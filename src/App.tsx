@@ -14,6 +14,7 @@ const Legal = lazy(() => import('./components/Legal'))
 const Tour = lazy(() => import('./components/Tour'))
 const WhatsNew = lazy(() => import('./components/WhatsNew'))
 const SearchOverlay = lazy(() => import('./components/SearchOverlay'))
+const BankImport = lazy(() => import('./components/BankImport'))
 import { ENTRIES, LATEST, pendingEntries, type ChangelogEntry } from './lib/changelog'
 import { currentPeriod } from './services/installments'
 import { getSource } from './services/source'
@@ -41,6 +42,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loaded, setLoaded] = useState(false)
   const [focusId, setFocusId] = useState('')
+  const [bankOpen, setBankOpen] = useState(false)
   const [compareId, setCompareId] = useState('')
   const [invoiceId, setInvoiceId] = useState('')
   const [alert, setAlert] = useState<{ kind: 'notice' | 'error'; text: string } | null>(null)
@@ -207,9 +209,9 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
-        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} quickSignal={quickSignal} drill={drill} />}
+        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
-        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} />}
+        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} onBank={() => setBankOpen(true)} />}
       </Suspense>}
     </main>
     <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ['billing', 'users', 'Cobrança'], ['settings', 'settings', 'Dados']] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}</nav>
@@ -217,6 +219,14 @@ export default function App() {
     <Suspense fallback={null}>
     {legalOpen && <Legal onClose={closeLegal} />}
     {searchOpen && <SearchOverlay transactions={transactions} invoices={invoices} onClose={() => setSearchOpen(false)} onPick={(hit) => { setSearchOpen(false); goDrill({ invoiceId: hit.row.invoice_id, query: hit.row.description }) }} />}
+    {bankOpen && <BankImport local={local} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} notify={notify} onClose={() => setBankOpen(false)}
+      onDone={async (period, where) => {
+        await refresh()
+        const created = (await local.listInvoices()).find((item) => item.period === period)
+        setBankOpen(false)
+        if (created) { setFocusId(created.id); setInvoiceId(created.id) }
+        setPage(where); window.scrollTo({ top: 0 })
+      }} />}
     {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
     {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
     </Suspense>
