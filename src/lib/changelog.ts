@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 20, date: '2026-11-10', title: 'Gráfico de limite mais claro',
+    items: [
+      'No gráfico de limites, o rótulo “limite R$ …” não fica mais cortado, a linha do limite ficou bem visível e só a parte que passou do limite fica vermelha.',
+      'Tocar na barra de uma pessoa em “Pessoas x limite” abre os lançamentos dela.',
+    ],
+  },
+  {
     n: 19, date: '2026-11-10', title: 'Tutorial responde ao toque',
     items: [
       'No tutorial, tocar na parte destacada da tela agora avança para o próximo passo (antes o toque não fazia nada no celular).',

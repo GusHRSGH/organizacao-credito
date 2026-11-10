@@ -36,15 +36,16 @@ export function HBarChart({ rows, series, stacked = false, onPick, limits }: HBa
   const barH = stacked ? 20 : 13
   const groupH = stacked ? barH : series.length * barH + (series.length - 1) * 3
   const rowH = groupH + 16
+  const top = limits && Object.keys(limits).length ? 24 : 8
   const max = Math.max(0, ...rows.map((row) => Math.max(stacked ? row.values.reduce((a, b) => a + b, 0) : Math.max(...row.values), limits?.[row.label] ?? 0)))
   if (!rows.length || max === 0) return <ChartEmpty />
   const scale = (W - labelW - right) / max
-  const H = 8 + rows.length * rowH
+  const H = top + rows.length * rowH
   return <div ref={reveal} className={`reveal ${shown ? 'in' : ''}`}>
     <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label="Gráfico de barras por responsável">
       <defs>{series.map((s, i) => <linearGradient key={s.name + i} id={`${uid}g${i}`} x1="0" x2="1" y1="0" y2="0"><stop offset="0" stopColor={s.light} /><stop offset="1" stopColor={s.color} /></linearGradient>)}</defs>
       {rows.map((row, r) => {
-        const y0 = 8 + r * rowH
+        const y0 = top + r * rowH
         let cursor = labelW
         return <g key={row.label}>
           <text x={labelW - 12} y={y0 + groupH / 2 + 4} textAnchor="end" className="chart-label" {...press(onPick && (() => onPick(row.label, 0)), `Ver lançamentos de ${row.label}`)}>{clip(row.label, 17)}</text>
@@ -66,7 +67,8 @@ export function HBarChart({ rows, series, stacked = false, onPick, limits }: HBa
             const cap = i === 0 ? limits?.[row.label] : undefined
             const over = cap !== undefined && value > cap
             return <g key={i} {...press(onPick && (() => onPick(row.label, i)), `Ver lançamentos de ${row.label}: ${series[i]?.name ?? ''}`)}>
-              <rect className="grow-x" style={{ animationDelay: `${r * 60 + i * 40}ms` }} x={labelW} y={y} width={value > 0 ? Math.max(width, 3) : 0} height={barH} rx={4} fill={over ? 'var(--bad)' : `url(#${uid}g${i})`} />
+              <rect className="grow-x" style={{ animationDelay: `${r * 60 + i * 40}ms` }} x={labelW} y={y} width={value > 0 ? Math.max(over ? cap * scale : width, 3) : 0} height={barH} rx={4} fill={`url(#${uid}g${i})`} />
+              {over && <rect className="grow-x" x={labelW + cap * scale} y={y} width={(value - cap) * scale} height={barH} rx={4} fill="var(--bad)" />}
               {value > 0 && <text x={labelW + Math.max(width, 3) + 6} y={y + barH - 2.5} className="chart-value">{moneyShort(value)}</text>}
             </g>
           })}
@@ -76,8 +78,8 @@ export function HBarChart({ rows, series, stacked = false, onPick, limits }: HBa
         const cap = limits[row.label]
         if (cap === undefined) return null
         const x = labelW + cap * scale
-        const y0 = 8 + r * rowH
-        return <g key={`limit-${row.label}`} className="chart-limit"><title>{`Limite de ${row.label}: ${moneyShort(cap)}`}</title><line x1={x} x2={x} y1={y0 - 3} y2={y0 + groupH + 3} /><text x={x + 4} y={y0 - 4} textAnchor="start">limite {moneyShort(cap)}</text></g>
+        const y0 = top + r * rowH
+        return <g key={`limit-${row.label}`} className="chart-limit"><title>{`Limite de ${row.label}: ${moneyShort(cap)}`}</title><line x1={x} x2={x} y1={y0 - 5} y2={y0 + groupH + 4} /><text x={Math.min(x + 4, W - 96)} y={y0 - 7} textAnchor="start">limite {moneyShort(cap)}</text></g>
       })}
     </svg>
     <Legend items={series.map((s) => ({ name: s.name, color: s.color }))} />

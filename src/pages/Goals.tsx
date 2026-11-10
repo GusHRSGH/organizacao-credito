@@ -17,6 +17,8 @@ interface Props {
   onDrill: (filter: DrillFilter) => void
 }
 
+const chartLabel = (g: Goal) => (g.category ? `${g.name.split(' ')[0]} · ${g.category}` : g.name.split(' ').slice(0, 2).join(' '))
+
 const LEVEL_TEXT = { ok: 'Dentro do limite', warn: 'Perto do limite', over: 'Passou do limite' } as const
 
 export default function Goals({ invoices, transactions, invoiceId, onInvoice, notify, onDrill }: Props) {
@@ -74,7 +76,7 @@ export default function Goals({ invoices, transactions, invoiceId, onInvoice, no
     </Panel>
 
     {personGoals.length > 0 && <Panel tour="goals-chart" icon="users" title="Pessoas x limite" subtitle={`${invoice?.label ?? ''}: quanto cada pessoa gastou e onde está o limite dela`}>
-      <HBarChart rows={personGoals.map((g) => ({ label: goalTitle(g), values: [spentFor(g, rows)] }))} series={[withName(TEAL, invoice?.label ?? 'Gasto')]} limits={Object.fromEntries(personGoals.map((g) => [goalTitle(g), g.limit]))} />
+      <HBarChart rows={personGoals.map((g) => ({ label: chartLabel(g), values: [spentFor(g, rows)] }))} onPick={(label) => { const g = personGoals.find((item) => chartLabel(item) === label); if (g && invoice) onDrill({ invoiceId: invoice.id, person: personToken(g.name), ...(g.category ? { category: categoryToken(g.category) } : {}) }) }} series={[withName(TEAL, invoice?.label ?? 'Gasto')]} limits={Object.fromEntries(personGoals.map((g) => [chartLabel(g), g.limit]))} />
     </Panel>}
 
     <Panel tour="goals-new" icon="plus" title="Nova meta" subtitle="Escolha o que limitar e quanto.">
