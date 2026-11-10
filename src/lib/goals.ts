@@ -1,7 +1,14 @@
 import type { Transaction } from '../types'
 
 /** Limite mensal (por fatura) para o total, uma categoria ou uma pessoa. */
-export interface Goal { id: string; scope: 'total' | 'category' | 'person'; name: string; limit: number }
+export interface Goal {
+  id: string
+  scope: 'total' | 'category' | 'person'
+  name: string
+  limit: number
+  /** Só para metas de pessoa: limita o que essa pessoa gasta nessa categoria (ex.: Ana em Lazer). */
+  category?: string
+}
 export type GoalLevel = 'ok' | 'warn' | 'over'
 
 const STORE = 'oc:metas'
@@ -9,7 +16,7 @@ const STORE = 'oc:metas'
 export function readGoals(): Goal[] {
   try {
     const raw = JSON.parse(localStorage.getItem(STORE) ?? '[]') as Partial<Goal>[]
-    return Array.isArray(raw) ? raw.filter((g): g is Goal => !!g && typeof g.id === 'string' && (g.scope === 'total' || g.scope === 'category' || g.scope === 'person') && typeof g.name === 'string' && Number(g.limit) > 0) : []
+    return Array.isArray(raw) ? raw.filter((g): g is Goal => !!g && typeof g.id === 'string' && (g.scope === 'total' || g.scope === 'category' || g.scope === 'person') && typeof g.name === 'string' && Number(g.limit) > 0).map((g) => (g.scope === 'person' && typeof g.category === 'string' && g.category ? g : { ...g, category: undefined })) : []
   } catch { return [] }
 }
 
@@ -17,12 +24,12 @@ export function writeGoals(goals: Goal[]) {
   try { localStorage.setItem(STORE, JSON.stringify(goals)) } catch { /* vale até recarregar */ }
 }
 
-export const goalTitle = (goal: Goal) => goal.scope === 'total' ? 'Total da fatura' : goal.scope === 'category' ? `Categoria ${goal.name}` : `Gastos de ${goal.name}`
+export const goalTitle = (goal: Goal) => goal.scope === 'total' ? 'Total da fatura' : goal.scope === 'category' ? `Categoria ${goal.name}` : goal.category ? `${goal.name} em ${goal.category}` : `Gastos de ${goal.name}`
 
 /** Quanto já foi gasto nas linhas dadas (as de uma fatura) dentro do escopo da meta. */
 export function spentFor(goal: Goal, rows: Transaction[]) {
   const cents = rows.reduce((sum, row) => {
-    const match = goal.scope === 'total' || (goal.scope === 'category' ? row.category?.name === goal.name : row.person?.name === goal.name)
+    const match = goal.scope === 'total' || (goal.scope === 'category' ? row.category?.name === goal.name : row.person?.name === goal.name && (!goal.category || row.category?.name === goal.category))
     return match ? sum + Math.round(Number(row.amount) * 100) : sum
   }, 0)
   return cents / 100
