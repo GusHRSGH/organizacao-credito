@@ -310,9 +310,9 @@ test('com o cartão configurado, a compra vai para a fatura pelo fechamento', as
   if (!(await page.locator('input[placeholder*="mercado 150,90"]:visible').first().isVisible().catch(() => false))) await page.locator('[data-tour="fab"]').click()
   const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
   await campo.fill('mercado fechamento 50 @ana #alimentacao 09/11/2026')
-  await expect(page.getByText('Fatura de Dezembro 2026')).toBeVisible()
+  await expect(page.locator('select[aria-label="Mês da fatura"]:visible')).toHaveValue('12')
   await campo.fill('mercado fechamento 50 @ana #alimentacao 30/10/2026')
-  await expect(page.getByText('Fatura de Novembro 2026')).toBeVisible()
+  await expect(page.locator('select[aria-label="Mês da fatura"]:visible')).toHaveValue('11')
 })
 
 const NUBANK_CSV = `date,category,title,amount
@@ -407,4 +407,18 @@ test('meta de uma pessoa aparece no gráfico com a linha de limite', async ({ pa
   await expect(page.getByRole('heading', { name: /Lançamentos|Faturas/ }).first()).toBeVisible()
   await irPara(page, 'dashboard')
   await expect(page.locator('.chart-limit').first()).toBeAttached()
+})
+
+test('o lançamento rápido pede mês e ano da fatura e respeita a escolha', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+  const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+  if (!(await campo.isVisible())) await page.locator('[data-tour="fab"]').click()
+  await page.locator('select[aria-label="Mês da fatura"]:visible').selectOption('08')
+  await page.locator('select[aria-label="Ano da fatura"]:visible').selectOption('2027')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible').first().fill('escolhida 77,70 @ana #casa')
+  await page.keyboard.press('Enter')
+  await expect(page.getByText(/Salvo: escolhida.*na fatura de Agosto 2027/)).toBeVisible({ timeout: 10_000 })
 })
