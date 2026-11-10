@@ -376,3 +376,14 @@ test('configurações: esconder valores e itens do menu continuam depois de reca
   const menu = (await page.locator('.tabbar').isVisible()) ? page.locator('.tabbar') : page.locator('.sidebar')
   await expect(menu.locator('[data-tour="nav-goals"]')).toHaveCount(0)
 })
+
+test('a previsão estima a fatura aberta a partir das anteriores', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2027-02-10T12:00:00'))
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'dashboard')
+  const painel = page.locator('.panel', { has: page.getByRole('heading', { name: /Previsão da fatura de Fevereiro 2027/ }) })
+  await expect(painel).toBeVisible()
+  await expect(painel).toContainText('Já lançado')
+  await expect(painel).toContainText('média das últimas 1 fatura')
+})

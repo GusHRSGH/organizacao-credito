@@ -32,6 +32,8 @@ const STEPS: Step[] = [
     example: <Example><div className="ex-code">Luz veio bem acima do normal</div><div className="ex-arrow">R$ 260,00 desta vez, normalmente cerca de R$ 100,00</div></Example> },
   { section: 'Início', target: 'dash-subs', page: 'dashboard', icon: 'repeat', title: 'Assinaturas descobertas sozinhas', text: 'O que se repete todo mês aparece aqui com o custo fixo somado. Se uma assinatura sobe de preço, o app avisa; se parou de ser cobrada, também.',
     example: <Example><Row a="Netflix" b={<Bad>R$ 55,90</Bad>} /><div className="ex-arrow">subiu de R$ 39,90</div></Example> },
+  { section: 'Início', target: 'dash-forecast', page: 'dashboard', icon: 'trend-up', title: 'Previsão da fatura aberta', text: 'O app soma o que já está lançado, as assinaturas que ainda vão cair e a média do seu dia a dia, e estima quanto a fatura fecha. Um botão lança as assinaturas que faltam.',
+    example: <Example><Row a="Já lançado" b="R$ 620" /><Row a="Assinaturas" b="R$ 120" /><Row a="Dia a dia" b="R$ 900" /><div className="ex-arrow">≈ R$ 1.640 no fim do mês</div></Example> },
   { section: 'Início', target: 'dash-people', page: 'dashboard', icon: 'pie', title: 'Os gráficos são clicáveis', text: 'Toque numa barra, numa fatia ou numa coluna e o app abre os lançamentos exatos por trás dela, já filtrados, para você resolver ali mesmo.',
     example: <Example><Row a="Toque na barra da Ana" b="R$ 412,00" /><div className="ex-arrow">abre só os lançamentos da Ana nessa fatura</div></Example> },
   { section: 'Início', target: 'dash-months', page: 'dashboard', icon: 'trend-up', title: 'Mês a mês', text: 'Cada coluna é uma fatura, com a parte paga e a parte pendente. Dá para ver de relance em que mês o gasto subiu.',

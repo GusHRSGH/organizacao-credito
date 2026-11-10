@@ -18,7 +18,8 @@ const WhatsNew = lazy(() => import('./components/WhatsNew'))
 const SearchOverlay = lazy(() => import('./components/SearchOverlay'))
 const BankImport = lazy(() => import('./components/BankImport'))
 import { ENTRIES, LATEST, pendingEntries, type ChangelogEntry } from './lib/changelog'
-import { currentPeriod } from './services/installments'
+import { currentPeriod, periodLabel } from './services/installments'
+import type { Subscription } from './lib/watch'
 import { getSource } from './services/source'
 import Dashboard from './pages/Dashboard'
 const Invoices = lazy(() => import('./pages/Invoices'))
@@ -155,6 +156,17 @@ export default function App() {
     setCompareId((current) => (has(current) ? current : defaultCompare))
     setInvoiceId((current) => (has(current) ? current : defaultFocus))
   }, [source])
+  const launchSubs = useCallback(async (period: string, subs: Subscription[]) => {
+    try {
+      for (const sub of subs) {
+        const last = transactions.find((row) => row.id === sub.ids[sub.ids.length - 1])
+        const day = Math.min(28, Number(last?.occurred_on.slice(8, 10) ?? 1))
+        await source.createRepeated({ invoiceId: '', occurredOn: `${period.slice(0, 7)}-${String(day).padStart(2, '0')}`, description: sub.name, amount: sub.monthly, personName: last?.person?.name ?? '', categoryName: last?.category?.name ?? '' }, [period])
+      }
+      await refresh()
+      notify('notice', `${subs.length === 1 ? 'Assinatura lançada' : `${subs.length} assinaturas lançadas`} na fatura de ${periodLabel(period)}.`)
+    } catch (cause) { notify('error', messageOf(cause)) }
+  }, [transactions, source, refresh, notify])
 
   useEffect(() => {
     let cancelled = false
@@ -224,7 +236,7 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {loaded && page !== 'settings' && page !== 'config' && <Reminders invoices={invoices} transactions={transactions} onGo={(next) => { setPage(next); window.scrollTo({ top: 0 }) }} />}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
-        {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} />}
+        {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'goals' && <Goals invoices={invoices} transactions={transactions} invoiceId={invoiceId || focusId} onInvoice={setInvoiceId} notify={notify} onDrill={goDrill} />}
