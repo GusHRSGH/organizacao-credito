@@ -1,3 +1,4 @@
+import { getSettings } from '../lib/settings'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Icon } from './Icon'
 import { messageOf, money, formatDate } from '../lib/format'
@@ -50,8 +51,9 @@ export default function QuickAdd({ source, invoice, invoices = [], people, categ
   const months = useMemo(() => [...new Set([...parsed.months, ...picked])].sort(), [parsed.months, picked])
   const spread = parsed.installments > 1 ? Array.from({ length: parsed.installments }, (_, i) => addMonthsToPeriod(base, i)) : []
   const hint = useMemo(() => suggestFor(parsed.description, suggestions), [parsed.description, suggestions])
-  const person = parsed.person ?? hint?.person ?? last.person
-  const category = parsed.category ?? hint?.category ?? last.category
+  const defaults = getSettings()
+  const person = parsed.person ?? hint?.person ?? (defaults.defaultPerson || undefined) ?? last.person
+  const category = parsed.category ?? hint?.category ?? (defaults.defaultCategory || undefined) ?? last.category
   const guessed = { person: !parsed.person && !!person, category: !parsed.category && !!category }
   const missing = [!parsed.description && 'descrição', parsed.amount === null && 'valor', !person && 'responsável (@nome)', !category && 'categoria (#nome)'].filter(Boolean) as string[]
 

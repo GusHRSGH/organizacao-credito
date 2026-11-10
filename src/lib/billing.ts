@@ -1,4 +1,4 @@
-import { formatDate, money } from './format'
+import { formatDate, moneyFull } from './format'
 import { receivingText, type Receiving } from './receiving'
 import type { Transaction } from '../types'
 
@@ -29,19 +29,19 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
   const word = bill.name.split(/\s+/)[0]
   const first = word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
   if (!open.length) return `Oi ${first}! Tudo certo com a fatura de ${invoiceLabel}, nada pendente.`
-  const line = (row: Transaction) => `• ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${money(Number(row.amount))}`
+  const line = (row: Transaction) => `• ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(Number(row.amount))}`
   const labels = options.invoiceLabels
   const many = labels && new Set(open.map((row) => row.invoice_id)).size > 1
   let detail: string
   if (many) {
     const byInvoice = new Map<string, Transaction[]>()
     for (const row of open) byInvoice.set(row.invoice_id, [...(byInvoice.get(row.invoice_id) ?? []), row])
-    detail = [...byInvoice].map(([id, list]) => `${labels.get(id) ?? 'Fatura'} (${money(list.reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100)}):\n${list.map(line).join('\n')}`).join('\n\n')
+    detail = [...byInvoice].map(([id, list]) => `${labels.get(id) ?? 'Fatura'} (${moneyFull(list.reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100)}):\n${list.map(line).join('\n')}`).join('\n\n')
   } else detail = open.map(line).join('\n')
-  const paidNote = bill.paid > 0 ? `\n(Já pago: ${money(bill.paid)})` : ''
+  const paidNote = bill.paid > 0 ? `\n(Já pago: ${moneyFull(bill.paid)})` : ''
   const pay = options.receiving ? receivingText(options.receiving, bill.pending, invoiceLabel) : ''
-  const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${money(bill.pending)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${money(bill.pending)}.`
-  return `${head}\n\nDetalhe:\n${detail}\n\nTotal: ${money(bill.pending)}${paidNote}${pay ? `\n\n${pay}` : ''}`
+  const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${moneyFull(bill.pending)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${moneyFull(bill.pending)}.`
+  return `${head}\n\nDetalhe:\n${detail}\n\nTotal: ${moneyFull(bill.pending)}${paidNote}${pay ? `\n\n${pay}` : ''}`
 }
 
 /** Uma mensagem só para o grupo: quanto cada um deve e como pagar. */
@@ -49,7 +49,7 @@ export function buildGroupMessage(bills: PersonBill[], label: string, receiving?
   const owing = bills.filter((bill) => bill.pending > 0.004)
   if (!owing.length) return `Acerto de ${label}: tudo pago, ninguém deve nada. 🎉`
   const total = owing.reduce((sum, bill) => sum + Math.round(bill.pending * 100), 0) / 100
-  const lines = owing.map((bill) => `• ${bill.name}: ${money(bill.pending)}`)
+  const lines = owing.map((bill) => `• ${bill.name}: ${moneyFull(bill.pending)}`)
   const pay = receiving ? receivingText(receiving) : ''
-  return `Acerto de ${label}:\n\n${lines.join('\n')}\n\nTotal a receber: ${money(total)}${pay ? `\n\n${pay}` : ''}`
+  return `Acerto de ${label}:\n\n${lines.join('\n')}\n\nTotal a receber: ${moneyFull(total)}${pay ? `\n\n${pay}` : ''}`
 }

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 
-type TourPage = 'dashboard' | 'invoices' | 'billing' | 'settings'
+type TourPage = 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings'
 interface Props {
   onClose: () => void
   onPage: (page: TourPage) => void
   onAction: (action: 'add' | 'import') => void
 }
 
-interface Step { target?: string; page?: TourPage; section: string; icon: IconName; title: string; text: string; example?: ReactNode }
+interface Step { target?: string; page?: TourPage; tab?: string; section: string; icon: IconName; title: string; text: string; example?: ReactNode }
 
 const Example = ({ children }: { children: ReactNode }) => <div className="tour-example"><span className="tour-tag">Exemplo</span>{children}</div>
 const Row = ({ a, b }: { a: ReactNode; b?: ReactNode }) => <div className="ex-row"><b>{a}</b>{b !== undefined && <span>{b}</span>}</div>
@@ -61,11 +61,15 @@ const STEPS: Step[] = [
   { section: 'Cobrança', target: 'bill-card', page: 'billing', icon: 'copy', title: 'Cobrar sem digitar nada', text: '“Copiar cobrança” gera uma mensagem pronta para colar no WhatsApp. Quando a pessoa pagar, “Marcar tudo como pago” dá baixa em todos os lançamentos dela.',
     example: <Example><div className="ex-code">Oi Ana! Sua parte na fatura de novembro: R$ 412,00</div><div className="ex-arrow">é só colar no WhatsApp</div></Example> },
 
-  { section: 'Dados', target: 'nav-settings', page: 'settings', icon: 'settings', title: 'Dados: o painel de controle', text: 'Aparência, conta, backups e importação ficam aqui. Vou mostrar cada painel.',
-    example: <Example><Chips items={['Aparência', 'Conta', 'Cópias', 'Exportar', 'Importar']} /></Example> },
-  { section: 'Dados', target: 'set-card', page: 'settings', icon: 'bank', title: 'Diga quando seu cartão fecha', text: 'Informe o dia do vencimento e quantos dias antes a fatura fecha. Aí cada compra vai sozinha para a fatura certa: uma compra de 09/11 com fatura vencendo dia 07 e fechando 7 dias antes entra em Dezembro, não em Novembro.',
+  { section: 'Metas', target: 'nav-goals', page: 'goals', icon: 'trend-up', title: 'Metas e limites', text: 'Defina quanto quer gastar por fatura no total, em uma categoria ou por pessoa. A barra fica amarela perto do limite e vermelha quando passa. Dá para aceitar sugestões pela média dos meses anteriores.',
+    example: <Example><Row a="Mercado" b="R$ 640 de R$ 800" /><div className="ex-arrow">80% → a barra avisa</div></Example> },
+  { section: 'Configurações', target: 'nav-config', page: 'config', tab: 'aparencia', icon: 'settings', title: 'Configurações: do seu jeito', text: 'Aqui ficam aparência, tamanho do texto, menu e tela inicial, formatos de data e valor, padrões de lançamento, privacidade e avisos. No celular, abra pelo botão “Mais”.',
+    example: <Example><Chips items={['Aparência', 'Menu', 'Formatos', 'Lançamentos', 'Privacidade', 'Avisos']} /></Example> },
+  { section: 'Dados', target: 'nav-settings', page: 'settings', icon: 'settings', title: 'Dados e backup', text: 'Conta na nuvem, cópias, exportar, importar e limpeza ficam aqui. Vou mostrar cada painel.',
+    example: <Example><Chips items={['Conta', 'Cópias', 'Exportar', 'Importar']} /></Example> },
+  { section: 'Configurações', target: 'set-card', page: 'config', tab: 'lancamentos', icon: 'bank', title: 'Diga quando seu cartão fecha', text: 'Informe o dia do vencimento e quantos dias antes a fatura fecha. Aí cada compra vai sozinha para a fatura certa: uma compra de 09/11 com fatura vencendo dia 07 e fechando 7 dias antes entra em Dezembro, não em Novembro.',
     example: <Example><Row a="Vence dia 7 · fecha 7 dias antes" /><div className="ex-arrow">compra de 09/11 → fatura de Dezembro</div></Example> },
-  { section: 'Dados', target: 'set-theme', page: 'settings', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 9 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
+  { section: 'Configurações', target: 'set-theme', page: 'config', tab: 'aparencia', icon: 'sparkle', title: 'Deixe com a sua cara', text: 'Escolha entre 9 temas e o modo claro, escuro ou automático. A mudança vale na hora. O vermelho dos pendentes é o mesmo em todos os temas.',
     example: <Example><Chips items={['Violeta', 'Verde-petróleo', 'Preto puro', 'Dourado']} /></Example> },
   { section: 'Dados', target: 'set-cloud', page: 'settings', icon: 'cloud', title: 'Sua conta na nuvem', text: 'Entre com o e-mail (sem senha, só um código) para guardar uma cópia segura e usar em outros aparelhos. É opcional, e o app continua funcionando sem internet.',
     example: <Example><div className="ex-code">Seu código de acesso: 123456</div></Example> },
@@ -97,7 +101,10 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
   const step = STEPS[index]
   const last = index === STEPS.length - 1
 
-  useEffect(() => { if (step.page) onPage(step.page) }, [step.page, onPage])
+  useEffect(() => {
+    if (step.tab) { try { sessionStorage.setItem('oc:config-tab', step.tab) } catch { /* ignora */ } window.dispatchEvent(new CustomEvent('oc:config-tab', { detail: step.tab })) }
+    if (step.page) onPage(step.page)
+  }, [step.page, step.tab, onPage])
 
   const measure = useCallback(() => {
     const node = step.target ? findTarget(step.target) : null
