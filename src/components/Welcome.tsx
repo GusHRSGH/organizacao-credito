@@ -39,8 +39,9 @@ export default function Welcome({ google, cloud, theme, onToggleTheme, onGuest, 
     </button>
     <section className="welcome-card" aria-labelledby="welcome-title">
       <Logo size={72} />
-      <h1 id="welcome-title">Organização do Crédito</h1>
-      <p className="welcome-lead">Acompanhe suas faturas e entenda para onde vai o seu dinheiro. Entre com o e-mail para guardar uma cópia segura na nuvem, ou comece sem conta.</p>
+      <h1 id="welcome-title" className="wordmark">Cadence</h1>
+      <p className="welcome-tag">Seu cartão, no ritmo certo.</p>
+      <p className="welcome-lead">Lance, confira e cobre cada fatura sem planilha. Entre com o e-mail para guardar uma cópia segura na nuvem, ou comece sem conta.</p>
 
       {alert && <div className={`alert ${alert.kind}`} role="status">{alert.text}<button className="text-button" onClick={onDismissAlert}>Fechar</button></div>}
 

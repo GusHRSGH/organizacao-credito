@@ -17,7 +17,11 @@ function systemTheme(): Theme {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
+/** A marca Cadence vira o visual padrão uma vez; depois, a escolha da pessoa vale. */
+const BRAND_KEY = 'oc:brand'
+
 function readPrefs(): Prefs {
+  if (read(BRAND_KEY) !== 'cadence') { write(PALETTE_KEY, 'cadence'); write(BRAND_KEY, 'cadence') }
   const stored = read(MODE_KEY) ?? read(OLD_KEY)
   const mode: ThemeMode = stored === 'light' || stored === 'dark' || stored === 'auto' ? stored : 'auto'
   return { mode, palette: getPalette(read(PALETTE_KEY) ?? DEFAULT_PALETTE).id }

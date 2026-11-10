@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 23, date: '2026-11-10', title: 'Agora somos a Cadence',
+    items: [
+      'O app mudou de nome e de cara: Cadence, com o lema “Seu cartão, no ritmo certo”. Novo símbolo (um C de arcos concêntricos), novo ícone no Android e no Windows, nova tela de abertura.',
+      'Visual novo, em preto e branco com um único acento verde-lima, e fonte nova (Inter). Ele vira o tema padrão; os outros temas continuam em Configurações > Aparência.',
+      'Seus dados, backups, metas e configurações continuam todos no lugar. Só mudou o visual e o nome.',
+    ],
+  },
+  {
     n: 22, date: '2026-11-10', title: 'Conciliação com a fatura do banco',
     items: [
       'Ao importar a fatura do banco para um mês que você já lançou, o app compara as duas: o que bate (mesmo valor e nome ou data parecidos) não entra de novo, o que só o banco cobrou entra, e o que só você lançou aparece como “o banco não cobrou”.',

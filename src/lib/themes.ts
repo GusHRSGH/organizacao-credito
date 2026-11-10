@@ -9,9 +9,33 @@ export interface PaletteDef {
   satLight: number
   /** Fundo totalmente preto no modo escuro. */
   amoled?: boolean
+  /** Cores fixas (paleta de marca), em vez de derivadas do matiz. */
+  fixed?: Record<Mode, Record<string, string>>
+}
+
+const GOOD_BAD = {
+  dark: { '--good': '#4ade80', '--good-soft': '#10281a', '--warn': '#fbbf24', '--warn-soft': '#33270b', '--bad': '#f87171', '--bad-soft': '#3a1618' },
+  light: { '--good': '#1f8a4c', '--good-soft': '#def3e6', '--warn': '#9a5b0a', '--warn-soft': '#fbeccf', '--bad': '#d12f3f', '--bad-soft': '#fde3e6' },
 }
 
 export const PALETTES: PaletteDef[] = [
+  {
+    id: 'cadence', name: 'Cadence (preto, branco e lima)', hue: 72, nhDark: 0, satDark: 0, nhLight: 60, satLight: 8,
+    fixed: {
+      dark: {
+        '--bg': '#0a0a0a', '--sidebar': '#0a0a0a', '--surface': '#111111', '--surface-2': '#1a1a1a', '--line': '#232323', '--line-strong': '#363636',
+        '--text': '#fafafa', '--muted': '#a3a3a3', '--faint': '#737373',
+        '--primary': '#c6f432', '--primary-strong': '#dcff6b', '--primary-soft': '#1b2108', '--on-primary': '#0a0a0a', '--accent': '#c6f432',
+        ...GOOD_BAD.dark, '--chart-alt': '#fafafa', '--chart-alt-light': '#ffffff', '--slice-1': '#c6f432', '--slice-2': '#fafafa', '--slice-3': '#b4b4b4', '--slice-4': '#8a8a8a', '--slice-5': '#646464', '--slice-6': '#9bbf2a', '--slice-7': '#d4d4d4', '--slice-8': '#747d4a', '--slice-9': '#4a4a4a', '--slice-10': '#363636', '--focus': '#c6f43280',
+      },
+      light: {
+        '--bg': '#fafaf7', '--sidebar': '#ffffff', '--surface': '#ffffff', '--surface-2': '#f2f2ed', '--line': '#e7e7e1', '--line-strong': '#d3d3cb',
+        '--text': '#0a0a0a', '--muted': '#5b5b55', '--faint': '#8c8c84',
+        '--primary': '#0a0a0a', '--primary-strong': '#000000', '--primary-soft': '#efefe8', '--on-primary': '#ffffff', '--accent': '#c6f432',
+        ...GOOD_BAD.light, '--chart-alt': '#8c8c84', '--chart-alt-light': '#a3a39b', '--slice-1': '#0a0a0a', '--slice-2': '#4a4a46', '--slice-3': '#7a7a74', '--slice-4': '#a3a39b', '--slice-5': '#c9c9c1', '--slice-6': '#9bbf2a', '--slice-7': '#2a2a28', '--slice-8': '#62662f', '--slice-9': '#bcbcb4', '--slice-10': '#dcdcd4', '--focus': '#0a0a0a40',
+      },
+    },
+  },
   { id: 'violeta', name: 'Preto e roxo', hue: 262, nhDark: 260, satDark: 6, nhLight: 255, satLight: 20 },
   { id: 'petroleo', name: 'Verde-petróleo e creme', hue: 175, nhDark: 175, satDark: 14, nhLight: 40, satLight: 35 },
   { id: 'azul', name: 'Azul clássico', hue: 220, nhDark: 222, satDark: 22, nhLight: 220, satLight: 30 },
@@ -52,6 +76,7 @@ const onAccent = (hex: string) => (luminance(hex) > 0.3 ? '#0b0b0f' : '#ffffff')
 export type Mode = 'light' | 'dark'
 
 export function tokensFor(def: PaletteDef, mode: Mode): Record<string, string> {
+  if (def.fixed) return def.fixed[mode]
   if (mode === 'dark') {
     const n = (l: number) => hsl(def.nhDark, def.satDark, l)
     const primary = hsl(def.hue, 90, 66)

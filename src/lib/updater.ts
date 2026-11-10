@@ -26,7 +26,7 @@ export function parseBuild(tag: string) {
 
 /** Escolhe da Release o APK do próprio repositório, ignorando qualquer outro endereço. */
 export function pickApk(assets: Array<{ name?: string; browser_download_url?: string }>) {
-  return assets.find((asset) => /^organizacao-credito-[\d.]+\.apk$/.test(asset.name ?? '') && (asset.browser_download_url ?? '').startsWith(DOWNLOAD_PREFIX))?.browser_download_url ?? null
+  return assets.find((asset) => /^(organizacao-credito|cadence)-[\d.]+\.apk$/.test(asset.name ?? '') && (asset.browser_download_url ?? '').startsWith(DOWNLOAD_PREFIX))?.browser_download_url ?? null
 }
 
 export async function currentBuild() {

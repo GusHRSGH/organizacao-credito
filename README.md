@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="public/icon.svg" width="96" alt="Ícone do Organização do Crédito" />
+<img src="public/icon.svg" width="96" alt="Ícone da Cadence" />
 
-# Organização do Crédito
+# Cadence
 
-**Acompanhe suas faturas de cartão, compare meses e guarde um backup no seu Google Drive.**
+**Seu cartão, no ritmo certo.** Lance, confira e cobre cada fatura, compare meses e guarde um backup seguro.
 
 Aplicativo para Windows, gratuito, com dados guardados no próprio computador.
 

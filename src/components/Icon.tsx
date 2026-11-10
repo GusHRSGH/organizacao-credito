@@ -93,11 +93,12 @@ export function Logo({ size = 36 }: { size?: number }) {
   return <img className="logo" src={`${import.meta.env.BASE_URL}icon.svg`} width={size} height={size} alt="" />
 }
 
-/** Logo só com o símbolo, nas cores do tema. */
+/** Símbolo da Cadence: um C feito de arcos concêntricos. O arco de dentro leva o verde-lima da marca. */
 export function LogoMark({ size = 32 }: { size?: number }) {
-  return <svg className="logo-mark" width={size} height={size} viewBox="0 0 256 256" fill="none" role="img" aria-label="Organização do Crédito">
-    <circle cx="98" cy="128" r="44" stroke="var(--primary)" strokeWidth="22" />
-    <path d="M196 100a44 44 0 1 0 0 56" stroke="var(--primary-strong)" strokeWidth="22" strokeLinecap="round" />
+  return <svg className="logo-mark" width={size} height={size} viewBox="0 0 256 256" fill="none" role="img" aria-label="Cadence">
+    <path d="M191.91 185.55A86 86 0 1 1 191.91 70.45" stroke="var(--text)" strokeWidth="15" strokeLinecap="round" />
+    <path d="M171.10 166.81A58 58 0 1 1 171.10 89.19" stroke="var(--text)" strokeWidth="15" strokeLinecap="round" />
+    <path d="M150.29 148.07A30 30 0 1 1 150.29 107.93" stroke="var(--accent, #c6f432)" strokeWidth="15" strokeLinecap="round" />
   </svg>
 }
 

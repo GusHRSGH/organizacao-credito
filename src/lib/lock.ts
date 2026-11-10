@@ -11,7 +11,7 @@ export async function lockAvailable() {
 
 export async function authenticate(reason: string) {
   try {
-    await BiometricAuth.authenticate({ reason, cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Organização do Crédito', androidSubtitle: 'Confirme que é você' })
+    await BiometricAuth.authenticate({ reason, cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Cadence', androidSubtitle: 'Confirme que é você' })
     return true
   } catch { return false }
 }
