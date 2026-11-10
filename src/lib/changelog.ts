@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 24, date: '2026-11-10', title: 'Novo símbolo da Cadence',
+    items: [
+      'O símbolo agora é um C grosso com um cartão em verde-lima encaixado na abertura. Mudou no menu, na tela de abertura, no bloqueio e nos ícones do Android e do Windows.',
+    ],
+  },
+  {
     n: 23, date: '2026-11-10', title: 'Agora somos a Cadence',
     items: [
       'O app mudou de nome e de cara: Cadence, com o lema “Seu cartão, no ritmo certo”. Novo símbolo (um C de arcos concêntricos), novo ícone no Android e no Windows, nova tela de abertura.',
