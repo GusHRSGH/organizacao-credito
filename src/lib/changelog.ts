@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 17, date: '2026-11-09', title: 'Previsão da fatura aberta',
+    items: [
+      'A Visão geral agora mostra quanto a fatura aberta deve fechar: o que você já lançou (parcelas incluídas), as assinaturas que ainda vão cair e a média dos gastos do dia a dia das últimas faturas.',
+      'Se alguma assinatura detectada ainda não foi lançada no mês, um botão lança todas de uma vez, no mesmo dia do mês anterior.',
+      'É só uma estimativa para você se planejar; o valor final é o do banco.',
+    ],
+  },
+  {
     n: 16, date: '2026-11-09', title: 'Metas e limites, Configurações com abas e avisos',
     items: [
       'Nova tela “Metas e limites”: defina um limite por fatura para o total, uma categoria ou uma pessoa. A barra fica amarela perto do limite e vermelha quando passa, e o app sugere metas pela média dos meses anteriores.',

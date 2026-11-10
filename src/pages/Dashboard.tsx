@@ -3,6 +3,8 @@ import { Donut, HBarChart, StackedColumns } from '../components/charts'
 import { AMBER, GREEN, NEUTRAL_SLICE, RED, SLICE_COLORS, TEAL, withName } from '../components/palette'
 import { Icon } from '../components/Icon'
 import WatchPanels from '../components/WatchPanels'
+import ForecastPanel from '../components/ForecastPanel'
+import type { Subscription } from '../lib/watch'
 import { EmptyState, Hero, Metric, PageHeading, Panel } from '../components/ui'
 import { money, pct, signedMoney } from '../lib/format'
 import { categoryToken, personToken, type DrillFilter } from '../lib/drill'
@@ -22,11 +24,12 @@ interface Props {
   onGo: (page: 'invoices' | 'settings') => void
   onDrill: (filter: DrillFilter) => void
   canImport: boolean
+  onLaunchSubs?: (period: string, subs: Subscription[]) => Promise<void>
 }
 
 const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? 'pos' : '')
 
-export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport }: Props) {
+export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs }: Props) {
   const [showInsight, setShowInsight] = useInsightVisible()
   const focus = invoices.find((invoice) => invoice.id === focusId)
   const other = invoices.find((invoice) => invoice.id === compareId)
@@ -75,6 +78,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
     </section>
     {showInsight && <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} /><span>{insight}</span><button className="insight-x" aria-label="Ocultar o resumo" title="Ocultar (volta em Dados > Aparência)" onClick={() => setShowInsight(false)}>×</button></p>}
 
+    <ForecastPanel invoices={invoices} transactions={transactions} onLaunch={onLaunchSubs} />
     <WatchPanels invoices={invoices} transactions={transactions} focusId={focusId} onDrill={onDrill} />
 
     <div className="panel-grid">
