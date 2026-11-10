@@ -36,9 +36,11 @@ interface TableProps {
   onSelect?: (id: string) => void
   onSelectAll?: (all: boolean) => void
   onEdit?: (row: Transaction) => void
+  /** Lançamentos que vieram do banco e ainda precisam ser conferidos. */
+  review?: Set<string>
 }
 
-export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort, selected, onSelect, onSelectAll, onEdit }: TableProps) {
+export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort, selected, onSelect, onSelectAll, onEdit, review }: TableProps) {
   if (busy) return <p className="empty">Carregando lançamentos…</p>
   if (!rows.length) return <p className="empty">Nenhum lançamento por aqui.</p>
   const head = (key: SortKey, label: string, className = '') => onSort
@@ -47,7 +49,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
   const cards = <ul className="tx-cards">{rows.map((row) => <li key={row.id} className={`tx-card ${row.status === 'paid' ? '' : 'is-pending'} ${selected?.has(row.id) ? 'selected' : ''}`}>
     {selected && <input type="checkbox" className="tx-check" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} />}
     <div className="tx-main">
-      <div className="tx-top"><b>{row.description}</b><span className="tx-amount">{money(Number(row.amount))}</span></div>
+      <div className="tx-top"><b>{row.description}{review?.has(row.id) && <span className="tag review">Conferir</span>}</b><span className="tx-amount">{money(Number(row.amount))}</span></div>
       <div className="tx-meta"><span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="person-cell">{row.person?.name ? <><PersonDot name={row.person.name} />{row.person.name}</> : '—'}</span>{row.category?.name && <span className="tag cat"><Icon name={categoryIcon(row.category.name)} size={13} />{row.category.name}</span>}{row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}</div>
       <div className="tx-foot">
         <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button>
@@ -60,7 +62,7 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
   </tr></thead><tbody>{rows.map((row) => <tr key={row.id} className={`${row.status === 'paid' ? '' : 'is-pending'} ${selected?.has(row.id) ? 'selected' : ''}`}>
     {selected && <td className="check"><input type="checkbox" aria-label={`Selecionar ${row.description}`} checked={selected.has(row.id)} onChange={() => onSelect?.(row.id)} /></td>}
     <td>{formatDate(row.occurred_on)}</td>
-    <td className="desc"><b>{row.description}</b></td>
+    <td className="desc"><b>{row.description}</b>{review?.has(row.id) && <span className="tag review">Conferir</span>}</td>
     <td>{row.person?.name ? <span className="person-cell"><PersonDot name={row.person.name} />{row.person.name}</span> : '—'}</td>
     <td>{row.category?.name ? <span className="tag cat"><Icon name={categoryIcon(row.category.name)} size={13} />{row.category.name}</span> : '—'}</td>
     <td>{row.installment_count ? <span className={`tag ${row.installment_number === row.installment_count ? 'last' : ''}`}>{row.installment_number}/{row.installment_count}</span> : <span className="muted">À vista</span>}</td>

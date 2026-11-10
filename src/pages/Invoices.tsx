@@ -11,6 +11,7 @@ import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
 import { Hero, PageHeading, Panel, TransactionTable, type Sort, type SortKey } from '../components/ui'
 import { messageOf, money } from '../lib/format'
 import { periodLabel } from '../services/installments'
+import { readReview, writeReview } from '../lib/reconcile'
 import { totals } from '../services/stats'
 import type { DataSource, Invoice, Transaction, TransactionRow } from '../types'
 
@@ -44,6 +45,10 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const [bulkCategory, setBulkCategory] = useState('')
   const descriptionField = useRef<HTMLInputElement>(null)
   const [saved, setSaved] = useState<SavedFilter[]>(readFilters)
+  const [review, setReview] = useState<Set<string>>(() => new Set(readReview()))
+  useEffect(() => { setReview(new Set(readReview())) }, [transactions])
+  const reviewHere = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId && review.has(row.id)), [transactions, invoiceId, review])
+  const confirmReview = () => { const gone = new Set(reviewHere.map((row) => row.id)); const next = readReview().filter((id) => !gone.has(id)); writeReview(next); setReview(new Set(next)) }
   const [naming, setNaming] = useState<string | null>(null)
 
   useEffect(() => {
@@ -223,8 +228,9 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
       <datalist id="bulk-categories">{categories.map((name) => <option key={name} value={name} />)}</datalist>
     </div>}
 
+    {reviewHere.length > 0 && <div className="restore-offer" role="status"><span><b>{reviewHere.length} {reviewHere.length === 1 ? 'lançamento veio' : 'lançamentos vieram'} do banco para você conferir.</b> Eles estão com a etiqueta “Conferir”. Corrija o que precisar e confirme.</span><div className="button-row"><button className="primary-button" onClick={confirmReview}>Está tudo certo</button></div></div>}
     <section className="panel" data-tour="tx-list">
-      <TransactionTable rows={visible} busy={false} sort={sort} onSort={toggleSort}
+      <TransactionTable rows={visible} review={review} busy={false} sort={sort} onSort={toggleSort}
         onToggle={(row) => void run(() => source.setTransactionStatus(row.id, row.status === 'paid' ? 'pending' : 'paid'))}
         selected={local ? selected : undefined} onSelect={toggleSelect} onSelectAll={selectAll} onEdit={local ? setEditing : undefined}
         onDelete={(row) => { if (local) void run(() => removeWithUndo([row.id], `Excluído: ${row.description}.`)); else if (window.confirm('Excluir este lançamento?')) void run(() => source.removeTransaction(row.id)) }} />
