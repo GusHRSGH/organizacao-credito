@@ -11,6 +11,7 @@ import { categoryToken, personToken, type DrillFilter } from '../lib/drill'
 import { shortPeriodLabel } from '../services/installments'
 import { useInsightVisible } from '../lib/prefs'
 import { summarize } from '../lib/insight'
+import { readGoals } from '../lib/goals'
 import { compareGroups, groupBy, monthlyTotals, totals, variation } from '../services/stats'
 import type { Invoice, Transaction } from '../types'
 
@@ -31,6 +32,7 @@ const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? '
 
 export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs }: Props) {
   const [showInsight, setShowInsight] = useInsightVisible()
+  const personLimits = useMemo(() => Object.fromEntries(readGoals().filter((g) => g.scope === 'person' && !g.category).map((g) => [g.name, g.limit])), [])
   const focus = invoices.find((invoice) => invoice.id === focusId)
   const other = invoices.find((invoice) => invoice.id === compareId)
   const data = useMemo(() => {
@@ -83,7 +85,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
 
     <div className="panel-grid">
       <Panel tour="dash-people" icon="users" title="Gasto por responsável" subtitle={other ? `${labelA} x ${labelB}` : labelA}>
-        <HBarChart rows={peopleRows.map((row) => ({ label: row.name, values: other ? [row.a, row.b] : [row.a] }))} series={series} onPick={(name, index) => onDrill({ invoiceId: invoiceOf(index), person: personToken(name) })} />
+        <HBarChart rows={peopleRows.map((row) => ({ label: row.name, values: other ? [row.a, row.b] : [row.a] }))} series={series} limits={personLimits} onPick={(name, index) => onDrill({ invoiceId: invoiceOf(index), person: personToken(name) })} />
       </Panel>
       <Panel icon="pie" title="Categorias" subtitle={labelA}><Donut slices={slices('a')} centerLabel="Total" onPick={(name) => onDrill({ invoiceId: focusId, category: categoryToken(name) })} /></Panel>
     </div>

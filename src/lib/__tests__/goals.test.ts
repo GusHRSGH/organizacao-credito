@@ -10,6 +10,8 @@ describe('metas', () => {
     expect(spentFor({ id: '1', scope: 'total', name: '', limit: 1 }, rows)).toBe(150.3)
     expect(spentFor({ id: '2', scope: 'category', name: 'Mercado', limit: 1 }, rows)).toBe(100.1)
     expect(spentFor({ id: '3', scope: 'person', name: 'Bia', limit: 1 }, rows)).toBe(50.2)
+    expect(spentFor({ id: '4', scope: 'person', name: 'Bia', category: 'Lazer', limit: 1 }, rows)).toBe(50.2)
+    expect(spentFor({ id: '5', scope: 'person', name: 'Bia', category: 'Mercado', limit: 1 }, rows)).toBe(0)
   })
   it('classifica o nível', () => {
     expect(levelOf(79, 100)).toBe('ok')

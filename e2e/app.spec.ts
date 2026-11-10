@@ -387,3 +387,17 @@ test('a previsão estima a fatura aberta a partir das anteriores', async ({ page
   await expect(painel).toContainText('Já lançado')
   await expect(painel).toContainText('média das últimas 1 fatura')
 })
+
+test('meta de uma pessoa aparece no gráfico com a linha de limite', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'goals')
+  await page.getByLabel('O que limitar').selectOption('person')
+  await page.locator('.goal-form select').nth(1).selectOption({ index: 1 })
+  await page.getByLabel('Limite por fatura (R$)').fill('1')
+  await page.getByRole('button', { name: 'Criar meta' }).click()
+  await expect(page.getByRole('heading', { name: 'Pessoas x limite' })).toBeVisible()
+  await expect(page.locator('.chart-limit').first()).toBeAttached()
+  await irPara(page, 'dashboard')
+  await expect(page.locator('.chart-limit').first()).toBeAttached()
+})

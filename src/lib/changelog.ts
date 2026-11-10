@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 18, date: '2026-11-10', title: 'Limite por pessoa, com gráfico',
+    items: [
+      'Em Metas e limites, a meta de uma pessoa agora pode valer só para uma categoria. Exemplo: Ana em Lazer, R$ 200 por fatura.',
+      'No gráfico “Gasto por responsável” da Visão geral, cada pessoa com limite ganha uma linha tracejada e a barra fica vermelha quando passa.',
+      'Metas e limites ganhou o gráfico “Pessoas x limite”, com cada meta de pessoa ao lado do que ela já gastou.',
+    ],
+  },
+  {
     n: 17, date: '2026-11-09', title: 'Previsão da fatura aberta',
     items: [
       'A Visão geral agora mostra quanto a fatura aberta deve fechar: o que você já lançou (parcelas incluídas), as assinaturas que ainda vão cair e a média dos gastos do dia a dia das últimas faturas.',
