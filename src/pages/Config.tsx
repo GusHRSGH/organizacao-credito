@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import AppearancePanel from '../components/AppearancePanel'
 import CardPanel from '../components/CardPanel'
+import PluggyPanel from '../components/PluggyPanel'
 import SecurityPanel from '../components/SecurityPanel'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
@@ -119,7 +120,7 @@ export default function Config({ people, categories, notify }: Props) {
       <Toggle checked={settings.remindGoals} onChange={(remindGoals) => patch({ remindGoals })}>Avisar quando uma meta chegar perto do limite ou estourar</Toggle>
     </Panel></>}
 
-    {tab === 'avancado' && <Panel icon="download" title="Backup das configurações" subtitle="Leve o seu jeito de usar para outro aparelho.">
+    {tab === 'avancado' && <><PluggyPanel notify={notify} /><Panel icon="download" title="Backup das configurações" subtitle="Leve o seu jeito de usar para outro aparelho.">
       <div className="button-row">
         <button className="secondary-button" onClick={() => downloadText(`configuracoes-${stamp()}.json`, exportSettings(), 'application/json')}>Baixar configurações</button>
         <button className="secondary-button" onClick={() => fileRef.current?.click()}>Carregar configurações…</button>
@@ -127,7 +128,7 @@ export default function Config({ people, categories, notify }: Props) {
         <button className="text-button" onClick={() => { if (window.confirm('Voltar todas as configurações ao padrão? Seus lançamentos não mudam.')) { resetSettings(); notify('notice', 'Configurações restauradas.') } }}>Restaurar o padrão</button>
       </div>
       <p className="hint">Metas, cartão e o tema não entram neste arquivo. Os lançamentos ficam no backup de Dados e backup.</p>
-    </Panel>}
+    </Panel></>}
   </>
 }
 

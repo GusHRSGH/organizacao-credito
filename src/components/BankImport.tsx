@@ -4,6 +4,7 @@ import MonthPicker from './MonthPicker'
 import { buildQuestions, findRefunds } from '../lib/assign'
 import { classifyRows, futureInstallments, guessPeriod, readBankFile, summarizeIncoming, toImportRows, type BankFile } from '../lib/bankImport'
 import { readCard } from '../lib/card'
+import { fetchBills, readPluggy, toBankFile, type PluggyBill } from '../lib/pluggy'
 import { readReview, reconcile, writeReview } from '../lib/reconcile'
 import { formatDate, messageOf, money, pct } from '../lib/format'
 import { buildInstallmentSuggestions, type Suggestion } from '../lib/suggest'
@@ -45,6 +46,8 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const pick = useRef<HTMLInputElement>(null)
+  const [pluggyBills, setPluggyBills] = useState<PluggyBill[] | null>(null)
+  const pluggy = useMemo(() => readPluggy(), [])
 
   async function open(chosen: File | undefined) {
     if (!chosen) return
@@ -54,6 +57,22 @@ export default function BankImport({ local, invoices, transactions, people, cate
       setFile(bank); setEdits({}); setAnswers({}); setSkipped([]); setRefunds({}); setDry(null)
       setPeriod(guessPeriod(bank.periodHint, bank.rows, readCard()))
     } catch (cause) { notify('error', messageOf(cause)) } finally { setStatus(''); if (pick.current) pick.current.value = '' }
+  }
+
+  async function fromBank() {
+    if (!pluggy) return
+    setStatus('Buscando as compras no banco pela Pluggy…')
+    try {
+      const found = await fetchBills(pluggy, readCard())
+      if (!found.bills.length) throw new Error('A Pluggy não trouxe compras de cartão dos últimos 75 dias. O banco atualiza a cada 24 horas; tente de novo mais tarde.')
+      setPluggyBills(found.bills)
+    } catch (cause) { notify('error', messageOf(cause)) } finally { setStatus('') }
+  }
+
+  function pickBill(bill: PluggyBill) {
+    const bank = toBankFile(bill)
+    setFile(bank); setName(`Meu Pluggy, fatura de ${periodLabel(bill.period)}`); setEdits({}); setAnswers({}); setSkipped([]); setRefunds({}); setDry(null); setPluggyBills(null)
+    setPeriod(guessPeriod(bank.periodHint, bank.rows, readCard()))
   }
 
   const existingInvoice = invoices.find((invoice) => invoice.period === period)
@@ -128,6 +147,16 @@ export default function BankImport({ local, invoices, transactions, people, cate
           <input ref={pick} type="file" accept=".csv,.xlsx,.pdf,.txt,application/pdf,image/*" hidden aria-label="Arquivo da fatura do banco" onChange={(event) => void open(event.target.files?.[0])} />
           <button className="text-button" onClick={onClose}>Cancelar</button>{status && <span className="muted" role="status">{status}</span>}</div>
         <p className="hint">Aceita CSV, XLSX, PDF e foto. Tudo é lido neste aparelho; nada é enviado para fora.</p>
+        {pluggy && <section className="bank-asks" aria-label="Buscar no banco">
+          <h3>Ou busque direto no banco</h3>
+          {!pluggyBills ? <>
+            <p className="hint">Usa a sua conexão do Meu Pluggy (Configurações, Avançado). Traz as compras dos últimos 75 dias, já separadas por fatura.</p>
+            <div className="button-row"><button className="secondary-button" disabled={!!status} onClick={() => void fromBank()}><Icon name="bank" size={16} />Buscar no banco (Meu Pluggy)</button></div>
+          </> : <>
+            <p className="hint">Achei estas faturas. Qual você quer conferir?</p>
+            <div className="button-row">{pluggyBills.map((bill) => <button key={bill.period} className="secondary-button" onClick={() => pickBill(bill)}>{periodLabel(bill.period)} · {bill.rows.length} {bill.rows.length === 1 ? 'compra' : 'compras'}</button>)}</div>
+          </>}
+        </section>}
       </> : <>
         <h2>Conferi sua fatura</h2>
         <p className="hint">{name}: {file.rows.length} compras encontradas{file.ignored.length ? `, ${file.ignored.length} ${file.ignored.length === 1 ? 'linha ignorada' : 'linhas ignoradas'} (pagamentos, estornos ou ruído)` : ''}.</p>
