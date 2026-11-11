@@ -99,6 +99,22 @@ for (const tamanho of ['normal', 'small', 'xlarge'] as const) {
   })
 }
 
+test('o cartão do tour fica por cima da sombra do destaque', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Continuar sem conta' }).click()
+  await expect(page.getByRole('dialog', { name: 'Tour do app' })).toBeVisible()
+  for (let passo = 0; passo < 6; passo += 1) {
+    await page.waitForTimeout(700)
+    // A sombra do destaque não recebe clique, então o teste compara a ordem de empilhamento: o cartão tem de ficar acima.
+    const camadas = await page.evaluate(() => {
+      const z = (sel: string) => { const v = getComputedStyle(document.querySelector(sel)!).zIndex; return v === 'auto' ? 0 : Number(v) }
+      return { cartao: z('.tour-card'), destaque: document.querySelector('.tour-spot') ? z('.tour-spot') : 0 }
+    })
+    expect(camadas.cartao, `cartão abaixo da sombra no passo ${passo + 1}`).toBeGreaterThan(camadas.destaque)
+    await page.getByRole('button', { name: 'Próximo' }).click()
+  }
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)

@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 29, date: '2026-11-11', title: 'Tutorial com texto legível',
+    items: [
+      'A mensagem do tutorial aparecia escurecida, coberta pela sombra do destaque. Agora o cartão fica por cima e o texto aparece com toda a nitidez.',
+    ],
+  },
+  {
     n: 28, date: '2026-11-11', title: 'Tutorial certo em qualquer tamanho de texto',
     items: [
       'O destaque do tutorial saía deslocado e com tamanho errado quando o Tamanho do texto não estava em “Normal”. Agora ele acompanha o elemento em qualquer tamanho, no celular e no computador.',
