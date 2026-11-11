@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 
 type TourPage = 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings'
@@ -100,6 +100,7 @@ function findTarget(name: string): HTMLElement | null {
 export default function Tour({ onClose, onPage, onAction }: Props) {
   const [index, setIndex] = useState(0)
   const [box, setBox] = useState<Box | null>(null)
+  const probe = useRef<HTMLDivElement>(null)
   const step = STEPS[index]
   const last = index === STEPS.length - 1
 
@@ -112,7 +113,12 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     const node = step.target ? findTarget(step.target) : null
     if (!node) { setBox(null); return }
     const rect = node.getBoundingClientRect()
-    const next = { top: Math.round(rect.top - PAD), left: Math.round(rect.left - PAD), width: Math.round(rect.width + PAD * 2), height: Math.round(Math.min(rect.height, window.innerHeight * 0.45) + PAD * 2) }
+    // O tamanho do texto usa zoom no documento. Conforme o navegador, as medidas vêm na escala da tela ou na do zoom; a sonda de 100px mostra qual é.
+    const k = (probe.current?.getBoundingClientRect().width ?? 100) / 100 || 1
+    const next = {
+      top: Math.round(rect.top / k - PAD), left: Math.round(rect.left / k - PAD), width: Math.round(rect.width / k + PAD * 2),
+      height: Math.round(Math.min(rect.height, window.innerHeight * 0.45) / k + PAD * 2),
+    }
     setBox((now) => (now && now.top === next.top && now.left === next.left && now.width === next.width && now.height === next.height ? now : next))
   }, [step.target])
 
@@ -147,8 +153,9 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const cardAtTop = !!box && box.top > window.innerHeight * 0.5
+  const cardAtTop = !!box && box.top * ((probe.current?.getBoundingClientRect().width ?? 100) / 100 || 1) > window.innerHeight * 0.5
   return <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Tour do app">
+    <div ref={probe} aria-hidden="true" style={{ position: 'fixed', left: 0, top: 0, width: 100, height: 100, visibility: 'hidden', pointerEvents: 'none' }} />
     {box ? <div className="tour-spot" data-tour-target={step.target} style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true" onClick={() => { if (!last) setIndex((n) => n + 1) }}><i /></div> : <div className="tour-dim" aria-hidden="true" />}
     <div key={index} className={`tour-card ${cardAtTop ? 'top' : 'bottom'}`}>
       <div className="tour-progress" aria-hidden="true"><i style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} /></div>
