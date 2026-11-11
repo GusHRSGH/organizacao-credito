@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import MonthPicker from './MonthPicker'
 import { buildQuestions, findRefunds } from '../lib/assign'
-import { classifyRows, guessPeriod, readBankFile, summarizeIncoming, toImportRows, type BankFile } from '../lib/bankImport'
+import { classifyRows, futureInstallments, guessPeriod, readBankFile, summarizeIncoming, toImportRows, type BankFile } from '../lib/bankImport'
 import { readCard } from '../lib/card'
 import { readReview, reconcile, writeReview } from '../lib/reconcile'
 import { formatDate, messageOf, money, pct } from '../lib/format'
-import type { Suggestion } from '../lib/suggest'
+import { buildInstallmentSuggestions, type Suggestion } from '../lib/suggest'
 import { periodLabel } from '../services/installments'
 import type { LocalSource } from '../services/localSource'
 import type { Invoice, ImportResult, Transaction } from '../types'
@@ -35,6 +35,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const [pickMonth, setPickMonth] = useState(false)
   const [defaultPerson, setDefaultPerson] = useState('')
   const [paid, setPaid] = useState(false)
+  const [future, setFuture] = useState(true)
   const [edits, setEdits] = useState<Record<number, Edit>>({})
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [skipped, setSkipped] = useState<string[]>([])
@@ -57,7 +58,8 @@ export default function BankImport({ local, invoices, transactions, people, cate
 
   const existingInvoice = invoices.find((invoice) => invoice.period === period)
   const existingRows = useMemo(() => (existingInvoice ? transactions.filter((row) => row.invoice_id === existingInvoice.id) : []), [transactions, existingInvoice])
-  const base = useMemo(() => (file ? classifyRows(file.rows, { suggestions, categories, defaultPerson }) : []), [file, suggestions, categories, defaultPerson])
+  const installments = useMemo(() => buildInstallmentSuggestions(transactions), [transactions])
+  const base = useMemo(() => (file ? classifyRows(file.rows, { suggestions, categories, defaultPerson, installments }) : []), [file, suggestions, categories, defaultPerson, installments])
   const recon = useMemo(() => reconcile(base, existingRows), [base, existingRows])
   const rows = useMemo(() => base.map((row) => {
     const answered = answers[row.qkey]
@@ -75,6 +77,9 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const answer = (key: string, person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, [key]: name })) }
   const chosen = useMemo(() => rows.filter((row) => row.include), [rows])
   const summary = useMemo(() => summarizeIncoming(chosen), [chosen])
+  const importRows = useMemo(() => toImportRows(chosen, paid), [chosen, paid])
+  const coming = useMemo(() => futureInstallments(importRows, period, transactions), [importRows, period, transactions])
+  const comingLabel = coming.entries.length ? `${coming.entries.length === 1 ? coming.entries[0].label : `${coming.entries[0].label} a ${coming.entries[coming.entries.length - 1].label}`}` : ''
   const previous = useMemo(() => {
     const before = [...invoices].filter((invoice) => invoice.period < period).sort((a, b) => b.period.localeCompare(a.period))[0]
     if (!before) return null
@@ -84,9 +89,9 @@ export default function BankImport({ local, invoices, transactions, people, cate
   useEffect(() => {
     if (!file || !period || !chosen.length) { setDry(null); return }
     let alive = true
-    void local.importInvoices([{ period, label: periodLabel(period), rows: toImportRows(chosen, paid) }], { dryRun: true }).then((value) => { if (alive) setDry(value) }).catch(() => { if (alive) setDry(null) })
+    void local.importInvoices([{ period, label: periodLabel(period), rows: importRows }], { dryRun: true }).then((value) => { if (alive) setDry(value) }).catch(() => { if (alive) setDry(null) })
     return () => { alive = false }
-  }, [file, period, chosen, paid, local])
+  }, [file, period, chosen, importRows, local])
 
   const edit = (id: number, patch: Edit) => setEdits((all) => ({ ...all, [id]: { ...all[id], ...patch } }))
   const newCategories = [...new Set(chosen.filter((row) => row.categoryFrom === 'nova').map((row) => row.category))]
@@ -96,7 +101,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
     setBusy(true)
     try {
       const knownIds = new Set(existingRows.map((row) => row.id))
-      const done = await local.importInvoices([{ period, label: periodLabel(period), rows: toImportRows(chosen, paid) }])
+      const done = await local.importInvoices([{ period, label: periodLabel(period), rows: importRows }, ...(future ? coming.entries : [])])
       const created = (await local.listInvoices()).find((invoice) => invoice.period === period)
       if (created && done.added > 0) {
         const fresh = (await local.listTransactions(created.id)).filter((row) => !knownIds.has(row.id)).map((row) => row.id)
@@ -114,7 +119,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
     <div className="modal assistant bank" role="dialog" aria-modal="true" aria-label="Importar fatura do banco">
       {result ? <>
         <h2>Fatura de {periodLabel(period)} pronta</h2>
-        <p>{result.added} lançamentos entraram (marcados “Conferir” na fatura){result.duplicates ? `, ${result.duplicates} já existiam e foram ignorados` : ''}. Total desta importação: <b>{money(summary.total)}</b>.</p>
+        <p>{result.added} lançamentos entraram (marcados “Conferir” na fatura){result.duplicates ? `, ${result.duplicates} já existiam e foram ignorados` : ''}. Total desta importação: <b>{money(summary.total)}</b>.{future && coming.count > 0 ? ` Também lancei ${coming.count} ${coming.count === 1 ? 'parcela futura' : 'parcelas futuras'} (${money(coming.total)}) em ${comingLabel}.` : ''}</p>
         <div className="button-row"><button className="primary-button" onClick={() => void onDone(period, 'dashboard')}>Ver na visão geral</button><button className="secondary-button" onClick={() => void onDone(period, 'invoices')}>Ver os lançamentos</button><button className="text-button" onClick={onClose}>Fechar</button></div>
       </> : !file ? <>
         <h2>Importar fatura do banco</h2>
@@ -131,6 +136,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
             <button className="text-button" onClick={() => setPickMonth(!pickMonth)} aria-expanded={pickMonth}>{pickMonth ? 'Fechar' : 'Trocar mês'}</button></div>
           <label>Responsável padrão<input value={defaultPerson} onChange={(event) => setDefaultPerson(event.target.value)} list="bank-people" placeholder="Opcional: quem paga o que sobrar" aria-label="Responsável padrão" /></label>
           <label className="check"><input type="checkbox" checked={paid} onChange={(event) => setPaid(event.target.checked)} />Marcar tudo como já pago</label>
+          {coming.count > 0 && <label className="check"><input type="checkbox" checked={future} onChange={(event) => setFuture(event.target.checked)} />Lançar {coming.count === 1 ? 'a' : 'as'} {coming.count} {coming.count === 1 ? 'parcela que falta' : 'parcelas que faltam'} ({money(coming.total)}) em {comingLabel}</label>}
         </section>
         {pickMonth && <MonthPicker value={period} onChange={(p) => { setPeriod(p); setPickMonth(false) }} existing={invoices.map((invoice) => invoice.period)} />}
         <datalist id="bank-people">{people.map((p) => <option key={p} value={p} />)}</datalist>
@@ -140,6 +146,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
           <div><span className="muted">Vai entrar</span><b>{money(summary.total)}</b><small className="muted">{summary.count} lançamentos{summary.installments ? ` · ${summary.installments} ${summary.installments === 1 ? 'parcelado' : 'parcelados'}` : ''}</small></div>
           {previous && <div><span className="muted">Contra {previous.label}</span><b className={variation !== null && variation > 0 ? 'neg' : 'pos'}>{variation === null ? '—' : `${variation > 0 ? '+' : ''}${pct(variation)}`}</b><small className="muted">{money(previous.total)} lá</small></div>}
           {dry && <div><span className="muted">Já existem</span><b>{dry.duplicates}</b><small className="muted">{dry.added} novos</small></div>}
+          <div className="bank-cats" aria-label="Quanto cada pessoa deve"><span className="muted">Por pessoa</span>{summary.byPerson.slice(0, 4).map((p) => <small key={p.name}>{p.name} {money(p.total)}</small>)}</div>
           <div className="bank-cats"><span className="muted">Maiores categorias</span>{summary.byCategory.slice(0, 4).map((c) => <small key={c.name}>{c.name} {money(c.total)}</small>)}</div>
         </section>
         {existingRows.length > 0 && <section className="bank-recon" aria-label="Conciliação com o que você já lançou">

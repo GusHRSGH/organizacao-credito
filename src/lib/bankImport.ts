@@ -3,10 +3,11 @@ import { invoicePeriodFor, type Card } from './card'
 import { guessCategory, matchCategoryName } from './keywords'
 import { parsePastedBill } from './pasteImport'
 import { questionKey } from './assign'
-import { byHistory, type Suggestion } from './suggest'
+import { byHistory, installmentKey, type Suggestion } from './suggest'
 import { analyzeSheet, applyMapping, readRawSheets } from '../services/smartImport'
 import { parseInstallment } from '../services/importXlsx'
-import type { ImportRow } from '../types'
+import { addMonthsToDate, addMonthsToPeriod, periodLabel } from '../services/installments'
+import type { ImportInvoice, ImportRow, Transaction } from '../types'
 
 export interface BankRow { date: string; description: string; amount: number; bankCategory: string; installmentNumber: number | null; installmentCount: number | null }
 export interface BankCredit { date: string; description: string; amount: number }
@@ -89,11 +90,13 @@ function linkIof(rows: BankRow[]): Map<number, number> {
 }
 
 /** Decide responsável e categoria de cada compra: primeiro o seu histórico, depois a categoria do banco, depois palavras comuns. */
-export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Suggestion>; categories: string[]; defaultPerson: string }): ClassifiedRow[] {
+export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Suggestion>; categories: string[]; defaultPerson: string; installments?: Map<string, Suggestion> }): ClassifiedRow[] {
   const iof = linkIof(rows)
   const first = rows.map((row, id): ClassifiedRow => {
     const description = cleanDescription(row.description)
-    const history = byHistory(description, ctx.suggestions) ?? byHistory(row.description, ctx.suggestions)
+    // A parcela anterior da mesma compra (mesmo nome, valor e total) é o sinal mais forte; depois, o histórico do nome.
+    const previous = row.installmentCount ? ctx.installments?.get(installmentKey(description, row.amount, row.installmentCount)) : undefined
+    const history = previous ?? byHistory(description, ctx.suggestions) ?? byHistory(row.description, ctx.suggestions)
     let category = ''
     let categoryFrom: ClassifiedRow['categoryFrom'] = ''
     const special = SPECIAL.find(([pattern]) => pattern.test(row.description.trim()))?.[1]
@@ -140,3 +143,33 @@ export const toImportRows = (rows: ClassifiedRow[], paid: boolean): ImportRow[] 
   date: row.date, description: row.description.trim().slice(0, 160), amount: row.amount, person: row.person.trim(), category: row.category.trim(), status: paid ? 'paid' : 'pending',
   installmentNumber: row.installmentNumber, installmentCount: row.installmentCount,
 }))
+
+/** Troca o "n/m" no fim da descrição pelo número da parcela seguinte: "Loja - Parcela 4/6" vira "Loja - Parcela 5/6". */
+export function bumpInstallment(description: string, by: number): string {
+  return description.replace(/(\d{1,2})(\s*\/\s*)(\d{1,2})(\s*\)?\s*)$/, (_all, n: string, slash: string, count: string, tail: string) => `${Number(n) + by}${slash}${count}${tail}`)
+}
+
+const baseOf = (description: string) => description.replace(/\s*[-–]?\s*(parcela\s*)?\d{1,2}\s*\/\s*\d{1,2}\s*\)?\s*$/i, '').trim().toLocaleLowerCase('pt-BR')
+
+export interface FutureInstallments { entries: ImportInvoice[]; count: number; total: number }
+
+/** As parcelas que faltam depois da desta fatura: uma por mês, com a mesma pessoa, categoria e valor. Pula as que já estão lançadas. */
+export function futureInstallments(rows: ImportRow[], period: string, existing: Transaction[]): FutureInstallments {
+  const have = new Set(existing.filter((row) => row.installment_number && row.installment_count).map((row) => `${baseOf(row.description)}|${Math.round(Number(row.amount) * 100)}|${row.installment_count}|${row.installment_number}`))
+  const byPeriod = new Map<string, ImportRow[]>()
+  let count = 0
+  let cents = 0
+  for (const row of rows) {
+    if (!row.installmentNumber || !row.installmentCount) continue
+    for (let by = 1; row.installmentNumber + by <= row.installmentCount; by += 1) {
+      const number = row.installmentNumber + by
+      if (have.has(`${baseOf(row.description)}|${Math.round(row.amount * 100)}|${row.installmentCount}|${number}`)) continue
+      const target = addMonthsToPeriod(period, by)
+      byPeriod.set(target, [...(byPeriod.get(target) ?? []), { ...row, date: addMonthsToDate(row.date, by), description: bumpInstallment(row.description, by), status: 'pending', installmentNumber: number }])
+      count += 1
+      cents += Math.round(row.amount * 100)
+    }
+  }
+  const entries = [...byPeriod].sort(([a], [b]) => a.localeCompare(b)).map(([target, list]) => ({ period: target, label: periodLabel(target), rows: list }))
+  return { entries, count, total: cents / 100 }
+}
