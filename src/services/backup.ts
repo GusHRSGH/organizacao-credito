@@ -10,7 +10,7 @@ export function makeBackup(data: LocalData, now = new Date()): BackupFile {
 
 /** Valida um backup antes de substituir o banco local. Lança erro em português. */
 export function validateBackup(input: unknown): LocalData {
-  if (!isObject(input) || input.app !== 'organizacao-credito') throw new Error('Este arquivo não é um backup da Cadence.')
+  if (!isObject(input) || input.app !== 'organizacao-credito') throw new Error('Este arquivo não é um backup do Chacun.')
   if (input.version !== 1) throw new Error('Versão de backup não suportada por esta versão do aplicativo.')
   const data = input.data
   if (!isObject(data) || !Array.isArray(data.invoices) || !Array.isArray(data.transactions) || !Array.isArray(data.people) || !Array.isArray(data.categories)) {

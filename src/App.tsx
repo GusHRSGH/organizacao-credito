@@ -209,7 +209,7 @@ export default function App() {
   return <div className={`app-shell ${menuOpen ? 'menu-open' : ''}`}>
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
     <aside className="sidebar">
-      <div className="brand"><LogoMark size={34} /><span className="wordmark">Cadence</span></div>
+      <div className="brand"><LogoMark size={34} /><span className="wordmark">Chacun</span></div>
       {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{prefs.showBilling && nav('billing', 'users', 'Quem deve quanto')}{prefs.showGoals && nav('goals', 'trend-up', 'Metas e limites')}
       <div className="nav-section">Preferências</div>
       {nav('config', 'sparkle', 'Configurações')}{nav('settings', 'database', 'Dados e backup')}

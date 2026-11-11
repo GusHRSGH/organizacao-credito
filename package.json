@@ -58,7 +58,7 @@
   "main": "electron/main.cjs",
   "build": {
     "appId": "com.organizacaocredito.desktop",
-    "productName": "Cadence",
+    "productName": "Chacun",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -76,7 +76,7 @@
     },
     "protocols": [
       {
-        "name": "Cadence",
+        "name": "Chacun",
         "schemes": [
           "organizacao-credito"
         ]

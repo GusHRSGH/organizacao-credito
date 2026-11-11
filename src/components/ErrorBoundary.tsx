@@ -15,7 +15,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, St
   private async saveData() {
     this.setState({ saving: true, note: '' })
     try {
-      downloadText(`cadence-backup-${stamp()}.json`, JSON.stringify(await getSource().exportBackup()), 'application/json')
+      downloadText(`chacun-backup-${stamp()}.json`, JSON.stringify(await getSource().exportBackup()), 'application/json')
       this.setState({ note: 'Backup salvo.' })
     } catch { this.setState({ note: 'Não consegui ler os dados agora. Eles continuam guardados neste aparelho.' }) } finally { this.setState({ saving: false }) }
   }

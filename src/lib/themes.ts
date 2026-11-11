@@ -20,7 +20,7 @@ const GOOD_BAD = {
 
 export const PALETTES: PaletteDef[] = [
   {
-    id: 'cadence', name: 'Cadence (preto, branco e lima)', hue: 72, nhDark: 0, satDark: 0, nhLight: 60, satLight: 8,
+    id: 'cadence', name: 'Chacun (preto, branco e lima)', hue: 72, nhDark: 0, satDark: 0, nhLight: 60, satLight: 8,
     fixed: {
       dark: {
         '--bg': '#0a0a0a', '--sidebar': '#0a0a0a', '--surface': '#111111', '--surface-2': '#1a1a1a', '--line': '#232323', '--line-strong': '#363636',
