@@ -9,7 +9,7 @@
 :root {
   --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
   --font-display: 'Inter Tight', 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --accent: #7fd1ae;
+  --accent: #5b8cff;
 
   --bg: #f5f4fa;
   --sidebar: #ffffff;
@@ -976,8 +976,8 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .logo-mark { color: var(--text); }
 :root[data-theme='light'] .nav-item.active::before { background: var(--accent); width: 4px; box-shadow: 0 0 0 1px var(--text) inset; }
 .primary-button { letter-spacing: -.005em; }
-:root[data-theme='light'] .primary-button { background: #0c0f0e; color: #fff; }
-:root[data-theme='light'] .primary-button:hover { background: #262626; }
+:root[data-theme='light'] .primary-button { background: #2f5fe0; color: #fff; }
+:root[data-theme='light'] .primary-button:hover { background: #234bc0; }
 .hero-progress i, .bill-progress i, .goal-bar i { background: var(--text); }
 :root[data-theme='dark'] .hero-progress i, :root[data-theme='dark'] .bill-progress i, :root[data-theme='dark'] .goal-bar i { background: var(--accent); }
 .goal.warn .goal-bar i { background: #f59e0b !important; }

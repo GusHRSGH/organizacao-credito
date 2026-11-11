@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 31, date: '2026-11-11', title: 'Nova cor: azul elétrico',
+    items: [
+      'A marca agora usa um azul elétrico sobre grafite, mais vivo e confortável de ler do que o verde-lima anterior.',
+      'O ícone do app (celular e computador) e a tela de abertura usam as novas cores.',
+    ],
+  },
+  {
     n: 30, date: '2026-11-11', title: 'Nova paleta e novo ícone',
     items: [
       'A marca trocou o lima forte por um verde-menta suave sobre grafite, bem mais confortável para ler textos e botões.',
