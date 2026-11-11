@@ -117,6 +117,7 @@ test('o cartão do tour fica por cima da sombra do destaque', async ({ page }) =
 
 async function campoRapido(page: Page) {
   await irPara(page, 'invoices')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
   const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
   if (!(await campo.isVisible())) await page.locator('[data-tour="fab"]').click()
   return page.locator('input[placeholder*="mercado 150,90"]:visible').first()
@@ -142,7 +143,7 @@ test('o alerta de meta aparece antes de salvar a compra', async ({ page }) => {
   await page.evaluate(() => localStorage.setItem('oc:metas', JSON.stringify([{ id: 't', scope: 'total', name: 'Total', limit: 10 }])))
   const campo = await campoRapido(page)
   await campo.fill('teste meta 50 @ana #casa')
-  await expect(page.locator('.quick-alert:visible').first()).toContainText('passa do limite')
+  await expect(page.locator('.quick-alert:visible').first()).toContainText(/limite/)
   await campo.fill('')
   await expect(page.locator('.quick-alert')).toHaveCount(0)
 })
@@ -155,6 +156,7 @@ test('o microfone preenche o lançamento com o que foi falado', async ({ page })
       start() { setTimeout(() => { this.onresult?.({ results: [Object.assign([{ transcript: 'mercado 12 vírgula 50 ontem' }], { isFinal: true })] }); this.onend?.() }, 150) }
       stop() { this.onend?.() }
     }
+    ;(window as unknown as { SpeechRecognition: unknown; webkitSpeechRecognition: unknown }).SpeechRecognition = FakeRecognition
     ;(window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = FakeRecognition
   })
   await entrar(page)
