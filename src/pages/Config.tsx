@@ -6,6 +6,7 @@ import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
 import { exportSettings, importSettings, resetSettings, useSettings, type Settings } from '../lib/settings'
 import { downloadText, stamp } from '../services/exporters'
+import { agendarLembrete, lembreteDisponivel, readLembrete, writeLembrete, type Lembrete } from '../lib/lembrete'
 
 const TABS = [['aparencia', 'Aparência'], ['menu', 'Menu e início'], ['formatos', 'Formatos'], ['lancamentos', 'Lançamentos'], ['privacidade', 'Privacidade'], ['avisos', 'Avisos'], ['avancado', 'Avançado']] as const
 type Tab = typeof TABS[number][0]
@@ -17,6 +18,25 @@ function Seg<T extends string | number>({ label, value, options, onChange }: { l
 
 function Toggle({ checked, onChange, children }: { checked: boolean; onChange: (value: boolean) => void; children: ReactNode }) {
   return <label className="check"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />{children}</label>
+}
+
+function DailyReminder({ notify }: { notify: Props['notify'] }) {
+  const [config, setConfig] = useState<Lembrete>(readLembrete)
+  const time = `${String(config.hour).padStart(2, '0')}:${String(config.minute).padStart(2, '0')}`
+  async function apply(next: Lembrete) {
+    setConfig(next); writeLembrete(next)
+    const result = await agendarLembrete(next)
+    if (result === 'negado') { const off = { ...next, on: false }; setConfig(off); writeLembrete(off); notify('error', 'Permita as notificações do Chacun nas configurações do aparelho para receber o lembrete.') }
+    else if (result === 'ok') notify('notice', `Lembrete diário ligado para ${String(next.hour).padStart(2, '0')}:${String(next.minute).padStart(2, '0')}.`)
+  }
+  return <Panel icon="clock" title="Lembrete diário" subtitle="Uma notificação por dia para você lançar os gastos. Sem custo e sem servidor.">
+    {lembreteDisponivel() ? <>
+      <Toggle checked={config.on} onChange={(on) => void apply({ ...config, on })}>Lembrar de lançar os gastos todo dia</Toggle>
+      <label className="time-field">Horário
+        <input type="time" value={time} disabled={!config.on} aria-label="Horário do lembrete" onChange={(event) => { const [hour, minute] = event.target.value.split(':').map(Number); if (Number.isInteger(hour) && Number.isInteger(minute)) void apply({ ...config, hour, minute }) }} /></label>
+      <p className="hint">Se você já lançou algo no dia, o lembrete daquele dia não aparece. Tocar na notificação abre o lançamento.</p>
+    </> : <p className="hint">O lembrete diário funciona no app do Android. Instale o app no celular para usar.</p>}
+  </Panel>
 }
 
 interface Props { people: string[]; categories: string[]; notify: (kind: 'notice' | 'error', text: string) => void }
@@ -92,12 +112,12 @@ export default function Config({ people, categories, notify }: Props) {
       </Panel>
     </>}
 
-    {tab === 'avisos' && <Panel icon="clock" title="Avisos dentro do app" subtitle="Aparecem no topo das telas quando você abre o app. Sem notificações do sistema e sem custo.">
+    {tab === 'avisos' && <><DailyReminder notify={notify} /><Panel icon="clock" title="Avisos dentro do app" subtitle="Aparecem no topo das telas quando você abre o app. Sem notificações do sistema e sem custo.">
       <Seg label="Fatura perto de vencer" value={settings.remindDue} options={[[0, 'Desligado'], [1, '1 dia'], [3, '3 dias'], [7, '7 dias']]} onChange={(remindDue) => patch({ remindDue })} />
       <p className="hint">Precisa do cartão configurado em Lançamentos. Só avisa se ainda houver valor pendente.</p>
       <Toggle checked={settings.remindDebts} onChange={(remindDebts) => patch({ remindDebts })}>Avisar quando alguém ainda não pagou faturas anteriores</Toggle>
       <Toggle checked={settings.remindGoals} onChange={(remindGoals) => patch({ remindGoals })}>Avisar quando uma meta chegar perto do limite ou estourar</Toggle>
-    </Panel>}
+    </Panel></>}
 
     {tab === 'avancado' && <Panel icon="download" title="Backup das configurações" subtitle="Leve o seu jeito de usar para outro aparelho.">
       <div className="button-row">

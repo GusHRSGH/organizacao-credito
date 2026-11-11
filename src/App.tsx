@@ -9,6 +9,7 @@ import type { DrillFilter } from './lib/drill'
 import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
+import { agendarLembrete, aoTocarNoLembrete } from './lib/lembrete'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -121,6 +122,7 @@ export default function App() {
     if (page === 'dashboard') return
     return registerBack(() => { setPage('dashboard'); return true })
   }, [page])
+  useEffect(() => { void agendarLembrete(); return aoTocarNoLembrete(() => { setPage('invoices'); setSheetOpen(true) }) }, [])
   useEffect(() => watchShortcuts((target) => {
     if (target === 'novo') { setPage('invoices'); setSheetOpen(true) }
     if (target === 'cobranca') setPage('billing')
@@ -260,6 +262,6 @@ export default function App() {
     {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
     {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
     </Suspense>
-    <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
+    <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
 }

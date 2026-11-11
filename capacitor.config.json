@@ -15,6 +15,10 @@
     },
     "Keyboard": {
       "resize": "body"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_chacun",
+      "iconColor": "#5B8CFF"
     }
   }
 }

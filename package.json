@@ -16,11 +16,13 @@
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^9.1.2",
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.10",
     "@capacitor/filesystem": "^7.1.9",
     "@capacitor/haptics": "^7.0.5",
     "@capacitor/keyboard": "^7.0.6",
+    "@capacitor/local-notifications": "^7.0.7",
     "@capacitor/share": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.5",
     "@capacitor/status-bar": "^7.0.6",

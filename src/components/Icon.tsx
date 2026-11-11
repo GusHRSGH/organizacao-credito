@@ -4,9 +4,17 @@ export type IconName =
   | 'dashboard' | 'invoices' | 'settings' | 'sun' | 'moon' | 'plus' | 'check' | 'clock' | 'trash'
   | 'download' | 'upload' | 'database' | 'cloud' | 'trend-up' | 'trend-down' | 'wallet' | 'receipt' | 'sparkle'
   | 'edit' | 'copy' | 'users' | 'undo' | 'menu' | 'lock'
-  | 'food' | 'car' | 'bag' | 'heart' | 'ticket' | 'repeat' | 'bank' | 'tag' | 'user' | 'shield' | 'pie' | 'search'
+  | 'food' | 'car' | 'bag' | 'heart' | 'ticket' | 'repeat' | 'bank' | 'tag' | 'user' | 'shield' | 'pie' | 'search' | 'mic' | 'clipboard'
 
 const PATHS: Record<IconName, ReactNode> = {
+  mic: <>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" />
+  </>,
+  clipboard: <>
+    <rect x="6" y="5" width="12" height="16" rx="2" />
+    <path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9.5 11h5M9.5 15h5" />
+  </>,
   search: <>
     <circle cx="11" cy="11" r="6.5" />
     <path d="M16 16l4.5 4.5" />
