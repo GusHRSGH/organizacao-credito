@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 26, date: '2026-11-10', title: 'O robô da fatura agora pergunta o responsável',
+    items: [
+      'Ao importar o CSV do Nubank, o robô entende o formato real do arquivo: valores com vírgula, pagamentos da fatura, parcelas (“Parcela 2/5” e “2/5” no fim), Pix e boleto no crédito e o IOF de compra internacional, que segue a compra que o gerou.',
+      'Ele só deixa pendente o responsável. Para cada grupo de compras parecidas, ele pergunta uma vez e já propõe quem costuma ser pelo seu histórico (nome parecido, mesmo valor ou a categoria), dizendo o motivo. Você responde com um toque ou escolhe outra pessoa.',
+      'Quando uma compra tem um crédito de mesmo valor na fatura, ele pergunta se foi estorno antes de importar. Ninguém é atribuído sozinho: o que ele não souber fica em branco para você. Se quase tudo for da mesma pessoa, um atalho atribui as perguntas abertas de uma vez.',
+      'Tutorial no celular: o destaque agora acompanha o elemento sem “correr atrás” da tela e mostra o cartão inteiro, não só o topo.',
+    ],
+  },
+  {
     n: 25, date: '2026-11-10', title: 'Agora somos o Chacun',
     items: [
       'O app mudou de nome de novo: Chacun, de “chacun sa part”, cada um a sua parte. O lema agora é “Cada um na sua parte.”.',

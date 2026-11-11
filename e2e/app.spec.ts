@@ -59,6 +59,36 @@ test('o tour percorre todos os passos até as ações finais', async ({ page }) 
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
+test('o destaque do tour acompanha o elemento com as mesmas dimensões', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Continuar sem conta' }).click()
+  await expect(page.getByRole('dialog', { name: 'Tour do app' })).toBeVisible()
+  const medir = () => page.evaluate(() => {
+    const spot = document.querySelector<HTMLElement>('.tour-spot[data-tour-target]')
+    if (!spot) return null
+    const name = spot.getAttribute('data-tour-target')!
+    const nodes = [...document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)]
+    const node = nodes.find((n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth })
+    if (!node) return null
+    const a = spot.getBoundingClientRect(), b = node.getBoundingClientRect()
+    return { name, dTop: Math.abs(a.top - (b.top - 8)), dLeft: Math.abs(a.left - (b.left - 8)), dWidth: Math.abs(a.width - (b.width + 16)), dHeight: Math.abs(a.height - (Math.min(b.height, window.innerHeight * 0.45) + 16)) }
+  })
+  let conferidos = 0
+  for (let passo = 0; passo < 14; passo += 1) {
+    await page.waitForTimeout(1800)
+    const m = await medir()
+    if (m) {
+      conferidos += 1
+      expect(m.dTop, `topo em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dLeft, `esquerda em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dWidth, `largura em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dHeight, `altura em ${m.name}`).toBeLessThanOrEqual(2)
+    }
+    await page.getByRole('button', { name: 'Próximo' }).click()
+  }
+  expect(conferidos).toBeGreaterThanOrEqual(3)
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)
@@ -340,6 +370,45 @@ test('importa a fatura do Nubank com classificação e conferência', async ({ p
   await expect(robo).toContainText('Fatura de Dezembro 2026 pronta')
   await robo.getByRole('button', { name: 'Ver os lançamentos' }).click()
   await expect(page.locator('b:visible', { hasText: 'Padaria Central' }).first()).toBeVisible()
+})
+
+const NUBANK_REAL = `date,title,amount
+2026-11-10,Pagamento recebido,"- 9,94"
+2026-11-09,Uber - NuPay,"9,94"
+2026-11-09,IOF de compra internacional,"3,50"
+2026-11-09,Servico Ai* Assinatura,"100,00"
+2026-11-07,Pagamento recebido,"- 4.182,94"
+2026-11-05,Mercado*Mercadolivre,"182,66"
+2026-10-31,Pix no Crédito - MARIA SOUZA LIMA - 2/3,"241,37"
+2026-10-31,Pix no Crédito - Maria Souza Lima - 3/3,"241,37"
+`
+
+test('o robô pergunta o responsável por grupo e o possível estorno', async ({ page }, info) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'Nubank_2026-12-07.csv', mimeType: 'text/csv', buffer: Buffer.from(NUBANK_REAL) })
+  await expect(robo).toContainText('6 compras encontradas')
+  await expect(robo).toContainText('Dezembro 2026')
+  const perguntas = robo.getByRole('region', { name: 'Perguntas do robô' })
+  await expect(perguntas).toContainText('Preciso de você em')
+  await expect(perguntas).toContainText('Foi estornada ou cancelada?')
+  await page.screenshot({ path: `test-results/robo-perguntas-${info.project.name}.png` })
+  await perguntas.getByRole('button', { name: 'Sim, não importar' }).click()
+  await expect(robo.getByRole('button', { name: /^Importar 5 lançamentos/ })).toBeVisible()
+  // Pix da mesma pessoa em duas parcelas responde numa pergunta só.
+  const pix = perguntas.locator('.bank-ask', { hasText: 'Pix no Crédito' })
+  await pix.getByLabel(/^Outra pessoa para/).fill('Ana')
+  await pix.getByRole('button', { name: 'Atribuir', exact: true }).click()
+  await expect(robo.getByLabel(/^Responsável de Pix no Crédito - MARIA SOUZA LIMA/)).toHaveValue('Ana')
+  // O que sobrou vai para uma pessoa só, de uma vez.
+  await perguntas.getByLabel('Pessoa para todas as restantes').fill('Gus')
+  await perguntas.getByRole('button', { name: 'Atribuir a todas' }).click()
+  await expect(perguntas).toContainText('Tudo respondido')
+  await expect(robo.getByLabel('Responsável de IOF de compra internacional')).toHaveValue('Gus')
+  await robo.getByRole('button', { name: /^Importar 5 lançamentos para Dezembro 2026/ }).click()
+  await expect(robo).toContainText('Fatura de Dezembro 2026 pronta')
 })
 
 test('cria a fatura de qualquer mês, inclusive passado', async ({ page }) => {

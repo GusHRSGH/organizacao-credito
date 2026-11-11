@@ -1,7 +1,10 @@
 import type { ImportRow } from '../types'
 import { MONTH_NAMES, periodLabel } from './installments'
 
+export interface ParsedCredit { date: string; description: string; amount: number }
 export interface ParsedSheet {
+  /** Valores negativos (pagamentos e estornos) que ficaram de fora das compras. */
+  credits?: ParsedCredit[]
   sheetName: string
   period: string | null
   label: string

@@ -2,13 +2,15 @@ import { cleanDescription } from './cleanup'
 import { invoicePeriodFor, type Card } from './card'
 import { guessCategory, matchCategoryName } from './keywords'
 import { parsePastedBill } from './pasteImport'
+import { questionKey } from './assign'
 import { byHistory, type Suggestion } from './suggest'
 import { analyzeSheet, applyMapping, readRawSheets } from '../services/smartImport'
 import { parseInstallment } from '../services/importXlsx'
 import type { ImportRow } from '../types'
 
 export interface BankRow { date: string; description: string; amount: number; bankCategory: string; installmentNumber: number | null; installmentCount: number | null }
-export interface BankFile { rows: BankRow[]; ignored: string[]; periodHint: string | null; kind: 'planilha' | 'pdf' | 'foto' | 'texto' }
+export interface BankCredit { date: string; description: string; amount: number }
+export interface BankFile { rows: BankRow[]; ignored: string[]; credits: BankCredit[]; periodHint: string | null; kind: 'planilha' | 'pdf' | 'foto' | 'texto' }
 
 /** O nome do arquivo costuma trazer o vencimento (Nubank_2026-12-07.csv). Devolve a fatura (AAAA-MM-01). */
 export function periodFromFileName(name: string): string | null {
@@ -32,42 +34,71 @@ export async function readBankFile(file: File, ctx: { people: string[]; categori
     const parsed = parsePastedBill(text, ctx.today, ctx.people, ctx.categories)
     return {
       rows: parsed.rows.map((row) => ({ date: row.date, description: row.description, amount: row.amount, bankCategory: '', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })),
-      ignored: parsed.skipped.map((item) => `${item.text} (${item.reason})`), periodHint, kind: isPdf ? 'pdf' : 'foto',
+      ignored: parsed.skipped.map((item) => `${item.text} (${item.reason})`), credits: [], periodHint, kind: isPdf ? 'pdf' : 'foto',
     }
   }
   onStatus?.('Lendo a planilha…')
   const raw = await readRawSheets(file)
   const rows: BankRow[] = []
   const ignored: string[] = []
+  const credits: BankCredit[] = []
   for (const sheet of raw) {
     const proposal = analyzeSheet(sheet.name, sheet.data)
     if (!proposal?.ok) continue
     for (const parsed of applyMapping(proposal, sheet.data, null)) {
       ignored.push(...parsed.issues)
+      credits.push(...(parsed.credits ?? []))
       parsed.rows.forEach((row) => rows.push({ date: row.date, description: row.description, amount: row.amount, bankCategory: row.category, installmentNumber: row.installmentNumber, installmentCount: row.installmentCount }))
     }
   }
   if (!rows.length) throw new Error('Não consegui identificar as compras nesse arquivo. Confira se é a fatura exportada, ou use Dados > Importar planilha para ajustar as colunas.')
-  return { rows, ignored, periodHint, kind: 'planilha' }
+  return { rows, ignored, credits, periodHint, kind: 'planilha' }
 }
 
 export interface ClassifiedRow extends BankRow {
   id: number
   person: string
   category: string
-  personFrom: 'histórico' | 'padrão' | ''
+  personFrom: 'histórico' | 'padrão' | 'resposta' | ''
   categoryFrom: 'histórico' | 'banco' | 'palavras' | 'nova' | ''
   renamed: boolean
+  /** Pergunta a que esta compra pertence (compras parecidas respondem juntas). */
+  qkey: string
+  /** Se é um IOF, a compra internacional que o gerou. */
+  iofOf: number | null
+}
+
+/** Tipos do Nubank que o banco não categoriza: o nome da categoria é nosso. */
+const SPECIAL: Array<[RegExp, string]> = [
+  [/^pix no cr[eé]dito\b/i, 'Pix no crédito'],
+  [/^boleto no cr[eé]dito\b/i, 'Boleto no crédito'],
+]
+const IOF_RATE = 0.035
+const dayDiff = (a: string, b: string) => Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000
+
+/** O IOF de compra internacional é 3,5% da compra: acha a compra pelo valor, perto da data. */
+function linkIof(rows: BankRow[]): Map<number, number> {
+  const links = new Map<number, number>()
+  const taken = new Set<number>()
+  rows.forEach((iof, id) => {
+    if (!/^iof\b/i.test(iof.description.trim())) return
+    const buy = rows.findIndex((row, other) => other !== id && !taken.has(other) && !/^iof\b/i.test(row.description.trim()) && Math.abs(Math.round(row.amount * IOF_RATE * 100) - Math.round(iof.amount * 100)) <= 2 && dayDiff(row.date, iof.date) <= 3)
+    if (buy >= 0) { links.set(id, buy); taken.add(buy) }
+  })
+  return links
 }
 
 /** Decide responsável e categoria de cada compra: primeiro o seu histórico, depois a categoria do banco, depois palavras comuns. */
 export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Suggestion>; categories: string[]; defaultPerson: string }): ClassifiedRow[] {
-  return rows.map((row, id) => {
+  const iof = linkIof(rows)
+  const first = rows.map((row, id): ClassifiedRow => {
     const description = cleanDescription(row.description)
     const history = byHistory(description, ctx.suggestions) ?? byHistory(row.description, ctx.suggestions)
     let category = ''
     let categoryFrom: ClassifiedRow['categoryFrom'] = ''
+    const special = SPECIAL.find(([pattern]) => pattern.test(row.description.trim()))?.[1]
     if (history?.category) { category = history.category; categoryFrom = 'histórico' }
+    else if (special) { const mine = matchCategoryName(special, ctx.categories); category = mine ?? special; categoryFrom = mine ? 'palavras' : 'nova' }
     else {
       const mapped = matchCategoryName(row.bankCategory, ctx.categories)
       const guessed = mapped ?? guessCategory(description, ctx.categories)
@@ -76,8 +107,14 @@ export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Su
       else if (row.bankCategory.trim()) { category = sentence(row.bankCategory); categoryFrom = 'nova' }
     }
     const person = history?.person ?? ctx.defaultPerson
-    return { ...row, id, description, renamed: description !== row.description.trim(), category, categoryFrom, person, personFrom: history?.person ? 'histórico' : ctx.defaultPerson ? 'padrão' : '' }
+    return { ...row, id, description, renamed: description !== row.description.trim(), category, categoryFrom, person, personFrom: history?.person ? 'histórico' : ctx.defaultPerson ? 'padrão' : '', qkey: questionKey(description), iofOf: null }
   })
+  // O IOF segue a compra que o gerou: mesma categoria, mesmo responsável, mesma pergunta.
+  for (const [iofId, buyId] of iof) {
+    const buy = first[buyId]
+    first[iofId] = { ...first[iofId], iofOf: buyId, qkey: buy.qkey, category: buy.category || first[iofId].category, categoryFrom: buy.category ? buy.categoryFrom : first[iofId].categoryFrom, person: buy.person, personFrom: buy.personFrom }
+  }
+  return first
 }
 
 export interface IncomingSummary { count: number; total: number; byCategory: Array<{ name: string; total: number }>; byPerson: Array<{ name: string; total: number }>; installments: number }

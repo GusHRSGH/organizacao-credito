@@ -6,12 +6,14 @@ const ALIASES: Array<[RegExp, string]> = [
   [/^uber\s*\*?\s*eats\b/i, 'Uber Eats'],
   [/^uber\b/i, 'Uber'],
   [/^ifood\b/i, 'iFood'],
-  [/^(mercado\s?livre|mercadolivre|mlp|meli)\b|^mercadolivre\s*\*/i, 'Mercado Livre'],
+  [/^(mercado\s?livre|mercadolivre|meli)\b|^mercadolivre\s*\*|^mercado\s*\*\s*mercado\s?livre/i, 'Mercado Livre'],
+  [/^mlp\s*\*?\s*magalu/i, 'Magalu'],
   [/^amazon\s*(prime\s*video|prime)\b/i, 'Amazon Prime'],
   [/^amazon\b|^amzn\b/i, 'Amazon'],
   [/^netflix\b/i, 'Netflix'],
   [/^spotify\b/i, 'Spotify'],
   [/^shopee\b/i, 'Shopee'],
+  [/^shein\b/i, 'Shein'],
   [/^(magalu|magazine\s?luiza)\b/i, 'Magalu'],
   [/^rappi\b/i, 'Rappi'],
   [/^(99\s?(app|pop|taxi|tecnologia)|99\s?\*)/i, '99'],
@@ -21,7 +23,7 @@ const ALIASES: Array<[RegExp, string]> = [
   [/^(hbo|max)\s*\*?\s*(max|plus)?\b/i, 'Max'],
 ]
 
-const PROCESSOR = /^(pg|pag|mp|ps|sq|ifd|paypal|pagseguro|mercadopago|picpay|stone|cielo|getnet|zp|ec)\s*\*\s*/i
+const PROCESSOR = /^(pgz|pg|pag|mp|ps|sq|ifd|paypal|pagseguro|mercadopago|picpay|stone|cielo|getnet|zp|ec)\s*\*\s*/i
 const INSTALLMENT = /\s*[(-]?\s*(?:parcela\s*)?\b\d{1,2}\s*\/\s*\d{1,2}\b\s*\)?\s*$/i
 const SMALL = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'na', 'no', 'a', 'o'])
 
@@ -40,6 +42,8 @@ export function cleanDescription(raw: string): string {
   if (!original) return original
   const suffix = original.match(INSTALLMENT)?.[0] ?? ''
   let text = suffix ? original.slice(0, original.length - suffix.length) : original
+  const seller = text.match(/^mercado\s*\*\s*(?!mercado\s?livre)(\S.*)$/i)
+  if (seller) return `Mercado Livre ${titleCase(seller[1].trim())}${suffix}`.replace(/\s+/g, ' ').trim()
   text = text.replace(PROCESSOR, '')
   const alias = ALIASES.find(([pattern]) => pattern.test(text))
   if (alias) return `${alias[1]}${suffix}`.replace(/\s+/g, ' ').trim()

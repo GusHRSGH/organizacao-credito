@@ -2,10 +2,12 @@ import { plain } from './quickEntry'
 
 /** Palavras comuns de cada tipo de gasto. O nome do tipo precisa existir entre as categorias da pessoa para ser sugerido. */
 const GROUPS: { names: string[]; words: string[] }[] = [
-  { names: ['alimentacao', 'mercado', 'comida', 'supermercado'], words: ['mercado', 'supermercado', 'padaria', 'acougue', 'hortifruti', 'atacadao', 'assai', 'carrefour', 'restaurante', 'lanchonete', 'pizza', 'hamburguer', 'ifood', 'rappi', 'cafe', 'sorvete', 'churrasco'] },
-  { names: ['transporte', 'locomocao', 'carro'], words: ['uber', '99', 'taxi', 'onibus', 'metro', 'combustivel', 'gasolina', 'posto', 'estacionamento', 'pedagio', 'bilhete', 'sem parar'] },
+  { names: ['compras', 'vestuario', 'roupas'], words: ['mercado livre', 'shopee', 'shein', 'amazon', 'magalu', 'aliexpress', 'americanas'] },
+  { names: ['assinaturas', 'servicos'], words: ['anthropic', 'claude', 'openai', 'chatgpt', 'google one', 'icloud', 'apple', 'adobe', 'microsoft'] },
+  { names: ['alimentacao', 'mercado', 'comida', 'supermercado'], words: ['mercado', 'supermercado', 'padaria', 'acougue', 'hortifruti', 'atacadao', 'assai', 'carrefour', 'restaurante', 'lanchonete', 'lanches', 'lanche', 'pizza', 'hamburguer', 'ifood', 'rappi', 'cafe', 'sorvete', 'churrasco'] },
+  { names: ['transporte', 'locomocao', 'carro'], words: ['uber', '99', 'taxi', 'onibus', 'metro', 'combustivel', 'gasolina', 'posto', 'auto posto', 'autozone', 'auto pecas', 'oficina', 'mecanica', 'estacionamento', 'pedagio', 'bilhete', 'sem parar'] },
   { names: ['lazer', 'entretenimento', 'diversao'], words: ['netflix', 'spotify', 'cinema', 'ingresso', 'show', 'bar', 'steam', 'playstation', 'xbox', 'disney', 'hbo', 'prime video', 'youtube', 'viagem', 'hotel'] },
-  { names: ['saude', 'farmacia'], words: ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'consulta', 'exame', 'dentista', 'plano de saude', 'clinica', 'hospital', 'academia'] },
+  { names: ['saude', 'farmacia'], words: ['farmacia', 'drogaria', 'drogasil', 'pacheco', 'raia', 'med', 'medico', 'medica', 'consulta', 'exame', 'dentista', 'plano de saude', 'clinica', 'hospital', 'academia'] },
   { names: ['educacao', 'estudos'], words: ['curso', 'faculdade', 'mensalidade', 'escola', 'livro', 'udemy', 'alura', 'livraria'] },
   { names: ['casa', 'moradia', 'contas'], words: ['aluguel', 'condominio', 'luz', 'energia', 'agua', 'internet', 'gas', 'iptu', 'leroy', 'telhanorte', 'enel', 'sabesp'] },
   { names: ['compras', 'vestuario', 'roupas'], words: ['amazon', 'shopee', 'mercado livre', 'magalu', 'shein', 'renner', 'riachuelo', 'c&a', 'zara', 'americanas', 'aliexpress', 'loja'] },

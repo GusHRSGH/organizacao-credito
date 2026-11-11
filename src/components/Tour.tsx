@@ -112,22 +112,29 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     const node = step.target ? findTarget(step.target) : null
     if (!node) { setBox(null); return }
     const rect = node.getBoundingClientRect()
-    setBox({ top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: Math.min(rect.height, window.innerHeight * 0.26) + PAD * 2 })
+    const next = { top: Math.round(rect.top - PAD), left: Math.round(rect.left - PAD), width: Math.round(rect.width + PAD * 2), height: Math.round(Math.min(rect.height, window.innerHeight * 0.45) + PAD * 2) }
+    setBox((now) => (now && now.top === next.top && now.left === next.left && now.width === next.width && now.height === next.height ? now : next))
   }, [step.target])
 
   // Leva o elemento para a parte de cima da tela (o cartão fica embaixo) e mede de novo.
   useLayoutEffect(() => {
     measure()
-    const timers = [120, 400, 800].map((delay) => setTimeout(measure, delay))
+    // Mede a cada quadro por um tempo: a tela pode estar rolando, trocando de página ou ajustando o teclado e as barras do sistema.
+    let raf = 0
+    const until = performance.now() + 1600
+    const tick = () => { measure(); if (performance.now() < until) raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    const timers = [120, 400, 800, 1600].map((delay) => setTimeout(measure, delay))
     const scrollTimer = setTimeout(() => {
       const node = step.target && !/^(fab|nav-)/.test(step.target) ? findTarget(step.target) : null
       if (!node) return
       const top = node.getBoundingClientRect().top
-      if (top < window.innerHeight * 0.04 || top > window.innerHeight * 0.2) window.scrollTo({ top: Math.max(0, window.scrollY + top - window.innerHeight * 0.12), behavior: 'smooth' })
+      if (top < window.innerHeight * 0.04 || top > window.innerHeight * 0.2) window.scrollTo({ top: Math.max(0, window.scrollY + top - window.innerHeight * 0.12), behavior: 'auto' })
     }, 180)
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
-    return () => { timers.forEach(clearTimeout); clearTimeout(scrollTimer); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+    window.visualViewport?.addEventListener('resize', measure)
+    return () => { cancelAnimationFrame(raf); window.visualViewport?.removeEventListener('resize', measure); timers.forEach(clearTimeout); clearTimeout(scrollTimer); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [measure, index, step.target])
 
   useEffect(() => {
@@ -142,7 +149,7 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
 
   const cardAtTop = !!box && box.top > window.innerHeight * 0.5
   return <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Tour do app">
-    {box ? <div className="tour-spot" style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true" onClick={() => { if (!last) setIndex((n) => n + 1) }}><i /></div> : <div className="tour-dim" aria-hidden="true" />}
+    {box ? <div className="tour-spot" data-tour-target={step.target} style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true" onClick={() => { if (!last) setIndex((n) => n + 1) }}><i /></div> : <div className="tour-dim" aria-hidden="true" />}
     <div key={index} className={`tour-card ${cardAtTop ? 'top' : 'bottom'}`}>
       <div className="tour-progress" aria-hidden="true"><i style={{ width: `${((index + 1) / STEPS.length) * 100}%` }} /></div>
       <div className="tour-head"><span className="tour-icon"><Icon name={step.icon} size={24} /></span><span className="tour-section">{step.section}</span><small>{index + 1} de {STEPS.length}</small></div>
