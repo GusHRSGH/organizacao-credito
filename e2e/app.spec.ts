@@ -59,6 +59,36 @@ test('o tour percorre todos os passos até as ações finais', async ({ page }) 
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
+test('o destaque do tour acompanha o elemento com as mesmas dimensões', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Continuar sem conta' }).click()
+  await expect(page.getByRole('dialog', { name: 'Tour do app' })).toBeVisible()
+  const medir = () => page.evaluate(() => {
+    const spot = document.querySelector<HTMLElement>('.tour-spot[data-tour-target]')
+    if (!spot) return null
+    const name = spot.getAttribute('data-tour-target')!
+    const nodes = [...document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`)]
+    const node = nodes.find((n) => { const r = n.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth })
+    if (!node) return null
+    const a = spot.getBoundingClientRect(), b = node.getBoundingClientRect()
+    return { name, dTop: Math.abs(a.top - (b.top - 8)), dLeft: Math.abs(a.left - (b.left - 8)), dWidth: Math.abs(a.width - (b.width + 16)), dHeight: Math.abs(a.height - (Math.min(b.height, window.innerHeight * 0.45) + 16)) }
+  })
+  let conferidos = 0
+  for (let passo = 0; passo < 14; passo += 1) {
+    await page.waitForTimeout(1800)
+    const m = await medir()
+    if (m) {
+      conferidos += 1
+      expect(m.dTop, `topo em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dLeft, `esquerda em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dWidth, `largura em ${m.name}`).toBeLessThanOrEqual(2)
+      expect(m.dHeight, `altura em ${m.name}`).toBeLessThanOrEqual(2)
+    }
+    await page.getByRole('button', { name: 'Próximo' }).click()
+  }
+  expect(conferidos).toBeGreaterThanOrEqual(6)
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)
