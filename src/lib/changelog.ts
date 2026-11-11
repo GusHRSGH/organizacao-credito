@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 31, date: '2026-11-11', title: 'Menta um pouco mais viva',
+    items: [
+      'O verde-menta da marca ficou um pouco mais vibrante, mantendo o texto confortável de ler. Ícone e tela de abertura acompanham.',
+    ],
+  },
+  {
     n: 30, date: '2026-11-11', title: 'Nova paleta e novo ícone',
     items: [
       'A marca trocou o lima forte por um verde-menta suave sobre grafite, bem mais confortável para ler textos e botões.',

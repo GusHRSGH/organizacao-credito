@@ -97,7 +97,7 @@ export function Logo({ size = 36 }: { size?: number }) {
 export function LogoMark({ size = 32 }: { size?: number }) {
   return <svg className="logo-mark" width={size} height={size} viewBox="0 0 256 256" fill="none" role="img" aria-label="Chacun">
     <path d="M173.5 176.2A72 72 0 1 1 173.5 79.8" stroke="var(--text)" strokeWidth="24" strokeLinecap="round" />
-    <g transform="rotate(-8 168 128)"><rect x="132" y="108" width="72" height="46" rx="10" fill="var(--accent, #7fd1ae)" /><rect x="132" y="118" width="72" height="9" fill="#0a0a0a" /></g>
+    <g transform="rotate(-8 168 128)"><rect x="132" y="108" width="72" height="46" rx="10" fill="var(--accent, #5ddcaa)" /><rect x="132" y="118" width="72" height="9" fill="#0a0a0a" /></g>
   </svg>
 }
 

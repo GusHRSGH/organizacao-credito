@@ -12,7 +12,7 @@
             android:strokeLineCap="round"
             android:fillColor="#00000000" />
         <group android:rotation="-8" android:pivotX="168" android:pivotY="128">
-            <path android:fillColor="#7FD1AE" android:pathData="M142,108h52a10,10 0 0 1 10,10v26a10,10 0 0 1 -10,10h-52a10,10 0 0 1 -10,-10v-26a10,10 0 0 1 10,-10z" />
+            <path android:fillColor="#5DDCAA" android:pathData="M142,108h52a10,10 0 0 1 10,10v26a10,10 0 0 1 -10,10h-52a10,10 0 0 1 -10,-10v-26a10,10 0 0 1 10,-10z" />
             <path android:fillColor="#0C0F0E" android:pathData="M132,118h72v9h-72z" />
         </group>
     </group>
