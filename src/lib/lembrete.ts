@@ -55,14 +55,14 @@ export async function agendarLembrete(config: Lembrete = readLembrete()): Promis
     let doneToday = false
     try { doneToday = localStorage.getItem(DONE_KEY) === dayKey(now) } catch { /* ignora */ }
     const when = proximosLembretes(config, now, doneToday)
-    await LocalNotifications.schedule({ notifications: when.map((at, i) => ({ id: BASE_ID + i, title: 'Chacun', body: 'Lançou os gastos de hoje? Leva só alguns segundos.', schedule: { at, allowWhileIdle: true }, smallIcon: 'ic_stat_chacun', iconColor: '#5b8cff' })) })
+    await LocalNotifications.schedule({ notifications: when.map((at, i) => ({ id: BASE_ID + i, title: 'Chacun', body: 'Lançou os gastos de hoje? Leva só alguns segundos.', extra: { go: 'novo' }, schedule: { at, allowWhileIdle: true }, smallIcon: 'ic_stat_chacun', iconColor: '#5b8cff' })) })
     return 'ok'
   } catch { return 'indisponivel' }
 }
 
-/** Quando a pessoa toca na notificação, abre o lançamento rápido. */
-export function aoTocarNoLembrete(open: () => void) {
+/** Quando a pessoa toca numa notificação do app, abre a tela certa (lançamento, faturas ou cobrança). */
+export function aoTocarNaNotificacao(open: (go: string) => void) {
   if (!lembreteDisponivel()) return () => undefined
-  const listener = LocalNotifications.addListener('localNotificationActionPerformed', () => open())
+  const listener = LocalNotifications.addListener('localNotificationActionPerformed', (event) => { const go = (event.notification.extra as { go?: string } | undefined)?.go; open(go ?? 'novo') })
   return () => { void listener.then((handle) => handle.remove()) }
 }

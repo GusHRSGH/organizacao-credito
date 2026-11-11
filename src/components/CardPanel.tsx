@@ -1,3 +1,4 @@
+import { agendarAvisos } from '../lib/avisosFatura'
 import { useState } from 'react'
 import { Panel } from './ui'
 import { closingDate, DEFAULT_CARD, dueDate, invoicePeriodFor, readCard, writeCard, type Card } from '../lib/card'
@@ -22,8 +23,8 @@ export default function CardPanel({ notify }: { notify: (kind: 'notice' | 'error
     <p className="hint" data-testid="card-preview">Uma compra de hoje ({formatDate(today)}) entra na fatura de <b>{periodLabel(target)}</b>, que fecha em {formatDate(closingDate(target, card))} e vence em {formatDate(dueDate(target, card))}. Compras no dia do fechamento já entram na fatura seguinte.</p>
     <p className="hint">Nubank costuma fechar 7 dias antes do vencimento. Confira o dia de fechamento no app do seu banco.</p>
     <div className="button-row">
-      <button className="primary-button" disabled={!changed} onClick={() => { writeCard(card); setSaved(card); notify('notice', `Pronto: as próximas compras vão para a fatura pelo fechamento (vence dia ${card.dueDay}).`) }}>Salvar</button>
-      {saved && <button className="text-button" onClick={() => { writeCard(null); setSaved(null); notify('notice', 'Voltei a usar o mês do calendário.') }}>Desligar</button>}
+      <button className="primary-button" disabled={!changed} onClick={() => { writeCard(card); void agendarAvisos(); setSaved(card); notify('notice', `Pronto: as próximas compras vão para a fatura pelo fechamento (vence dia ${card.dueDay}).`) }}>Salvar</button>
+      {saved && <button className="text-button" onClick={() => { writeCard(null); void agendarAvisos(); setSaved(null); notify('notice', 'Voltei a usar o mês do calendário.') }}>Desligar</button>}
       <span className="muted">{saved ? `Ligado: vence dia ${saved.dueDay}, fecha ${saved.closingDaysBefore} dias antes.` : 'Desligado: o app usa o mês do calendário.'}</span></div>
   </Panel>
 }

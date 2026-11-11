@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 34, date: '2026-11-11', title: 'Notificações do cartão',
+    items: [
+      'Novas notificações no Android, em Configurações, Avisos: fatura perto de vencer (no dia, 1 ou 3 dias antes), dia em que a fatura fecha e lembrete de cobrar quem ainda não pagou.',
+      'Você escolhe o horário de cada uma, e tocar na notificação abre a tela certa.',
+    ],
+  },
+  {
     n: 33, date: '2026-11-11', title: 'Open Finance pessoal (Meu Pluggy)',
     items: [
       'Em Configurações, Avançado, ligue o Meu Pluggy com as suas credenciais e o app busca as compras do cartão direto no banco, sem exportar arquivo.',

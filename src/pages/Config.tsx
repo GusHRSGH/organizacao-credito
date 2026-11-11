@@ -7,6 +7,8 @@ import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
 import { exportSettings, importSettings, resetSettings, useSettings, type Settings } from '../lib/settings'
 import { downloadText, stamp } from '../services/exporters'
+import { agendarAvisos, avisosDisponiveis, readAvisos, writeAvisos, type AvisosFatura } from '../lib/avisosFatura'
+import { readCard } from '../lib/card'
 import { agendarLembrete, lembreteDisponivel, readLembrete, writeLembrete, type Lembrete } from '../lib/lembrete'
 
 const TABS = [['aparencia', 'Aparência'], ['menu', 'Menu e início'], ['formatos', 'Formatos'], ['lancamentos', 'Lançamentos'], ['privacidade', 'Privacidade'], ['avisos', 'Avisos'], ['avancado', 'Avançado']] as const
@@ -37,6 +39,38 @@ function DailyReminder({ notify }: { notify: Props['notify'] }) {
         <input type="time" value={time} disabled={!config.on} aria-label="Horário do lembrete" onChange={(event) => { const [hour, minute] = event.target.value.split(':').map(Number); if (Number.isInteger(hour) && Number.isInteger(minute)) void apply({ ...config, hour, minute }) }} /></label>
       <p className="hint">Se você já lançou algo no dia, o lembrete daquele dia não aparece. Tocar na notificação abre o lançamento.</p>
     </> : <p className="hint">O lembrete diário funciona no app do Android. Instale o app no celular para usar.</p>}
+  </Panel>
+}
+
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
+const hourLabel = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+
+function CardNotices({ notify }: { notify: Props['notify'] }) {
+  const [config, setConfig] = useState<AvisosFatura>(readAvisos)
+  const hasCard = !!readCard()
+  async function apply(next: AvisosFatura) {
+    setConfig(next); writeAvisos(next)
+    const result = await agendarAvisos(next)
+    if (result === 'negado') { const off: AvisosFatura = { due: { ...next.due, on: false }, closing: { ...next.closing, on: false }, collect: { ...next.collect, on: false } }; setConfig(off); writeAvisos(off); notify('error', 'Permita as notificações do Chacun nas configurações do aparelho para receber os avisos.') }
+  }
+  const hourPicker = (label: string, value: number, onChange: (hour: number) => void) => <label className="time-field">{label}<select value={value} aria-label={label} onChange={(event) => onChange(Number(event.target.value))}>{HOURS.map((hour) => <option key={hour} value={hour}>{hourLabel(hour)}</option>)}</select></label>
+  return <Panel icon="clock" title="Notificações do cartão" subtitle="Vencimento, fechamento e dia de cobrar, direto na tela do celular. Sem custo e sem servidor.">
+    {avisosDisponiveis() ? <>
+      {!hasCard && <p className="hint">Para os avisos de vencimento e fechamento, configure o cartão em Lançamentos. A cobrança do mês funciona sem ele.</p>}
+      <Toggle checked={config.due.on} onChange={(on) => void apply({ ...config, due: { ...config.due, on } })}>Avisar quando a fatura estiver perto de vencer</Toggle>
+      {config.due.on && <div className="button-row">
+        <Seg label="Antecedência" value={config.due.daysBefore} options={[[0, 'No dia'], [1, '1 dia'], [3, '3 dias']]} onChange={(daysBefore) => void apply({ ...config, due: { ...config.due, daysBefore } })} />
+        {hourPicker('Horário do aviso de vencimento', config.due.hour, (hour) => void apply({ ...config, due: { ...config.due, hour } }))}
+      </div>}
+      <Toggle checked={config.closing.on} onChange={(on) => void apply({ ...config, closing: { ...config.closing, on } })}>Avisar no dia em que a fatura fecha (melhor dia de compra)</Toggle>
+      {config.closing.on && hourPicker('Horário do aviso de fechamento', config.closing.hour, (hour) => void apply({ ...config, closing: { ...config.closing, hour } }))}
+      <Toggle checked={config.collect.on} onChange={(on) => void apply({ ...config, collect: { ...config.collect, on } })}>Lembrar de cobrar quem ainda não pagou</Toggle>
+      {config.collect.on && <div className="button-row">
+        <label className="time-field">Dia do mês<select value={config.collect.day} aria-label="Dia da cobrança" onChange={(event) => void apply({ ...config, collect: { ...config.collect, day: Number(event.target.value) } })}>{Array.from({ length: 28 }, (_, i) => i + 1).map((day) => <option key={day} value={day}>{day}</option>)}</select></label>
+        {hourPicker('Horário do aviso de cobrança', config.collect.hour, (hour) => void apply({ ...config, collect: { ...config.collect, hour } }))}
+      </div>}
+      <p className="hint">Os avisos são reagendados toda vez que você abre o app e quando muda o cartão. Tocar na notificação abre a tela certa.</p>
+    </> : <p className="hint">As notificações do cartão funcionam no app do Android. Instale o app no celular para usar.</p>}
   </Panel>
 }
 
@@ -113,7 +147,7 @@ export default function Config({ people, categories, notify }: Props) {
       </Panel>
     </>}
 
-    {tab === 'avisos' && <><DailyReminder notify={notify} /><Panel icon="clock" title="Avisos dentro do app" subtitle="Aparecem no topo das telas quando você abre o app. Sem notificações do sistema e sem custo.">
+    {tab === 'avisos' && <><DailyReminder notify={notify} /><CardNotices notify={notify} /><Panel icon="clock" title="Avisos dentro do app" subtitle="Aparecem no topo das telas quando você abre o app. Sem notificações do sistema e sem custo.">
       <Seg label="Fatura perto de vencer" value={settings.remindDue} options={[[0, 'Desligado'], [1, '1 dia'], [3, '3 dias'], [7, '7 dias']]} onChange={(remindDue) => patch({ remindDue })} />
       <p className="hint">Precisa do cartão configurado em Lançamentos. Só avisa se ainda houver valor pendente.</p>
       <Toggle checked={settings.remindDebts} onChange={(remindDebts) => patch({ remindDebts })}>Avisar quando alguém ainda não pagou faturas anteriores</Toggle>
