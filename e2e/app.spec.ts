@@ -115,6 +115,56 @@ test('o cartão do tour fica por cima da sombra do destaque', async ({ page }) =
   }
 })
 
+async function campoRapido(page: Page) {
+  await irPara(page, 'invoices')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+  const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+  if (!(await campo.isVisible())) await page.locator('[data-tour="fab"]').click()
+  return page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+}
+
+test('colar a notificação do banco monta o lançamento', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await entrar(page)
+  await importarModelo(page)
+  const campo = await campoRapido(page)
+  await page.evaluate(() => navigator.clipboard.writeText('Compra de R$ 89,90 APROVADA em MERCADO LIVRE'))
+  await page.getByRole('button', { name: 'Colar notificação do banco' }).first().click()
+  await expect(campo).toHaveValue('Mercado Livre 89,90')
+  await expect(page.getByText('Li a notificação do banco').first()).toBeVisible()
+  const chips = page.locator('.quick-chips:visible').first()
+  await expect(chips).toContainText('Mercado Livre')
+  await expect(chips).toContainText('89,90')
+})
+
+test('o alerta de meta aparece antes de salvar a compra', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await page.evaluate(() => localStorage.setItem('oc:metas', JSON.stringify([{ id: 't', scope: 'total', name: 'Total', limit: 10 }])))
+  const campo = await campoRapido(page)
+  await campo.fill('teste meta 50 @ana #casa')
+  await expect(page.locator('.quick-alert:visible').first()).toContainText(/limite/)
+  await campo.fill('')
+  await expect(page.locator('.quick-alert')).toHaveCount(0)
+})
+
+test('o microfone preenche o lançamento com o que foi falado', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeRecognition {
+      lang = ''; interimResults = false; continuous = false
+      onresult: ((e: unknown) => void) | null = null; onerror: ((e: unknown) => void) | null = null; onend: (() => void) | null = null
+      start() { setTimeout(() => { this.onresult?.({ results: [Object.assign([{ transcript: 'mercado 12 vírgula 50 ontem' }], { isFinal: true })] }); this.onend?.() }, 150) }
+      stop() { this.onend?.() }
+    }
+    ;(window as unknown as { SpeechRecognition: unknown; webkitSpeechRecognition: unknown }).SpeechRecognition = FakeRecognition
+    ;(window as unknown as { webkitSpeechRecognition: unknown }).webkitSpeechRecognition = FakeRecognition
+  })
+  await entrar(page)
+  const campo = await campoRapido(page)
+  await page.getByRole('button', { name: 'Falar o gasto' }).first().click()
+  await expect(campo).toHaveValue('mercado 12,50 ontem')
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)

@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 32, date: '2026-11-11', title: 'Lançar sem digitar',
+    items: [
+      'Cole a notificação de compra do banco no lançamento rápido (ou toque no ícone de prancheta): o app lê o valor, a loja, as parcelas e a data, e sugere o responsável pelo seu histórico.',
+      'No celular, toque no microfone e fale o gasto, por exemplo “mercado 50 reais com a Ana ontem”.',
+      'Alerta de meta antes de salvar: se a compra faz alguém chegar perto do limite ou passar dele, o app avisa na hora.',
+      'Lembrete diário no Android: uma notificação no horário que você escolher em Configurações, Avisos. Se você já lançou algo no dia, ela não aparece.',
+    ],
+  },
+  {
     n: 31, date: '2026-11-11', title: 'Nova cor: azul elétrico',
     items: [
       'A marca agora usa um azul elétrico sobre grafite, mais vivo e confortável de ler do que o verde-lima anterior.',
