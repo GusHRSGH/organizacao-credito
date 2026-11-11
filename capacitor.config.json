@@ -1,6 +1,6 @@
 {
   "appId": "br.com.gushrs.organizacaocredito",
-  "appName": "Cadence",
+  "appName": "Chacun",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false,

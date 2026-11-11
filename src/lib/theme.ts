@@ -17,7 +17,7 @@ function systemTheme(): Theme {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
-/** A marca Cadence vira o visual padrão uma vez; depois, a escolha da pessoa vale. */
+/** A marca Chacun vira o visual padrão uma vez; depois, a escolha da pessoa vale. */
 const BRAND_KEY = 'oc:brand'
 
 function readPrefs(): Prefs {

@@ -16,7 +16,7 @@ export default function Legal({ onClose }: Props) {
       <p className="hint">Atualizado em novembro de 2026. Em linguagem simples.</p>
 
       <h3>O que é o app</h3>
-      <p>A Cadence ajuda você a acompanhar faturas de cartão: lançamentos, parcelas, quem deve quanto e o que falta pagar. Ele é gratuito e não se conecta ao seu banco nem ao seu cartão.</p>
+      <p>O Chacun ajuda você a acompanhar faturas de cartão: lançamentos, parcelas, quem deve quanto e o que falta pagar. Ele é gratuito e não se conecta ao seu banco nem ao seu cartão.</p>
 
       <h3>O que fica guardado</h3>
       <ul>

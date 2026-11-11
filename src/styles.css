@@ -965,7 +965,7 @@ kbd { border: 1px solid var(--line-strong); border-bottom-width: 2px; border-rad
 .bank-recon { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin: 12px 0; }
 .bank-recon h3 { margin: 0 0 10px; font-size: 14px; }
 
-/* ---------- Marca Cadence ---------- */
+/* ---------- Marca Chacun ---------- */
 .wordmark { font-family: var(--font-display); font-weight: 700; letter-spacing: -.035em; }
 .brand .wordmark { font-size: 20px; line-height: 1; }
 .welcome-card h1.wordmark { font-size: 40px; letter-spacing: -.045em; margin: 14px 0 4px; }

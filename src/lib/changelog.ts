@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 25, date: '2026-11-10', title: 'Agora somos o Chacun',
+    items: [
+      'O app mudou de nome de novo: Chacun, de “chacun sa part”, cada um a sua parte. O lema agora é “Cada um na sua parte.”.',
+      'O símbolo (o C com o cartão), o visual e tudo o que você já tinha continuam iguais. Só o nome mudou, no app, no Android e no Windows.',
+      'Os backups antigos continuam abrindo normalmente e os novos arquivos exportados passam a se chamar chacun-backup.',
+    ],
+  },
+  {
     n: 24, date: '2026-11-10', title: 'Novo símbolo da Cadence',
     items: [
       'O símbolo agora é um C grosso com um cartão em verde-lima encaixado na abertura. Mudou no menu, na tela de abertura, no bloqueio e nos ícones do Android e do Windows.',

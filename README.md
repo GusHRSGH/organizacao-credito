@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="public/icon.svg" width="96" alt="Ícone da Cadence" />
+<img src="public/icon.svg" width="96" alt="Ícone do Chacun" />
 
-# Cadence
+# Chacun
 
-**Seu cartão, no ritmo certo.** Lance, confira e cobre cada fatura, compare meses e guarde um backup seguro.
+**Cada um na sua parte.** Lance, confira e cobre cada fatura, compare meses e guarde um backup seguro.
 
 Aplicativo para Windows, gratuito, com dados guardados no próprio computador.
 

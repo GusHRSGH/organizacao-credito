@@ -23,7 +23,7 @@ export default function AppLock({ children }: { children: ReactNode }) {
     {children}
     {locked && <div className="lock-screen" role="dialog" aria-modal="true" aria-label="App bloqueado">
       <Logo size={72} />
-      <h1 className="wordmark">Cadence</h1>
+      <h1 className="wordmark">Chacun</h1>
       <p>{failed ? 'Não foi possível confirmar. Tente de novo.' : 'Confirme que é você para continuar.'}</p>
       <button className="primary-button" onClick={() => void unlock()}><Icon name="check" size={18} />Desbloquear</button>
     </div>}

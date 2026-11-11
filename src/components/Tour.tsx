@@ -17,7 +17,7 @@ const Ok = ({ children }: { children: ReactNode }) => <span className="ex-badge 
 const Chips = ({ items }: { items: string[] }) => <div className="ex-chips">{items.map((item) => <span key={item}>{item}</span>)}</div>
 
 const STEPS: Step[] = [
-  { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Bem-vindo à Cadence', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. Você pode pular quando quiser. Toque na parte destacada ou em Próximo para seguir.',
+  { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Bem-vindo ao Chacun', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. Você pode pular quando quiser. Toque na parte destacada ou em Próximo para seguir.',
     example: <Example><Chips items={['Início', 'Faturas', 'Cobrança', 'Metas', 'Configurações']} /></Example> },
 
   { section: 'Início', target: 'nav-dashboard', page: 'dashboard', icon: 'dashboard', title: 'Início: o resumo do mês', text: 'Aqui você bate o olho e sabe quanto gastou, quanto já foi pago e quanto ainda falta. Tudo é calculado sozinho a partir dos seus lançamentos.',
