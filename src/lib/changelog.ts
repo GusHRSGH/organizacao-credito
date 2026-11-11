@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 27, date: '2026-11-11', title: 'Robô do Nubank: parcelas que faltam e quanto cada um deve',
+    items: [
+      'Ao importar uma compra parcelada (“Parcela 1/3”, Pix ou boleto no crédito), o robô já lança as parcelas que faltam nas próximas faturas, com o mesmo valor, responsável e categoria. A previsão e o total dos meses seguintes ficam certos desde o primeiro dia. Dá para desmarcar na tela da importação.',
+      'Ele reconhece a parcela anterior da mesma compra (mesmo nome, valor e total) e já atribui ao mesmo responsável, mesmo que outra compra do mesmo lugar seja de outra pessoa.',
+      'O resumo antes de importar mostra quanto cada pessoa deve, para você conferir a divisão antes de confirmar.',
+    ],
+  },
+  {
     n: 26, date: '2026-11-10', title: 'O robô da fatura agora pergunta o responsável',
     items: [
       'Ao importar o CSV do Nubank, o robô entende o formato real do arquivo: valores com vírgula, pagamentos da fatura, parcelas (“Parcela 2/5” e “2/5” no fim), Pix e boleto no crédito e o IOF de compra internacional, que segue a compra que o gerou.',

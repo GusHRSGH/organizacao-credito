@@ -406,9 +406,12 @@ test('o robô pergunta o responsável por grupo e o possível estorno', async ({
   await perguntas.getByLabel('Pessoa para todas as restantes').fill('Gus')
   await perguntas.getByRole('button', { name: 'Atribuir a todas' }).click()
   await expect(perguntas).toContainText('Tudo respondido')
+  await expect(robo).toContainText('Lançar a 1 parcela que falta')
+  await expect(robo.getByLabel('Quanto cada pessoa deve')).toContainText('Ana')
   await expect(robo.getByLabel('Responsável de IOF de compra internacional')).toHaveValue('Gus')
   await robo.getByRole('button', { name: /^Importar 5 lançamentos para Dezembro 2026/ }).click()
   await expect(robo).toContainText('Fatura de Dezembro 2026 pronta')
+  await expect(robo).toContainText('Também lancei 1 parcela futura')
 })
 
 test('cria a fatura de qualquer mês, inclusive passado', async ({ page }) => {

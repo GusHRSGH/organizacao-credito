@@ -48,3 +48,19 @@ export function knownDescriptions(transactions: Transaction[], limit = 200) {
   }
   return [...new Set(seen.values())]
 }
+
+const cents = (value: number) => Math.round(Number(value) * 100)
+export const installmentKey = (description: string, amount: number, count: number) => `${historyKey(description)}|${cents(amount)}|${count}`
+
+/** Parcelas já lançadas: a mesma compra (nome, valor e total de parcelas) continua com o mesmo responsável e categoria. */
+export function buildInstallmentSuggestions(transactions: Transaction[]) {
+  const latest = new Map<string, { n: number; value: Suggestion }>()
+  for (const row of transactions) {
+    if (!row.installment_count) continue
+    const key = installmentKey(row.description, Number(row.amount), row.installment_count)
+    const known = latest.get(key)
+    const n = row.installment_number ?? 0
+    if (!known || n >= known.n) latest.set(key, { n, value: { person: row.person?.name ?? null, category: row.category?.name ?? null } })
+  }
+  return new Map([...latest].map(([key, entry]) => [key, entry.value]))
+}
