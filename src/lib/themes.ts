@@ -20,19 +20,19 @@ const GOOD_BAD = {
 
 export const PALETTES: PaletteDef[] = [
   {
-    id: 'cadence', name: 'Chacun (grafite e menta)', hue: 156, nhDark: 0, satDark: 0, nhLight: 150, satLight: 8,
+    id: 'cadence', name: 'Chacun (grafite e azul)', hue: 222, nhDark: 0, satDark: 0, nhLight: 220, satLight: 8,
     fixed: {
       dark: {
-        '--bg': '#0c0f0e', '--sidebar': '#0c0f0e', '--surface': '#131715', '--surface-2': '#1a1f1c', '--line': '#232a26', '--line-strong': '#333c37',
-        '--text': '#e9efec', '--muted': '#9aa8a2', '--faint': '#76837d',
-        '--primary': '#7fd1ae', '--primary-strong': '#9ae0c2', '--primary-soft': '#14231d', '--on-primary': '#0c0f0e', '--accent': '#7fd1ae',
-        ...GOOD_BAD.dark, '--chart-alt': '#e9efec', '--chart-alt-light': '#f4f8f6', '--slice-1': '#7fd1ae', '--slice-2': '#e9efec', '--slice-3': '#b0bcb6', '--slice-4': '#8a9690', '--slice-5': '#66716c', '--slice-6': '#5fa88a', '--slice-7': '#d0d8d4', '--slice-8': '#4f7f6c', '--slice-9': '#46504b', '--slice-10': '#363f3a', '--focus': '#7fd1ae80',
+        '--bg': '#0b0d12', '--sidebar': '#0b0d12', '--surface': '#12151c', '--surface-2': '#191d26', '--line': '#222733', '--line-strong': '#323949',
+        '--text': '#eaedf5', '--muted': '#9aa1b5', '--faint': '#7a8196',
+        '--primary': '#5b8cff', '--primary-strong': '#86a9ff', '--primary-soft': '#121c33', '--on-primary': '#071026', '--accent': '#5b8cff',
+        ...GOOD_BAD.dark, '--chart-alt': '#eaedf5', '--chart-alt-light': '#f5f7fb', '--slice-1': '#5b8cff', '--slice-2': '#eaedf5', '--slice-3': '#b0b6c7', '--slice-4': '#8a91a5', '--slice-5': '#666d82', '--slice-6': '#3f6fe0', '--slice-7': '#d0d4e0', '--slice-8': '#3d5aa6', '--slice-9': '#464c5e', '--slice-10': '#363b4b', '--focus': '#5b8cff80',
       },
       light: {
-        '--bg': '#f7f9f8', '--sidebar': '#ffffff', '--surface': '#ffffff', '--surface-2': '#eef2f0', '--line': '#e0e6e3', '--line-strong': '#cad3ce',
-        '--text': '#0c0f0e', '--muted': '#55615b', '--faint': '#85918b',
-        '--primary': '#0c0f0e', '--primary-strong': '#000000', '--primary-soft': '#e8f0ec', '--on-primary': '#ffffff', '--accent': '#7fd1ae',
-        ...GOOD_BAD.light, '--chart-alt': '#85918b', '--chart-alt-light': '#a0aba5', '--slice-1': '#0c0f0e', '--slice-2': '#46504b', '--slice-3': '#76837d', '--slice-4': '#a0aba5', '--slice-5': '#c8d1cd', '--slice-6': '#4fa583', '--slice-7': '#27302c', '--slice-8': '#3d6b59', '--slice-9': '#b8c2bd', '--slice-10': '#d8dfdb', '--focus': '#0c0f0e40',
+        '--bg': '#f7f8fb', '--sidebar': '#ffffff', '--surface': '#ffffff', '--surface-2': '#eef0f6', '--line': '#e1e4ec', '--line-strong': '#cbd0de',
+        '--text': '#0b0d12', '--muted': '#555c70', '--faint': '#858ba0',
+        '--primary': '#2f5fe0', '--primary-strong': '#234bc0', '--primary-soft': '#e6ecfd', '--on-primary': '#ffffff', '--accent': '#5b8cff',
+        ...GOOD_BAD.light, '--chart-alt': '#858ba0', '--chart-alt-light': '#a3a9bb', '--slice-1': '#2f5fe0', '--slice-2': '#0b0d12', '--slice-3': '#5b6fb8', '--slice-4': '#a3a9bb', '--slice-5': '#c9cdda', '--slice-6': '#46506b', '--slice-7': '#8aa5f0', '--slice-8': '#27304d', '--slice-9': '#b8bdcc', '--slice-10': '#d8dce6', '--focus': '#2f5fe040',
       },
     },
   },
