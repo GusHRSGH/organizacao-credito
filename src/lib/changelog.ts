@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 28, date: '2026-11-11', title: 'Tutorial certo em qualquer tamanho de texto',
+    items: [
+      'O destaque do tutorial saía deslocado e com tamanho errado quando o Tamanho do texto não estava em “Normal”. Agora ele acompanha o elemento em qualquer tamanho, no celular e no computador.',
+    ],
+  },
+  {
     n: 27, date: '2026-11-11', title: 'Robô do Nubank: parcelas que faltam e quanto cada um deve',
     items: [
       'Ao importar uma compra parcelada (“Parcela 1/3”, Pix ou boleto no crédito), o robô já lança as parcelas que faltam nas próximas faturas, com o mesmo valor, responsável e categoria. A previsão e o total dos meses seguintes ficam certos desde o primeiro dia. Dá para desmarcar na tela da importação.',
