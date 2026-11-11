@@ -7,13 +7,13 @@
     <group android:scaleX="0.36" android:scaleY="0.36" android:translateX="10.44" android:translateY="7.92">
         <path
             android:pathData="M173.5,176.2A72,72 0 1 1 173.5,79.8"
-            android:strokeColor="#FAFAFA"
+            android:strokeColor="#E9EFEC"
             android:strokeWidth="24"
             android:strokeLineCap="round"
             android:fillColor="#00000000" />
         <group android:rotation="-8" android:pivotX="168" android:pivotY="128">
-            <path android:fillColor="#C6F432" android:pathData="M142,108h52a10,10 0 0 1 10,10v26a10,10 0 0 1 -10,10h-52a10,10 0 0 1 -10,-10v-26a10,10 0 0 1 10,-10z" />
-            <path android:fillColor="#0A0A0A" android:pathData="M132,118h72v9h-72z" />
+            <path android:fillColor="#7FD1AE" android:pathData="M142,108h52a10,10 0 0 1 10,10v26a10,10 0 0 1 -10,10h-52a10,10 0 0 1 -10,-10v-26a10,10 0 0 1 10,-10z" />
+            <path android:fillColor="#0C0F0E" android:pathData="M132,118h72v9h-72z" />
         </group>
     </group>
 </vector>

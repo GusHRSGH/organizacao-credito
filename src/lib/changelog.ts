@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 30, date: '2026-11-11', title: 'Nova paleta e novo ícone',
+    items: [
+      'A marca trocou o lima forte por um verde-menta suave sobre grafite, bem mais confortável para ler textos e botões.',
+      'O ícone do app (celular e computador) e a tela de abertura usam as novas cores.',
+    ],
+  },
+  {
     n: 29, date: '2026-11-11', title: 'Tutorial com texto legível',
     items: [
       'A mensagem do tutorial aparecia escurecida, coberta pela sombra do destaque. Agora o cartão fica por cima e o texto aparece com toda a nitidez.',
