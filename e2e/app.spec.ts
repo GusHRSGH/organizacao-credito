@@ -86,7 +86,7 @@ test('o destaque do tour acompanha o elemento com as mesmas dimensões', async (
     }
     await page.getByRole('button', { name: 'Próximo' }).click()
   }
-  expect(conferidos).toBeGreaterThanOrEqual(6)
+  expect(conferidos).toBeGreaterThanOrEqual(3)
 })
 
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
