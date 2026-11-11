@@ -1,5 +1,5 @@
 import type { ImportRow } from '../types'
-import { inferPeriod, parseDate, parseInstallment, type ParsedSheet } from './importXlsx'
+import { inferPeriod, parseDate, parseInstallment, type ParsedCredit, type ParsedSheet } from './importXlsx'
 import { periodLabel } from './installments'
 import { invoicePeriodFor, type Card } from '../lib/card'
 
@@ -140,6 +140,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
   const amounts = body.map((row) => parseMoney(row?.[cAmount])).filter((v): v is number => v !== null && v !== 0)
   const flip = amounts.filter((v) => v < 0).length > amounts.length / 2
   const rows: ImportRow[] = []
+  const credits: ParsedCredit[] = []
   body.forEach((raw, offset) => {
     if (!raw || raw.every(blank)) return
     const line = proposal.headerIndex + offset + 2
@@ -150,6 +151,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
     const signed = parseMoney(raw[cAmount])
     if (signed === null) { issues.push(`Linha ${line} (${description}): valor não reconhecido, ignorada.`); return }
     const amount = Math.round((flip ? -signed : signed) * 100) / 100
+    if (amount < 0) credits.push({ date, description: description.slice(0, 160), amount: -amount })
     if (amount <= 0) { issues.push(`Linha ${line} (${description}): valor ${signed === 0 ? 'zerado' : 'de estorno ou pagamento'}, ignorada.`); return }
     const installment = parseInstallment(cParcel >= 0 ? raw[cParcel] : null, description)
     rows.push({
@@ -160,14 +162,14 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
       installmentNumber: installment?.number ?? null, installmentCount: installment?.count ?? null,
     })
   })
-  if (!rows.length) return [{ sheetName: proposal.sheetName, period: null, label: proposal.sheetName, rows, issues }]
+  if (!rows.length) return [{ sheetName: proposal.sheetName, period: null, label: proposal.sheetName, rows, issues, credits }]
   // Nome da aba com mês: uma fatura só. Senão, uma fatura para cada mês das datas.
   const named = inferPeriod(proposal.sheetName, rows)
-  if (named) return [{ sheetName: proposal.sheetName, period: named, label: periodLabel(named), rows, issues }]
+  if (named) return [{ sheetName: proposal.sheetName, period: named, label: periodLabel(named), rows, issues, credits }]
   const byMonth = new Map<string, ImportRow[]>()
   for (const row of rows) { const key = invoicePeriodFor(row.date, card); byMonth.set(key, [...(byMonth.get(key) ?? []), row]) }
   return [...byMonth].sort(([a], [b]) => a.localeCompare(b)).map(([period, list], i) => ({
-    sheetName: byMonth.size > 1 ? `${proposal.sheetName} · ${periodLabel(period)}` : proposal.sheetName, period, label: periodLabel(period), rows: list, issues: i === 0 ? issues : [],
+    sheetName: byMonth.size > 1 ? `${proposal.sheetName} · ${periodLabel(period)}` : proposal.sheetName, period, label: periodLabel(period), rows: list, issues: i === 0 ? issues : [], credits: i === 0 ? credits : [],
   }))
 }
 
