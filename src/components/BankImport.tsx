@@ -156,7 +156,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
         {(openRefunds.length > 0 || questions.length > 0) && <section className="bank-asks" role="region" aria-label="Perguntas do robô">
           <h3>Preciso de você em {openRefunds.length + openQuestions.length} {openRefunds.length + openQuestions.length === 1 ? 'ponto' : 'pontos'}</h3>
           {openRefunds.length + openQuestions.length === 0 && <p className="hint pos">Tudo respondido. Confira a lista e importe.</p>}
-          {openQuestions.length >= 3 && <div className="bank-ask">
+          {openQuestions.length >= 2 && <div className="bank-ask">
             <p><b>Quase tudo é da mesma pessoa?</b></p>
             <p className="hint">Atribua as {openQuestions.length} perguntas abertas de uma vez e corrija só as exceções na lista.</p>
             <div className="button-row">
