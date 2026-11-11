@@ -11,7 +11,7 @@ import type { ImportInvoice, ImportRow, Transaction } from '../types'
 
 export interface BankRow { date: string; description: string; amount: number; bankCategory: string; installmentNumber: number | null; installmentCount: number | null }
 export interface BankCredit { date: string; description: string; amount: number }
-export interface BankFile { rows: BankRow[]; ignored: string[]; credits: BankCredit[]; periodHint: string | null; kind: 'planilha' | 'pdf' | 'foto' | 'texto' }
+export interface BankFile { rows: BankRow[]; ignored: string[]; credits: BankCredit[]; periodHint: string | null; kind: 'planilha' | 'pdf' | 'foto' | 'texto' | 'open-finance' }
 
 /** O nome do arquivo costuma trazer o vencimento (Nubank_2026-12-07.csv). Devolve a fatura (AAAA-MM-01). */
 export function periodFromFileName(name: string): string | null {

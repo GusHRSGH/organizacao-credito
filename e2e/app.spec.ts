@@ -165,6 +165,38 @@ test('o microfone preenche o lançamento com o que foi falado', async ({ page })
   await expect(campo).toHaveValue('mercado 12,50 ontem')
 })
 
+test('Meu Pluggy: configura, busca a fatura no banco e passa pelo robô', async ({ page }) => {
+  const ITEM = '3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
+  await page.route('https://api.pluggy.ai/**', async (route) => {
+    const url = route.request().url()
+    const json = (data: unknown) => route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(data) })
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } })
+    if (url.endsWith('/auth')) return json({ apiKey: 'K' })
+    if (url.includes('/accounts')) return json({ results: [{ id: 'acc-1', name: 'Nubank', number: 'xxxx1234' }] })
+    if (url.includes('/v2/transactions')) return json({ next: null, results: [
+      { id: 't1', date: '2026-11-03', description: 'Padaria Pao Quente', amount: 18.5, type: 'DEBIT', status: 'POSTED', creditCardMetadata: { billForecastDate: '2026-12' } },
+      { id: 't2', date: '2026-11-04', description: 'Magazine Luiza', amount: 100, type: 'DEBIT', status: 'POSTED', creditCardMetadata: { billForecastDate: '2026-12', installmentNumber: 1, totalInstallments: 3 } },
+      { id: 't3', date: '2026-11-05', description: 'Pagamento recebido', amount: -300, type: 'CREDIT', status: 'POSTED', creditCardMetadata: { billForecastDate: '2026-12' } },
+    ] })
+    return route.fulfill({ status: 404, body: '' })
+  })
+  await entrar(page)
+  await abaConfig(page, 'Avançado')
+  await page.getByLabel('Client ID da Pluggy').fill('11111111-2222-4333-8444-555555555555')
+  await page.getByLabel('Client Secret da Pluggy').fill('segredo')
+  await page.getByLabel('Item IDs da Pluggy').fill(ITEM)
+  await page.getByRole('button', { name: 'Salvar e testar' }).click()
+  await expect(page.getByText('Achei 1 cartão de crédito').first()).toBeVisible()
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  await page.getByRole('button', { name: 'Buscar no banco (Meu Pluggy)' }).click()
+  await page.getByRole('button', { name: /Dezembro 2026 · 2 compras/ }).click()
+  await expect(page.getByText('Conferi sua fatura')).toBeVisible()
+  await expect(page.getByLabel('Descrição de Padaria Pao Quente')).toBeVisible()
+  await expect(page.getByText('parcela 1/3').first()).toBeVisible()
+  await expect(page.getByLabel('Descrição de Pagamento recebido')).toHaveCount(0)
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)

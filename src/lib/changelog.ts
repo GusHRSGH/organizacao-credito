@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 33, date: '2026-11-11', title: 'Open Finance pessoal (Meu Pluggy)',
+    items: [
+      'Em Configurações, Avançado, ligue o Meu Pluggy com as suas credenciais e o app busca as compras do cartão direto no banco, sem exportar arquivo.',
+      'Em Importar fatura do banco, o botão “Buscar no banco” mostra as faturas encontradas e passa tudo pelo mesmo robô: categorias, parcelas, estornos e a pergunta de quem é cada compra.',
+      'As credenciais ficam só neste aparelho e não entram em nenhum backup. É um modo para as suas próprias contas.',
+    ],
+  },
+  {
     n: 32, date: '2026-11-11', title: 'Lançar sem digitar',
     items: [
       'Cole a notificação de compra do banco no lançamento rápido (ou toque no ícone de prancheta): o app lê o valor, a loja, as parcelas e a data, e sugere o responsável pelo seu histórico.',
