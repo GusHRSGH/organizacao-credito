@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyRows, guessPeriod, periodFromFileName, readBankFile, summarizeIncoming, toImportRows } from '../bankImport'
+import { buildCategoryQuestions, categoryUncertain, classifyRows, guessPeriod, periodFromFileName, readBankFile, summarizeIncoming, toImportRows } from '../bankImport'
 import { matchCategoryName } from '../keywords'
 import { buildSuggestions } from '../suggest'
 import type { Transaction } from '../../types'
@@ -62,5 +62,26 @@ describe('importar fatura do banco', () => {
     expect(matchCategoryName('supermercado', ['Mercado', 'Casa'])).toBe('Mercado')
     expect(matchCategoryName('Transportes', ['Transporte'])).toBe('Transporte')
     expect(matchCategoryName('lazer', ['Casa'])).toBeNull()
+  })
+})
+
+describe('quando o robô não tem certeza da categoria', () => {
+  const bank = [
+    { date: '2026-11-02', description: 'Padaria Central', amount: 23.9, bankCategory: 'restaurante', installmentNumber: null, installmentCount: null },
+    { date: '2026-11-03', description: 'Xyzzy Quux', amount: 10, bankCategory: '', installmentNumber: null, installmentCount: null },
+    { date: '2026-11-04', description: 'Pix no Crédito - Fulano - 1/2', amount: 50, bankCategory: '', installmentNumber: 1, installmentCount: 2 },
+    { date: '2026-11-05', description: 'Uber', amount: 9, bankCategory: 'transporte', installmentNumber: null, installmentCount: null },
+  ]
+  const rows = classifyRows(bank, { suggestions: new Map(), categories: ['Transporte'], defaultPerson: '' })
+
+  it('pergunta quando não achou categoria ou o banco usou um nome que você não tem', () => {
+    expect(rows.map(categoryUncertain)).toEqual([true, true, false, false])
+    const questions = buildCategoryQuestions(rows)
+    expect(questions.map((q) => [q.label, q.suggestion])).toEqual([['Padaria Central', 'Restaurante'], ['Xyzzy Quux', '']])
+  })
+
+  it('não pergunta as categorias que o próprio app nomeia (Pix e boleto no crédito)', () => {
+    expect(rows[2]).toMatchObject({ category: 'Pix no crédito', categoryFrom: 'nova' })
+    expect(buildCategoryQuestions(rows).some((q) => q.label.includes('Pix'))).toBe(false)
   })
 })

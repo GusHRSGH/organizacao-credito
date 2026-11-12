@@ -61,7 +61,7 @@ export interface ClassifiedRow extends BankRow {
   person: string
   category: string
   personFrom: 'histórico' | 'padrão' | 'resposta' | ''
-  categoryFrom: 'histórico' | 'banco' | 'palavras' | 'nova' | ''
+  categoryFrom: 'histórico' | 'banco' | 'palavras' | 'nova' | 'resposta' | ''
   renamed: boolean
   /** Pergunta a que esta compra pertence (compras parecidas respondem juntas). */
   qkey: string
@@ -124,6 +124,22 @@ export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Su
 export function rowKey(description: string, amount: number, installmentCount: number | null): string {
   const key = questionKey(description)
   return installmentCount && /^(pix|boleto) no credito\b/.test(key) ? `${key}|${Math.round(amount * 100)}` : key
+}
+
+/** Categoria sem base: o robô não achou nenhuma, ou o banco usou um nome que você não tem e ele só poderia inventar uma categoria nova. */
+export const categoryUncertain = (row: Pick<ClassifiedRow, 'categoryFrom' | 'bankCategory'>) => row.categoryFrom === '' || (row.categoryFrom === 'nova' && !!row.bankCategory.trim())
+
+export interface CategoryQuestion { key: string; label: string; rowIds: number[]; total: number; /** O que o robô faria sozinho (a categoria do banco, criada nova), se houver. */ suggestion: string }
+
+/** Uma pergunta de categoria por grupo de compras parecidas em que o robô não tem certeza. */
+export function buildCategoryQuestions(rows: ClassifiedRow[]): CategoryQuestion[] {
+  const groups = new Map<string, ClassifiedRow[]>()
+  for (const row of rows) if (categoryUncertain(row)) groups.set(row.qkey, [...(groups.get(row.qkey) ?? []), row])
+  return [...groups].map(([key, list]) => {
+    const first = list.find((row) => row.iofOf === null) ?? list[0]
+    const label = first.description.replace(/\s*[(-]?\s*(?:parcela\s*)?\d{1,2}\/\d{1,2}\)?$/i, '').trim() || first.description
+    return { key, label: key.includes('|') ? `${label} (${first.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})` : label, rowIds: list.map((row) => row.id), total: list.reduce((sum, row) => sum + Math.round(row.amount * 100), 0) / 100, suggestion: first.category }
+  }).sort((a, b) => b.total - a.total)
 }
 
 export interface IncomingSummary { count: number; total: number; byCategory: Array<{ name: string; total: number }>; byPerson: Array<{ name: string; total: number }>; installments: number }

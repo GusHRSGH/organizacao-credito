@@ -513,6 +513,15 @@ test('o robô pergunta o responsável por grupo e o possível estorno', async ({
   // O que sobrou vai para uma pessoa só, de uma vez.
   await perguntas.getByLabel('Pessoa para todas as restantes').fill('Gus')
   await perguntas.getByRole('button', { name: 'Atribuir a todas' }).click()
+  // Sem base para adivinhar a categoria, o robô pergunta: aqui o usuário escolhe uma e digita outra.
+  const mercado = perguntas.locator('.bank-ask', { hasText: 'Mercado Livre' })
+  await expect(mercado).toContainText('Não consegui adivinhar a categoria')
+  await mercado.getByLabel(/^Outra categoria para/).fill('Compras')
+  await mercado.getByRole('button', { name: 'Usar', exact: true }).click()
+  await expect(robo.getByLabel('Categoria de Mercado Livre')).toHaveValue('Compras')
+  const assinatura = perguntas.locator('.bank-ask', { hasText: 'Servico Ai' })
+  await assinatura.getByLabel(/^Outra categoria para/).fill('Assinaturas')
+  await assinatura.getByRole('button', { name: 'Usar', exact: true }).click()
   await expect(perguntas).toContainText('Tudo respondido')
   await expect(robo).toContainText('Lançar a 1 parcela que falta')
   await expect(robo.getByLabel('Quanto cada pessoa deve')).toContainText('Ana')
@@ -628,4 +637,18 @@ test('conciliação: o que o banco cobrou e eu não lancei entra para conferir',
   await expect(conc).toContainText('1 lançamento seu que o banco não cobrou')
   await robo.getByRole('button', { name: /^Importar 1 lançamentos/ }).click()
   await expect(robo).toContainText('pronta')
+})
+
+test('o robô pergunta o mês quando o nome do arquivo não diz e o usuário confirma', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  const csv = 'date,title,amount\n2026-10-12,Padaria Central,"23,90"\n2026-10-14,Uber - NuPay,"9,94"\n'
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'compras.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const perguntas = robo.getByRole('region', { name: 'Perguntas do robô' })
+  const mes = perguntas.locator('.bank-ask', { hasText: 'De que mês é essa fatura?' })
+  await expect(mes).toContainText('parece')
+  await mes.getByRole('button', { name: /^Sim, é / }).click()
+  await expect(perguntas.locator('.bank-ask', { hasText: 'De que mês é essa fatura?' })).toHaveCount(0)
 })
