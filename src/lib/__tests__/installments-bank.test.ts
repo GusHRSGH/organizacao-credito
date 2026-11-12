@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bumpInstallment, classifyRows, futureInstallments, summarizeIncoming } from '../bankImport'
+import { buildQuestions } from '../assign'
 import { buildInstallmentSuggestions, buildSuggestions } from '../suggest'
 import type { ImportRow, Transaction } from '../../types'
 
@@ -71,5 +72,30 @@ describe('parcelas futuras no banco local', () => {
     expect(again.duplicates).toBe(3)
     // E o robô, na hora de importar de novo, já enxerga as parcelas lançadas e não cria outras.
     expect(futureInstallments([main], '2026-12-01', all).count).toBe(0)
+  })
+})
+
+describe('dois boletos do mesmo banco no mesmo mês', () => {
+  const bank = [
+    { date: '2027-01-10', description: 'Boleto no Crédito - BANCO PAN SA - AUTO PAN - 3/5', amount: 319.37, bankCategory: '', installmentNumber: 3, installmentCount: 5 },
+    { date: '2027-01-10', description: 'Boleto no Crédito - BANCO PAN SA - AUTO PAN - 2/5', amount: 317.28, bankCategory: '', installmentNumber: 2, installmentCount: 5 },
+    { date: '2027-01-04', description: 'Shein - Parcela 3/3', amount: 72.71, bankCategory: '', installmentNumber: 3, installmentCount: 3 },
+  ]
+  const ask = (rows: ReturnType<typeof classifyRows>) => buildQuestions(rows.map((r) => ({ id: r.id, qkey: r.qkey, description: r.description, amount: r.amount, category: r.category, person: r.person, personFrom: r.personFrom })), [])
+
+  it('valores diferentes viram duas perguntas, cada uma com o seu responsável', () => {
+    const rows = classifyRows(bank, { suggestions: new Map(), installments: new Map(), categories: ['Compras'], defaultPerson: '' })
+    const questions = ask(rows)
+    expect(questions).toHaveLength(3)
+    const pan = questions.filter((q) => q.label.includes('PAN'))
+    expect(pan.map((q) => q.label).sort()).toEqual([expect.stringContaining('317,28'), expect.stringContaining('319,37')])
+    expect(pan.every((q) => q.rowIds.length === 1)).toBe(true)
+  })
+
+  it('o histórico do nome continua valendo para o palpite', () => {
+    const rows = classifyRows(bank, { suggestions: new Map(), installments: new Map(), categories: ['Compras'], defaultPerson: '' })
+    const history = [tx('Boleto no Crédito - BANCO PAN SA - AUTO PAN - 1/5', 'Bia', 319.37, 1, 5)]
+    const questions = buildQuestions(rows.map((r) => ({ id: r.id, qkey: r.qkey, description: r.description, amount: r.amount, category: r.category, person: r.person, personFrom: r.personFrom })), history)
+    expect(questions.filter((q) => q.suggestion?.person === 'Bia')).toHaveLength(2)
   })
 })

@@ -57,11 +57,13 @@ export function buildQuestions(rows: AskRow[], history: Transaction[]): Question
   const questions: Question[] = []
   for (const [key, list] of groups) {
     const first = list.find((row) => !row.iof) ?? list[0]
-    const label = first.description.replace(/\s*[(-]?\s*(?:parcela\s*)?\d{1,2}\/\d{1,2}\)?$/i, '').trim() || first.description
+    const baseLabel = first.description.replace(/\s*[(-]?\s*(?:parcela\s*)?\d{1,2}\/\d{1,2}\)?$/i, '').trim() || first.description
+    const split = key.includes('|')
+    const label = split ? `${baseLabel} (${brl(first.amount)})` : baseLabel
     let suggestion: Question['suggestion'] = null
 
-    const family = top(patterns.byFamily.get(key))
-    if (family && family.share === 1) suggestion = { person: family.person, reason: `Você já lançou “${label}” ${family.n === 1 ? 'uma vez' : `${family.n} vezes`} para ${family.person}.` }
+    const family = top(patterns.byFamily.get(key.split('|')[0]))
+    if (family && family.share === 1) suggestion = { person: family.person, reason: `Você já lançou “${baseLabel}” ${family.n === 1 ? 'uma vez' : `${family.n} vezes`} para ${family.person}.` }
 
     if (!suggestion && list.filter((row) => !row.iof).every((row) => row.amount === first.amount)) {
       const same = top(patterns.byAmount.get(String(Math.round(first.amount * 100))))

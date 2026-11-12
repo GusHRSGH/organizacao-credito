@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 35, date: '2026-11-11', title: 'Boletos parcelados do mesmo banco',
+    items: [
+      'Na importação da fatura, dois boletos ou Pix parcelados com o mesmo nome e valores diferentes agora viram duas perguntas, para cada um ter o seu responsável.',
+    ],
+  },
+  {
     n: 33, date: '2026-11-11', title: 'Open Finance pessoal (Meu Pluggy)',
     items: [
       'Em Configurações, Avançado, ligue o Meu Pluggy com as suas credenciais e o app busca as compras do cartão direto no banco, sem exportar arquivo.',

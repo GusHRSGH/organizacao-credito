@@ -110,7 +110,7 @@ export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Su
       else if (row.bankCategory.trim()) { category = sentence(row.bankCategory); categoryFrom = 'nova' }
     }
     const person = history?.person ?? ctx.defaultPerson
-    return { ...row, id, description, renamed: description !== row.description.trim(), category, categoryFrom, person, personFrom: history?.person ? 'histórico' : ctx.defaultPerson ? 'padrão' : '', qkey: questionKey(description), iofOf: null }
+    return { ...row, id, description, renamed: description !== row.description.trim(), category, categoryFrom, person, personFrom: history?.person ? 'histórico' : ctx.defaultPerson ? 'padrão' : '', qkey: rowKey(description, row.amount, row.installmentCount), iofOf: null }
   })
   // O IOF segue a compra que o gerou: mesma categoria, mesmo responsável, mesma pergunta.
   for (const [iofId, buyId] of iof) {
@@ -118,6 +118,12 @@ export function classifyRows(rows: BankRow[], ctx: { suggestions: Map<string, Su
     first[iofId] = { ...first[iofId], iofOf: buyId, qkey: buy.qkey, category: buy.category || first[iofId].category, categoryFrom: buy.category ? buy.categoryFrom : first[iofId].categoryFrom, person: buy.person, personFrom: buy.personFrom }
   }
   return first
+}
+
+/** Chave da pergunta de responsável. Pix e boleto parcelados com valores diferentes são contratos diferentes, mesmo com o mesmo nome: cada um tem a sua pergunta. */
+export function rowKey(description: string, amount: number, installmentCount: number | null): string {
+  const key = questionKey(description)
+  return installmentCount && /^(pix|boleto) no credito\b/.test(key) ? `${key}|${Math.round(amount * 100)}` : key
 }
 
 export interface IncomingSummary { count: number; total: number; byCategory: Array<{ name: string; total: number }>; byPerson: Array<{ name: string; total: number }>; installments: number }
