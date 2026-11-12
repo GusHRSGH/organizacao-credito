@@ -3,10 +3,30 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
-    n: 34, date: '2026-11-11', title: 'Notificações do cartão',
+    n: 38, date: '2026-11-11', title: 'Notificações do cartão',
     items: [
       'Novas notificações no Android, em Configurações, Avisos: fatura perto de vencer (no dia, 1 ou 3 dias antes), dia em que a fatura fecha e lembrete de cobrar quem ainda não pagou.',
       'Você escolhe o horário de cada uma, e tocar na notificação abre a tela certa.',
+    ],
+  },
+  {
+    n: 37, date: '2026-11-11', title: 'Você confirma os responsáveis sugeridos',
+    items: [
+      'Na importação da fatura, o responsável que o robô atribuiu pelo histórico também aparece como pergunta, já com o palpite: um toque confirma, ou você corrige para outra pessoa.',
+      'Com várias sugestões, o botão “Confirmar as N sugestões” aceita todas de uma vez.',
+    ],
+  },
+  {
+    n: 36, date: '2026-11-11', title: 'O robô pergunta quando não tem certeza',
+    items: [
+      'Na importação da fatura, se o robô não achar a categoria de uma compra (ou o banco usar um nome que você não tem), ele mostra a sugestão e as suas categorias: você confirma com um toque ou corrige.',
+      'Se o nome do arquivo não diz o mês, ele pergunta se a fatura é do mês que as datas indicam, e você confirma ou troca.',
+    ],
+  },
+  {
+    n: 35, date: '2026-11-11', title: 'Boletos parcelados do mesmo banco',
+    items: [
+      'Na importação da fatura, dois boletos ou Pix parcelados com o mesmo nome e valores diferentes agora viram duas perguntas, para cada um ter o seu responsável.',
     ],
   },
   {

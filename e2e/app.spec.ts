@@ -520,6 +520,15 @@ test('o robô pergunta o responsável por grupo e o possível estorno', async ({
   // O que sobrou vai para uma pessoa só, de uma vez.
   await perguntas.getByLabel('Pessoa para todas as restantes').fill('Gus')
   await perguntas.getByRole('button', { name: 'Atribuir a todas' }).click()
+  // Sem base para adivinhar a categoria, o robô pergunta: aqui o usuário escolhe uma e digita outra.
+  const mercado = perguntas.locator('.bank-ask', { hasText: 'Mercado Livre' })
+  await expect(mercado).toContainText('Não consegui adivinhar a categoria')
+  await mercado.getByLabel(/^Outra categoria para/).fill('Compras')
+  await mercado.getByRole('button', { name: 'Usar', exact: true }).click()
+  await expect(robo.getByLabel('Categoria de Mercado Livre')).toHaveValue('Compras')
+  const assinatura = perguntas.locator('.bank-ask', { hasText: 'Servico Ai' })
+  await assinatura.getByLabel(/^Outra categoria para/).fill('Assinaturas')
+  await assinatura.getByRole('button', { name: 'Usar', exact: true }).click()
   await expect(perguntas).toContainText('Tudo respondido')
   await expect(robo).toContainText('Lançar a 1 parcela que falta')
   await expect(robo.getByLabel('Quanto cada pessoa deve')).toContainText('Ana')
@@ -635,4 +644,44 @@ test('conciliação: o que o banco cobrou e eu não lancei entra para conferir',
   await expect(conc).toContainText('1 lançamento seu que o banco não cobrou')
   await robo.getByRole('button', { name: /^Importar 1 lançamentos/ }).click()
   await expect(robo).toContainText('pronta')
+})
+
+test('o robô pergunta o mês quando o nome do arquivo não diz e o usuário confirma', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  const csv = 'date,title,amount\n2026-10-12,Padaria Central,"23,90"\n2026-10-14,Uber - NuPay,"9,94"\n'
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'compras.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const perguntas = robo.getByRole('region', { name: 'Perguntas do robô' })
+  const mes = perguntas.locator('.bank-ask', { hasText: 'De que mês é essa fatura?' })
+  await expect(mes).toContainText('parece')
+  await mes.getByRole('button', { name: /^Sim, é / }).click()
+  await expect(perguntas.locator('.bank-ask', { hasText: 'De que mês é essa fatura?' })).toHaveCount(0)
+})
+
+test('o robô confirma os responsáveis que atribuiu pelo histórico: o usuário aceita ou corrige', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'settings')
+  const base = 'Estabelecimento;Quando;Quanto;Quem\nPadaria Central;05/11/2026;R$ 23,90;Ana\nPosto Shell;07/11/2026;180,00;Bia\n'
+  await page.locator('input[type=file][accept^=".xlsx"]').setInputFiles({ name: 'extrato.csv', mimeType: 'text/csv', buffer: Buffer.from(base) })
+  await page.getByRole('dialog', { name: 'Robô de importação' }).getByRole('button', { name: 'Está certo, continuar' }).click()
+  await page.getByRole('button', { name: /^Importar 2 lançamentos/ }).click()
+  await expect(page.getByRole('button', { name: /^Importar \d+ lançamentos/ })).toHaveCount(0, { timeout: 10_000 })
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  const csv = 'date,title,amount\n2026-12-01,Padaria Central,"30,00"\n2026-12-02,Posto Shell,"200,00"\n'
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'Nubank_2026-12-07.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const perguntas = robo.getByRole('region', { name: 'Perguntas do robô' })
+  const padaria = perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico, “Padaria Central”' })
+  const posto = perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico, “Posto Shell”' })
+  await expect(padaria).toContainText('Pelo seu histórico')
+  await expect(robo.getByLabel(/^Responsável de Padaria Central/)).toHaveValue('Ana')
+  // Errou: o usuário corrige para outra pessoa. Acertou: aceita com um toque.
+  await posto.getByRole('button', { name: 'É Ana' }).click()
+  await padaria.getByRole('button', { name: 'Sim, é Ana' }).click()
+  await expect(robo.getByLabel(/^Responsável de Posto Shell/)).toHaveValue('Ana')
+  await expect(robo.getByLabel(/^Responsável de Padaria Central/)).toHaveValue('Ana')
+  await expect(perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico' })).toHaveCount(0)
 })
