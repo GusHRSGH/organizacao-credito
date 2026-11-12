@@ -16,6 +16,8 @@ export interface Question {
   rowIds: number[]
   total: number
   suggestion: { person: string; reason: string } | null
+  /** O robô já tinha atribuído pelo histórico; a pergunta só confirma. */
+  fromHistory?: boolean
 }
 
 type Counts = Map<string, number>
@@ -51,7 +53,7 @@ export function buildQuestions(rows: AskRow[], history: Transaction[]): Question
   const patterns = learnPatterns(history)
   const groups = new Map<string, AskRow[]>()
   for (const row of rows) {
-    if (row.person.trim() || row.personFrom === 'histórico') continue
+    if (row.person.trim() && row.personFrom !== 'histórico') continue
     groups.set(row.qkey, [...(groups.get(row.qkey) ?? []), row])
   }
   const questions: Question[] = []
@@ -61,6 +63,16 @@ export function buildQuestions(rows: AskRow[], history: Transaction[]): Question
     const split = key.includes('|')
     const label = split ? `${baseLabel} (${brl(first.amount)})` : baseLabel
     let suggestion: Question['suggestion'] = null
+
+    // O robô já atribuiu pelo histórico: a pergunta só pede para confirmar ou corrigir.
+    const decided = list.filter((row) => row.personFrom === 'histórico' && row.person.trim())
+    if (decided.length === list.length) {
+      const counts: Counts = new Map()
+      for (const row of decided) counts.set(row.person, (counts.get(row.person) ?? 0) + 1)
+      const [person, n] = [...counts].sort((a, b) => b[1] - a[1])[0]
+      questions.push({ key, label, rowIds: list.map((row) => row.id), total: list.reduce((s, row) => s + Math.round(row.amount * 100), 0) / 100, suggestion: { person, reason: n === list.length ? `Pelo seu histórico, “${baseLabel}” é de ${person}.` : `Pelo seu histórico, “${baseLabel}” costuma ser de ${person}.` }, fromHistory: true })
+      continue
+    }
 
     const family = top(patterns.byFamily.get(key.split('|')[0]))
     if (family && family.share === 1) suggestion = { person: family.person, reason: `Você já lançou “${baseLabel}” ${family.n === 1 ? 'uma vez' : `${family.n} vezes`} para ${family.person}.` }

@@ -84,7 +84,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const recon = useMemo(() => reconcile(base, existingRows), [base, existingRows])
   const rows = useMemo(() => base.map((row) => {
     const answered = answers[row.qkey]
-    const own = answered !== undefined && !row.person.trim() ? { person: answered, personFrom: 'resposta' as const } : {}
+    const own = answered !== undefined && (!row.person.trim() || row.personFrom === 'histórico') ? { person: answered, personFrom: 'resposta' as const } : {}
     const cat = catAnswers[row.qkey]
     const ownCat = cat !== undefined && categoryUncertain(row) ? { category: cat, categoryFrom: 'resposta' as const } : {}
     return { ...row, ...own, ...ownCat, ...edits[row.id], include: edits[row.id]?.include ?? (refunds[row.id] === 'ignore' ? false : !recon.matched.has(row.id)), match: recon.matched.get(row.id) }
@@ -101,7 +101,10 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const openRefunds = refundGuesses.filter((guess) => refunds[guess.rowId] === undefined)
   const points = openRefunds.length + openQuestions.length + openCats.length + (openPeriod ? 1 : 0)
   const [everyone, setEveryone] = useState('')
-  const answerAll = (person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, ...Object.fromEntries(openQuestions.map((q) => [q.key, name])) })) }
+  const openBlank = openQuestions.filter((q) => !q.suggestion)
+  const openGuessed = openQuestions.filter((q) => q.suggestion)
+  const answerAll = (person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, ...Object.fromEntries(openBlank.map((q) => [q.key, name])) })) }
+  const confirmGuesses = () => setAnswers((all) => ({ ...all, ...Object.fromEntries(openGuessed.map((q) => [q.key, q.suggestion!.person])) }))
   const answer = (key: string, person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, [key]: name })) }
   const chosen = useMemo(() => rows.filter((row) => row.include), [rows])
   const summary = useMemo(() => summarizeIncoming(chosen), [chosen])
@@ -201,9 +204,14 @@ export default function BankImport({ local, invoices, transactions, people, cate
         {(openRefunds.length > 0 || questions.length > 0 || catQuestions.length > 0 || openPeriod) && <section className="bank-asks" role="region" aria-label="Perguntas do robô">
           <h3>Preciso de você em {points} {points === 1 ? 'ponto' : 'pontos'}</h3>
           {points === 0 && <p className="hint pos">Tudo respondido. Confira a lista e importe.</p>}
-          {openQuestions.length >= 2 && <div className="bank-ask">
+          {openGuessed.length >= 2 && <div className="bank-ask">
+            <p><b>Os palpites do robô estão certos?</b></p>
+            <p className="hint">Confirme as {openGuessed.length} sugestões de uma vez e corrija só as que estiverem erradas.</p>
+            <div className="button-row"><button className="primary-button" onClick={confirmGuesses}>Confirmar as {openGuessed.length} sugestões</button></div>
+          </div>}
+          {openBlank.length >= 2 && <div className="bank-ask">
             <p><b>Quase tudo é da mesma pessoa?</b></p>
-            <p className="hint">Atribua as {openQuestions.length} perguntas abertas de uma vez e corrija só as exceções na lista.</p>
+            <p className="hint">Atribua as {openBlank.length} perguntas sem palpite de uma vez e corrija só as exceções na lista.</p>
             <div className="button-row">
               {people.slice(0, 6).map((name) => <button key={name} className="secondary-button" onClick={() => answerAll(name)}>Todas para {name}</button>)}
               <input value={everyone} onChange={(event) => setEveryone(event.target.value)} list="bank-people" placeholder="outra pessoa" aria-label="Pessoa para todas as restantes" />
@@ -232,7 +240,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
           </div> })}
           {openQuestions.map((q) => <div key={q.key} className="bank-ask">
             <p><b>{q.label}</b> <span className="muted">{q.rowIds.length} {q.rowIds.length === 1 ? 'compra' : 'compras'} · {money(q.total)}</span></p>
-            <p className="hint">{q.suggestion ? `${q.suggestion.reason} Atribuo a ${q.suggestion.person}?` : 'Não achei nada parecido no seu histórico. De quem é?'}</p>
+            <p className="hint">{q.suggestion ? `${q.suggestion.reason} ${q.fromHistory ? 'Confere?' : `Atribuo a ${q.suggestion.person}?`}` : 'Não achei nada parecido no seu histórico. De quem é?'}</p>
             <div className="button-row">
               {q.suggestion && <button className="primary-button" onClick={() => answer(q.key, q.suggestion!.person)}>Sim, é {q.suggestion.person}</button>}
               {people.filter((name) => name !== q.suggestion?.person).slice(0, 6).map((name) => <button key={name} className="secondary-button" onClick={() => answer(q.key, name)}>{q.suggestion ? `É ${name}` : name}</button>)}
