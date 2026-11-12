@@ -9,7 +9,8 @@ import type { DrillFilter } from './lib/drill'
 import Welcome from './components/Welcome'
 import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
-import { agendarLembrete, aoTocarNoLembrete } from './lib/lembrete'
+import { agendarLembrete, aoTocarNaNotificacao } from './lib/lembrete'
+import { agendarAvisos } from './lib/avisosFatura'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -122,7 +123,10 @@ export default function App() {
     if (page === 'dashboard') return
     return registerBack(() => { setPage('dashboard'); return true })
   }, [page])
-  useEffect(() => { void agendarLembrete(); return aoTocarNoLembrete(() => { setPage('invoices'); setSheetOpen(true) }) }, [])
+  useEffect(() => {
+    void agendarLembrete(); void agendarAvisos()
+    return aoTocarNaNotificacao((go) => { if (go === 'billing') setPage('billing'); else if (go === 'invoices') setPage('invoices'); else { setPage('invoices'); setSheetOpen(true) } })
+  }, [])
   useEffect(() => watchShortcuts((target) => {
     if (target === 'novo') { setPage('invoices'); setSheetOpen(true) }
     if (target === 'cobranca') setPage('billing')

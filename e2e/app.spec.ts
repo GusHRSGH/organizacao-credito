@@ -197,6 +197,13 @@ test('Meu Pluggy: configura, busca a fatura no banco e passa pelo robô', async 
   await expect(page.getByLabel('Descrição de Pagamento recebido')).toHaveCount(0)
 })
 
+test('no computador, as notificações do celular explicam que são do Android', async ({ page }) => {
+  await entrar(page)
+  await abaConfig(page, 'Avisos')
+  await expect(page.getByText('As notificações do cartão funcionam no app do Android')).toBeVisible()
+  await expect(page.getByText('O lembrete diário funciona no app do Android')).toBeVisible()
+})
+
 test('importar o modelo de planilha preenche o resumo', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)
