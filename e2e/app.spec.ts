@@ -652,3 +652,29 @@ test('o robô pergunta o mês quando o nome do arquivo não diz e o usuário con
   await mes.getByRole('button', { name: /^Sim, é / }).click()
   await expect(perguntas.locator('.bank-ask', { hasText: 'De que mês é essa fatura?' })).toHaveCount(0)
 })
+
+test('o robô confirma os responsáveis que atribuiu pelo histórico: o usuário aceita ou corrige', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'settings')
+  const base = 'Estabelecimento;Quando;Quanto;Quem\nPadaria Central;05/11/2026;R$ 23,90;Ana\nPosto Shell;07/11/2026;180,00;Bia\n'
+  await page.locator('input[type=file][accept^=".xlsx"]').setInputFiles({ name: 'extrato.csv', mimeType: 'text/csv', buffer: Buffer.from(base) })
+  await page.getByRole('dialog', { name: 'Robô de importação' }).getByRole('button', { name: 'Está certo, continuar' }).click()
+  await page.getByRole('button', { name: /^Importar 2 lançamentos/ }).click()
+  await expect(page.getByRole('button', { name: /^Importar \d+ lançamentos/ })).toHaveCount(0, { timeout: 10_000 })
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  const csv = 'date,title,amount\n2026-12-01,Padaria Central,"30,00"\n2026-12-02,Posto Shell,"200,00"\n'
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'Nubank_2026-12-07.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const perguntas = robo.getByRole('region', { name: 'Perguntas do robô' })
+  const padaria = perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico, “Padaria Central”' })
+  const posto = perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico, “Posto Shell”' })
+  await expect(padaria).toContainText('Pelo seu histórico')
+  await expect(robo.getByLabel(/^Responsável de Padaria Central/)).toHaveValue('Ana')
+  // Errou: o usuário corrige para outra pessoa. Acertou: aceita com um toque.
+  await posto.getByRole('button', { name: 'É Ana' }).click()
+  await padaria.getByRole('button', { name: 'Sim, é Ana' }).click()
+  await expect(robo.getByLabel(/^Responsável de Posto Shell/)).toHaveValue('Ana')
+  await expect(robo.getByLabel(/^Responsável de Padaria Central/)).toHaveValue('Ana')
+  await expect(perguntas.locator('.bank-ask', { hasText: 'Pelo seu histórico' })).toHaveCount(0)
+})

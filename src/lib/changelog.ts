@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 37, date: '2026-11-11', title: 'Você confirma os responsáveis sugeridos',
+    items: [
+      'Na importação da fatura, o responsável que o robô atribuiu pelo histórico também aparece como pergunta, já com o palpite: um toque confirma, ou você corrige para outra pessoa.',
+      'Com várias sugestões, o botão “Confirmar as N sugestões” aceita todas de uma vez.',
+    ],
+  },
+  {
     n: 36, date: '2026-11-11', title: 'O robô pergunta quando não tem certeza',
     items: [
       'Na importação da fatura, se o robô não achar a categoria de uma compra (ou o banco usar um nome que você não tem), ele mostra a sugestão e as suas categorias: você confirma com um toque ou corrige.',

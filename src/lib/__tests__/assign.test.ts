@@ -67,10 +67,10 @@ describe('perguntas do robô', () => {
     expect(pix.rowIds).toHaveLength(2)
     expect(pix.total).toBe(482.74)
     expect(pix.suggestion).toBeNull()
-    // "Mercado Livre" exato já tem dono no histórico; só o vendedor novo vira pergunta, e com palpite da Ana.
+    // "Mercado Livre" exato já tem dono no histórico e o vendedor novo é parecido: uma pergunta só, com palpite da Ana.
     const ml = questions.filter((q) => q.label.startsWith('Mercado Livre'))
     expect(ml).toHaveLength(1)
-    expect(ml[0].rowIds).toHaveLength(1)
+    expect(ml[0].rowIds).toHaveLength(2)
     expect(ml[0].suggestion).toMatchObject({ person: 'Ana' })
     expect(questions[0].suggestion).not.toBeNull()
     // O IOF responde junto com a compra internacional.
@@ -96,8 +96,10 @@ describe('perguntas do robô', () => {
     expect(question.suggestion).toMatchObject({ person: 'Bia' })
   })
 
-  it('quem já tem responsável pelo histórico não é perguntado', () => {
-    expect(buildQuestions([{ id: 0, qkey: 'a', description: 'A', amount: 1, category: '', person: 'Ana', personFrom: 'histórico' }], [])).toHaveLength(0)
+  it('quem já tem responsável pelo histórico vira confirmação com o palpite pronto', () => {
+    const [q] = buildQuestions([{ id: 0, qkey: 'a', description: 'A', amount: 1, category: '', person: 'Ana', personFrom: 'histórico' }], [])
+    expect(q).toMatchObject({ fromHistory: true, suggestion: { person: 'Ana' } })
+    expect(buildQuestions([{ id: 0, qkey: 'a', description: 'A', amount: 1, category: '', person: 'Ana', personFrom: 'padrão' }], [])).toHaveLength(0)
   })
 
   it('aponta o provável estorno: crédito de mesmo valor até 3 dias de diferença', async () => {
