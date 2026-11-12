@@ -3,6 +3,19 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 36, date: '2026-11-11', title: 'O robô pergunta quando não tem certeza',
+    items: [
+      'Na importação da fatura, se o robô não achar a categoria de uma compra (ou o banco usar um nome que você não tem), ele mostra a sugestão e as suas categorias: você confirma com um toque ou corrige.',
+      'Se o nome do arquivo não diz o mês, ele pergunta se a fatura é do mês que as datas indicam, e você confirma ou troca.',
+    ],
+  },
+  {
+    n: 35, date: '2026-11-11', title: 'Boletos parcelados do mesmo banco',
+    items: [
+      'Na importação da fatura, dois boletos ou Pix parcelados com o mesmo nome e valores diferentes agora viram duas perguntas, para cada um ter o seu responsável.',
+    ],
+  },
+  {
     n: 33, date: '2026-11-11', title: 'Open Finance pessoal (Meu Pluggy)',
     items: [
       'Em Configurações, Avançado, ligue o Meu Pluggy com as suas credenciais e o app busca as compras do cartão direto no banco, sem exportar arquivo.',
