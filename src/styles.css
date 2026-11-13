@@ -1004,3 +1004,11 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .field-stack { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: var(--faint); margin-bottom: 10px; }
 .field-stack input, .field-stack textarea { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 400; min-width: 0; }
 .field-stack input:focus, .field-stack textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus); }
+
+.settle-panel { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.settle-panel p { margin: 0; }
+.settle-options { display: grid; gap: 8px; }
+.settle-option { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.settle-option.on { border-color: var(--accent, #4f8cff); }
+.settle-option small { display: block; color: var(--muted, #8a93a6); margin-top: 2px; }
+.settle-diff { color: var(--warn, #f5a524); }

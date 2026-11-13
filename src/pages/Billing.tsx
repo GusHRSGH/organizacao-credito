@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon'
 import { personToken, type DrillFilter } from '../lib/drill'
 import { EmptyState, Metric, PageHeading } from '../components/ui'
 import ReceivingPanel from '../components/ReceivingPanel'
+import SettleByAmount from '../components/SettleByAmount'
 import { billsByPerson, buildGroupMessage, buildMessage, type PersonBill } from '../lib/billing'
 import { readReceiving } from '../lib/receiving'
 import { formatDate, messageOf, money } from '../lib/format'
@@ -21,6 +22,7 @@ interface Props {
 
 export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, onDrill }: Props) {
   const [open, setOpen] = useState<string | null>(null)
+  const [paying, setPaying] = useState<string | null>(null)
   const [scope, setScope] = useState<'month' | 'all'>('month')
   const [receiving, setReceiving] = useState(readReceiving)
   const invoice = invoices.find((item) => item.id === invoiceId)
@@ -47,6 +49,15 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     const ids = bill.rows.filter((row) => row.status !== 'paid').map((row) => row.id)
     if (!ids.length || !window.confirm(`Marcar ${ids.length} lançamentos de ${bill.name} (${money(bill.pending)}) como pagos?`)) return
     try { await source.setStatusMany(ids, 'paid'); await onChanged(); notify('notice', `${bill.name} está em dia nesta fatura.`) } catch (cause) { notify('error', messageOf(cause)) }
+  }
+
+  async function settleSome(bill: PersonBill, ids: string[]) {
+    try {
+      if (ids.length) await source.setStatusMany(ids, 'paid')
+      setPaying(null)
+      await onChanged()
+      notify('notice', `${ids.length} ${ids.length === 1 ? 'lançamento marcado' : 'lançamentos marcados'} como ${ids.length === 1 ? 'pago' : 'pagos'} para ${bill.name}.`)
+    } catch (cause) { notify('error', messageOf(cause)) }
   }
 
   return <>
@@ -77,9 +88,11 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
             <div className="bill-actions">
               <button className="secondary-button" onClick={() => void copy(bill)}><Icon name="copy" size={16} />Copiar cobrança</button>
               <button className="secondary-button" disabled={bill.pending <= 0} onClick={() => void settle(bill)}><Icon name="check" size={16} />Marcar tudo como pago</button>
+              <button className="secondary-button" disabled={bill.pending <= 0} onClick={() => setPaying(paying === bill.name ? null : bill.name)} aria-expanded={paying === bill.name}><Icon name="wallet" size={16} />Pagou um valor</button>
               {bill.pending > 0 && <button className="text-button" onClick={() => onDrill({ invoiceId, person: personToken(bill.name), status: 'pending' })}>Ver o que falta →</button>}
               <button className="text-button" onClick={() => setOpen(expanded ? null : bill.name)} aria-expanded={expanded}>{expanded ? 'Ocultar detalhes' : 'Ver detalhes'}</button>
             </div>
+            {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} onConfirm={(ids) => settleSome(bill, ids)} onCancel={() => setPaying(null)} />}
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>
               <span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="grow">{row.description}{row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}</span><span className="muted">{row.category?.name ?? ''}</span><b>{money(Number(row.amount))}</b>
             </li>)}</ul>}
