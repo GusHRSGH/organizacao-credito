@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 39, date: '2026-11-13', title: 'Pagou um valor',
+    items: [
+      'Na cobrança, o novo botão "Pagou um valor" resolve quando a pessoa paga menos do que deve: você digita o que ela mandou e o robô procura o que sobrou (ex.: devia 1689, pagou 1600, sobram 89) e deixa essas compras pendentes.',
+      'Se a conta não fecha certinho, o robô mostra a diferença e só marca como pago depois que você confirmar. Ele oferece até 3 opções e evita rachar uma compra parcelada no meio.',
+    ],
+  },
+  {
     n: 38, date: '2026-11-11', title: 'Notificações do cartão',
     items: [
       'Novas notificações no Android, em Configurações, Avisos: fatura perto de vencer (no dia, 1 ou 3 dias antes), dia em que a fatura fecha e lembrete de cobrar quem ainda não pagou.',
