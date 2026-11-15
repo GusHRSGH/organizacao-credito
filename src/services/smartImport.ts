@@ -21,11 +21,16 @@ export interface Proposal {
 }
 
 /** Texto UTF-8 que foi lido como Latin-1 ("DescriÃ§Ã£o"): reverte quando dá para ter certeza. */
+/** O PDF perde o hífen invisível (U+00AD) que faz parte de "Ã­" (í): devolve. */
+const fixSoftHyphen = (text: string) => text.replace(/Ã(?![\u0080-\u00bf])/g, 'Ã\u00ad')
+
 export function fixMojibake(text: string): string {
   if (!/[ÃÂ][\u0080-\u00bf]/.test(text)) return text
   const bytes = new Uint8Array(text.length)
   for (let i = 0; i < text.length; i++) { const code = text.charCodeAt(i); if (code > 255) return text; bytes[i] = code }
-  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { return text }
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { /* sobrou byte solto (ex.: os pontinhos de CPF): tenta de novo sem exigir tudo perfeito */ }
+  const loose = new TextDecoder('utf-8').decode(new Uint8Array([...fixSoftHyphen(text)].map((c) => c.charCodeAt(0))))
+  return (loose.match(/Ã/g) ?? []).length < (text.match(/Ã/g) ?? []).length ? loose : text
 }
 
 const strip = (value: unknown) => fixMojibake(String(value ?? '')).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()

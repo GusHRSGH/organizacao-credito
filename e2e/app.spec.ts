@@ -731,3 +731,20 @@ test('extrato da conta do Nubank com acento quebrado: usa a descrição e ignora
   await expect(robo).not.toContainText('6aeb5db6')
   await expect(robo).toContainText('Importar 2 lançamentos')
 })
+
+test('PDF do extrato da conta: importa o que saiu e deixa de fora o investimento', async ({ page }) => {
+  const outra = await page.context().newPage()
+  await outra.setContent('<body style="font:14px sans-serif"><p>Data Valor Identificador Descrição</p>'
+    + '<p>04/11/2026 -44,89 6aeb5db6-0b9e-4b Compra no débito - MERCADO EXTRATO TESTE</p>'
+    + '<p>05/11/2026 -600 6aedec22-c491-4f Aplicação RDB</p>'
+    + '<p>06/11/2026 2180,06 6aedacd6-9027-48 Transferência recebida pelo Pix - EMPRESA TESTE</p>'
+    + '<p>07/11/2026 -70 6aee1223-ff37-49 Plano Nucel - Conta</p></body>')
+  const pdf = await outra.pdf()
+  await outra.close()
+  await abrirColar(page)
+  await page.getByLabel('Arquivo da fatura').setInputFiles({ name: 'NU_000_01NOV2026_14NOV2026.pdf', mimeType: 'application/pdf', buffer: pdf })
+  await expect(page.getByText('MERCADO EXTRATO TESTE').first()).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Plano Nucel').first()).toBeVisible()
+  // A aplicação aparece só na lista de linhas ignoradas: entram 2 lançamentos (o mercado e o plano).
+  await expect(page.getByRole('button', { name: /^Importar 2 / })).toBeVisible()
+})
