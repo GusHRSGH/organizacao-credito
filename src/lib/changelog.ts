@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 41, date: '2026-11-15', title: 'PDF do extrato da conta',
+    items: [
+      'O PDF do extrato da conta do Nubank agora importa os gastos de verdade: o que saiu da conta vira lançamento, Pix e boletos incluídos. Antes o app lia o contrário e só pegava o que tinha entrado.',
+      'Dinheiro que entrou, aplicação e resgate de investimento ficam de fora, e o nome do Pix mostra só para quem foi.',
+    ],
+  },
+  {
     n: 40, date: '2026-11-15', title: 'Extrato da conta do Nubank',
     items: [
       'O robô agora lê o extrato da conta do Nubank mesmo quando os acentos vêm quebrados no arquivo: a coluna Descrição vira o nome da compra, e não mais o código do Identificador.',

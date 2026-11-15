@@ -1,4 +1,5 @@
 import { addDays, dateFromDayMonth, makeDate, parseQuickLine, plain } from './quickEntry'
+import { fixMojibake, INTERNAL_MOVE } from '../services/smartImport'
 
 export interface PastedRow { line: number; date: string; description: string; amount: number; person?: string; /** Como o robô chegou nessa linha, quando não foi o formato de fatura. */ origin?: 'notificação' | 'conversa'; dateGuessed?: boolean }
 export interface PasteResult { rows: PastedRow[]; skipped: Array<{ line: number; text: string; reason: string }> }
@@ -11,6 +12,8 @@ const DATE_TEXT = /\b(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|
 
 /** Lê texto colado da fatura do banco (uma compra por linha) e separa o que é lançamento do que é ruído. */
 export function parsePastedBill(text: string, today: string, people: string[] = [], categories: string[] = []): PasteResult {
+  const statement = parseAccountStatement(text)
+  if (statement) return statement
   const rows: PastedRow[] = []
   const skipped: PasteResult['skipped'] = []
   text.split(/\r?\n/).forEach((raw, index) => {
@@ -66,4 +69,42 @@ function smartLine(line: string, number: number, today: string, people: string[]
   const low = plain(line)
   const date = low.includes('ontem') ? addDays(today, -1) : today
   return { line: number, date, description, amount, origin: 'notificação', dateGuessed: !low.includes('ontem') && !low.includes('hoje') }
+}
+
+
+// Extrato da conta (Nubank): "01/11/2026  -13,95  6ae6cfe6-dd27-4e1  Transferência enviada pelo Pix - NOME - CNPJ ...".
+// O id é minúsculo e vem cortado, às vezes colado na descrição ("...4e1Transferência"), por isso só minúsculas entram no id.
+const ACCOUNT_LINE = /^\s*(\d{2})\/(\d{2})\/(\d{4})\s+(-?\s*\d[\d.]*(?:,\d+)?)\s+[0-9a-f]{8}-[0-9a-f-]*\s*(.*)$/
+const ACCOUNT_HEADER = /^\s*data\s+valor\s+identificador\s+descri/i
+
+function accountDescription(raw: string) {
+  let text = raw.replace(/\s+/g, ' ').trim()
+  const pix = text.match(/^Transfer[êe]ncia (enviada|recebida) pelo Pix - (.+)$/i)
+  if (pix) text = `Pix - ${pix[2].split(' - ')[0].replace(/\s*\(.*\)\s*$/, '').replace(/\s*Ag[êe]ncia:.*$/i, '').trim()}`
+  else text = text.replace(/^Pagamento de boleto efetuado - /i, 'Boleto - ').replace(/\s*Ag[êe]ncia:.*$/i, '').replace(/ - \d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}.*$/, '')
+  return text.slice(0, 160)
+}
+
+/** Extrato da conta: negativo é o que saiu (gasto), positivo é o que entrou. Devolve null quando o texto não é um extrato. */
+export function parseAccountStatement(source: string): PasteResult | null {
+  const lines = fixMojibake(source).split(/\r?\n/).filter((l) => l.trim())
+  const hits = lines.filter((l) => ACCOUNT_LINE.test(l)).length
+  const body = lines.filter((l) => !ACCOUNT_HEADER.test(l)).length
+  if (hits < 3 || hits < body * 0.6) return null
+  const rows: PastedRow[] = []
+  const skipped: PasteResult['skipped'] = []
+  lines.forEach((raw, index) => {
+    if (ACCOUNT_HEADER.test(raw)) return
+    const m = raw.match(ACCOUNT_LINE)
+    if (!m) { skipped.push({ line: index + 1, text: raw.trim(), reason: 'sem valor' }); return }
+    const date = makeDate(Number(m[1]), Number(m[2]), Number(m[3]))
+    const signed = Number(m[4].replace(/\s/g, '').replace(/\./g, '').replace(',', '.'))
+    const description = accountDescription(m[5])
+    if (!date || !Number.isFinite(signed)) { skipped.push({ line: index + 1, text: raw.trim(), reason: 'data inválida' }); return }
+    if (INTERNAL_MOVE.test(plain(description))) { skipped.push({ line: index + 1, text: raw.trim(), reason: 'movimentação entre as suas contas, não é gasto' }); return }
+    if (signed >= 0) { skipped.push({ line: index + 1, text: raw.trim(), reason: 'entrada de dinheiro' }); return }
+    if (!description) { skipped.push({ line: index + 1, text: raw.trim(), reason: 'sem descrição' }); return }
+    rows.push({ line: index + 1, date, description, amount: Math.round(-signed * 100) / 100 })
+  })
+  return { rows, skipped }
 }
