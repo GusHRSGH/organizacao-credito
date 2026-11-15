@@ -2,17 +2,19 @@ import GoogleAccountPanel from '../components/GoogleAccount'
 import { UpdatePanel } from '../components/SecurityPanel'
 import { Icon } from '../components/Icon'
 import type { GoogleAccount } from '../hooks/useGoogleAccount'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PageHeading, Panel } from '../components/ui'
 import { formatDate, messageOf, money } from '../lib/format'
 import { downloadAsset, downloadText, stamp, toCsv } from '../services/exporters'
 import { readWorkbook, type ParsedSheet } from '../services/importXlsx'
 import { readRawSheets, type RawSheet } from '../services/smartImport'
 import ImportAssistant from '../components/ImportAssistant'
+import ImportReview from '../components/ImportReview'
+import { buildSuggestions } from '../lib/suggest'
 import CleanupAssistant from '../components/CleanupAssistant'
 import type { CleanupPlan } from '../lib/cleanup'
 import type { LocalSource, SnapshotInfo } from '../services/localSource'
-import type { ImportResult, Invoice, Transaction } from '../types'
+import type { ImportInvoice, ImportResult, Invoice, Transaction } from '../types'
 import CloudPanel from '../components/CloudPanel'
 import type { CloudState } from '../hooks/useCloud'
 
@@ -39,6 +41,8 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   const [preview, setPreview] = useState<ImportResult | null>(null)
   const [fileName, setFileName] = useState('')
   const [raw, setRaw] = useState<RawSheet[] | null>(null)
+  const [review, setReview] = useState<ImportInvoice[] | null>(null)
+  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
   const [cleaning, setCleaning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([])
@@ -89,12 +93,17 @@ export default function Settings({ google, cloud, local, invoices, transactions,
     await refreshPreview(sheets, selection)
   }
 
-  async function confirmImport() {
+  // Antes de gravar, a pessoa confirma de quem é cada compra, uma por vez.
+  function confirmImport() {
     const batch = batchOf(sheets, picked)
-    if (!batch.length) return
+    if (batch.length) setReview(batch)
+  }
+
+  async function importReviewed(batch: ImportInvoice[]) {
     setBusy(true)
     try {
       const result = await local.importInvoices(batch)
+      setReview(null)
       await onChanged()
       setSheets([]); setPreview(null); setFileName('')
       notify('notice', `Importação concluída: ${result.added} lançamentos novos, ${result.duplicates} já existiam.`)
@@ -138,6 +147,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
 
   return <>
     {cleaning && <CleanupAssistant transactions={transactions} busy={busy} onApply={(plan) => void applyCleanup(plan)} onCancel={() => setCleaning(false)} />}
+    {review && <ImportReview batch={review} transactions={transactions} suggestions={suggestions} busy={busy} onCancel={() => setReview(null)} onConfirm={(batch) => void importReviewed(batch)} />}
     {raw && <ImportAssistant raw={raw} onCancel={() => { setRaw(null); setFileName('') }} onConfirm={(list) => { setRaw(null); setBusy(true); void acceptParsed(list).catch((cause) => notify('error', messageOf(cause))).finally(() => setBusy(false)) }} />}
     <PageHeading title="Dados e backup" subtitle="Conta na nuvem, cópias, exportar, importar e limpeza. O visual, o cartão e os avisos ficam em Configurações." />
 
@@ -183,7 +193,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
           })}</tbody></table></div>
         {sheets.some((sheet) => sheet.issues.length) && <details className="issues"><summary>{sheets.reduce((n, s) => n + s.issues.length, 0)} avisos de leitura</summary><ul>{sheets.flatMap((s) => s.issues.map((issue) => <li key={s.sheetName + issue}>{s.sheetName}: {issue}</li>))}</ul></details>}
         <p className="hint">Primeiro lançamento: {sheets[0].rows[0] ? `${formatDate(sheets[0].rows[0].date)} · ${sheets[0].rows[0].description}` : '—'}. Lançamentos idênticos já existentes são ignorados, então reimportar é seguro.</p>
-        <div className="button-row"><button className="primary-button" disabled={busy || !preview?.added} onClick={() => void confirmImport()}>Importar {preview?.added ?? 0} lançamentos</button><button className="text-button" onClick={() => { setSheets([]); setPreview(null) }}>Cancelar</button></div>
+        <div className="button-row"><button className="primary-button" disabled={busy || !preview?.added} onClick={confirmImport}>Conferir e importar {preview?.added ?? 0} lançamentos</button><button className="text-button" onClick={() => { setSheets([]); setPreview(null) }}>Cancelar</button></div>
       </div>}
     </Panel>
 

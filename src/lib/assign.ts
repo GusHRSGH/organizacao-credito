@@ -109,3 +109,38 @@ export function findRefunds(rows: Array<{ id: number; date: string; amount: numb
   }
   return found
 }
+
+export interface RowQuestion { id: number; label: string; suggestion: { person: string; reason: string } | null }
+export interface RowAsk { id: number; description: string; amount: number; category: string; person: string; personFrom: string }
+
+const shortLabel = (description: string) => description.replace(/\s*[(-]?\s*(?:parcela\s*)?\d{1,2}\/\d{1,2}\)?$/i, '').trim() || description
+
+/**
+ * Uma pergunta por compra, sem juntar as parecidas: quatro iFoods são quatro perguntas, porque cada um pode ser de uma pessoa.
+ * O palpite vem do que já está na linha (histórico, responsável padrão, planilha) ou dos padrões do seu histórico; nunca é aplicado sozinho.
+ */
+export function buildRowQuestions(rows: RowAsk[], history: Transaction[]): RowQuestion[] {
+  const patterns = learnPatterns(history)
+  return rows.map((row) => {
+    const label = shortLabel(row.description)
+    const person = row.person.trim()
+    let suggestion: RowQuestion['suggestion'] = null
+    if (person && row.personFrom === 'histórico') suggestion = { person, reason: `Pelo seu histórico, “${label}” costuma ser de ${person}.` }
+    else if (person && row.personFrom === 'padrão') suggestion = { person, reason: `${person} é o responsável padrão que você escolheu.` }
+    else if (person && row.personFrom === 'planilha') suggestion = { person, reason: `Na planilha está como ${person}.` }
+    else if (person) suggestion = { person, reason: `Está como ${person}.` }
+    if (!suggestion) {
+      const family = top(patterns.byFamily.get(questionKey(row.description)))
+      if (family && family.share >= 0.6) suggestion = { person: family.person, reason: family.share === 1 ? `Você já lançou “${label}” ${family.n === 1 ? 'uma vez' : `${family.n} vezes`} para ${family.person}.` : `“${label}” costuma ser de ${family.person} (${family.n} de ${family.total} vezes).` }
+    }
+    if (!suggestion) {
+      const same = top(patterns.byAmount.get(String(Math.round(row.amount * 100))))
+      if (same && same.n >= 2 && same.share >= 0.8) suggestion = { person: same.person, reason: `O valor de ${brl(row.amount)} já apareceu ${same.n} vezes para ${same.person}.` }
+    }
+    if (!suggestion && row.category) {
+      const byCat = top(patterns.byCategory.get(row.category))
+      if (byCat && byCat.total >= 3 && byCat.share >= 0.6) suggestion = { person: byCat.person, reason: `Em ${byCat.n} de ${byCat.total} compras de ${row.category} no seu histórico, o responsável é ${byCat.person}.` }
+    }
+    return { id: row.id, label, suggestion }
+  })
+}

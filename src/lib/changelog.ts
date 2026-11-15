@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 42, date: '2026-11-15', title: 'Perguntas uma por vez na importação',
+    items: [
+      'Ao importar a fatura do banco ou uma planilha, o robô agora pergunta uma coisa por vez: estorno, parcelas que ainda vão vir, de quem é cada compra e a categoria quando ele não tem certeza.',
+      'Cada compra é uma pergunta: quatro iFoods são quatro perguntas, porque cada um pode ser de uma pessoa. O palpite do histórico aparece em destaque, mas só vale quando você toca.',
+      'Dá para voltar, pular e abrir "Ver todos" para resolver as que faltam de uma vez. No fim, um resumo mostra o total e quanto fica para cada pessoa antes de importar.',
+      'Na planilha fora do padrão, o robô só pergunta pelas colunas em que ficou em dúvida.',
+    ],
+  },
+  {
     n: 41, date: '2026-11-15', title: 'PDF do extrato da conta',
     items: [
       'O PDF do extrato da conta do Nubank agora importa os gastos de verdade: o que saiu da conta vira lançamento, Pix e boletos incluídos. Antes o app lia o contrário e só pegava o que tinha entrado.',
