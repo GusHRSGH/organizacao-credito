@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 40, date: '2026-11-15', title: 'Extrato da conta do Nubank',
+    items: [
+      'O robô agora lê o extrato da conta do Nubank mesmo quando os acentos vêm quebrados no arquivo: a coluna Descrição vira o nome da compra, e não mais o código do Identificador.',
+      'Aplicação e resgate de investimento e pagamento da fatura deixam de contar como gasto.',
+    ],
+  },
+  {
     n: 39, date: '2026-11-13', title: 'Pagou um valor',
     items: [
       'Na cobrança, o novo botão "Pagou um valor" resolve quando a pessoa paga menos do que deve: você digita o que ela mandou e o robô procura o que sobrou (ex.: devia 1689, pagou 1600, sobram 89) e deixa essas compras pendentes.',
