@@ -715,3 +715,19 @@ test('pagou um valor: o robô deixa pendente o que sobrou e mostra a diferença'
   await expect(card).toContainText('89')
   await expect(card.getByRole('button', { name: 'Pagou um valor' })).toBeEnabled()
 })
+
+// O arquivo chega com o UTF-8 lido como Latin-1 e salvo de novo ("DescriÃ§Ã£o"), como no relato do beta tester.
+test('extrato da conta do Nubank com acento quebrado: usa a descrição e ignora investimento', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Importar fatura do banco' }).first().click()
+  const robo = page.getByRole('dialog', { name: 'Importar fatura do banco' })
+  const csv = ['Data,Valor,Identificador,Descrição',
+    '"04/11/2026","-44.89","6aeb5db6-0b9e-4b12-85ff-609f64f08e81","Compra no débito - MERCADO TESTE"',
+    '"05/11/2026","-600","6aedec22-c491-4b12-85ff-609f64f08e82","Aplicação RDB"',
+    '"06/11/2026","-70","6aee1223-ff37-4b12-85ff-609f64f08e83","Plano Nucel - Conta"'].join('\n')
+  await robo.getByLabel('Arquivo da fatura do banco').setInputFiles({ name: 'NU_000_01NOV2026_30NOV2026.csv', mimeType: 'text/csv', buffer: Buffer.from(Buffer.from(csv, 'utf8').toString('latin1'), 'utf8') })
+  await expect(robo).toContainText('Compra no débito')
+  await expect(robo).not.toContainText('6aeb5db6')
+  await expect(robo).toContainText('Importar 2 lançamentos')
+})

@@ -20,7 +20,15 @@ export interface Proposal {
   ok: boolean
 }
 
-const strip = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+/** Texto UTF-8 que foi lido como Latin-1 ("DescriÃ§Ã£o"): reverte quando dá para ter certeza. */
+export function fixMojibake(text: string): string {
+  if (!/[ÃÂ][\u0080-\u00bf]/.test(text)) return text
+  const bytes = new Uint8Array(text.length)
+  for (let i = 0; i < text.length; i++) { const code = text.charCodeAt(i); if (code > 255) return text; bytes[i] = code }
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { return text }
+}
+
+const strip = (value: unknown) => fixMojibake(String(value ?? '')).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
 const blank = (value: unknown) => value === null || value === undefined || String(value).trim() === ''
 const colName = (index: number) => `Coluna ${String.fromCharCode(65 + (index % 26))}`
 
@@ -65,6 +73,8 @@ function looksDate(value: unknown) {
 
 const looksAmount = (value: unknown) => !(value instanceof Date) && !(typeof value === 'string' && parseDate(value)) && parseMoney(value) !== null
 const looksParcel = (value: unknown) => typeof value === 'string' && parseInstallment(value) !== null
+/** Movimentações do extrato da conta que não são gasto: investimento e pagamento da própria fatura. */
+export const INTERNAL_MOVE = /^(aplica[cç][aã]o|resgate)\b|^pagamento d[ae] fatura/i
 const PAID = new Set(['pago', 'paga', 'paid', 'sim', 'ok', 'quitado'])
 const STATUS_WORDS = new Set([...PAID, 'pendente', 'nao pago', 'nao', 'aberto', 'a pagar', 'em aberto', 'nao paga'])
 
@@ -115,13 +125,14 @@ export function analyzeSheet(sheetName: string, data: unknown[][]): Proposal | n
   if (!taken.has('amount')) { const c = pick((c) => (ratio(columns[c], looksDate) > 0.5 ? 0 : ratio(columns[c], looksAmount)), 0.8); if (c !== undefined) assign(c, 'amount', 'media') }
   if (!taken.has('parcel')) { const c = pick((c) => ratio(columns[c], looksParcel), 0.4); if (c !== undefined) assign(c, 'parcel', 'media') }
   if (!taken.has('status')) { const c = pick((c) => ratio(columns[c], (v) => typeof v === 'string' && STATUS_WORDS.has(strip(v))), 0.8); if (c !== undefined) assign(c, 'status', 'media') }
+  const idLike = (c: number) => ratio(columns[c], (v) => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.trim()))
   const textual = (c: number) => ratio(columns[c], (v) => typeof v === 'string' && !looksAmount(v) && !looksDate(v))
   const distinct = (c: number) => new Set(columns[c].map(strip)).size
   if (!taken.has('desc')) {
-    const c = pick((c) => (textual(c) > 0.8 ? (distinct(c) / columns[c].length) * Math.min(columns[c].reduce<number>((n, v) => n + String(v).length, 0) / columns[c].length, 40) : 0), 1)
+    const c = pick((c) => (textual(c) > 0.8 && idLike(c) < 0.5 ? (distinct(c) / columns[c].length) * Math.min(columns[c].reduce<number>((n, v) => n + String(v).length, 0) / columns[c].length, 40) : 0), 1)
     if (c !== undefined) assign(c, 'desc', 'media')
   }
-  const few = (c: number) => textual(c) > 0.8 && distinct(c) <= Math.max(12, columns[c].length * 0.3)
+  const few = (c: number) => textual(c) > 0.8 && idLike(c) < 0.5 && distinct(c) <= Math.max(12, columns[c].length * 0.3)
   const small = free().filter(few).sort((a, b) => distinct(a) - distinct(b))
   if (!taken.has('person') && small.length) { assign(small[0], 'person', 'baixa'); small.shift() }
   if (!taken.has('category') && small.length) assign(small[0], 'category', 'baixa')
@@ -148,6 +159,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
     if (!description) { issues.push(`Linha ${line}: sem título, ignorada.`); return }
     const date = parseDate(raw[cDate])
     if (!date) { issues.push(`Linha ${line} (${description}): data não reconhecida, ignorada.`); return }
+    if (INTERNAL_MOVE.test(strip(description))) { issues.push(`Linha ${line} (${description}): movimentação entre as suas contas, não é gasto, ignorada.`); return }
     const signed = parseMoney(raw[cAmount])
     if (signed === null) { issues.push(`Linha ${line} (${description}): valor não reconhecido, ignorada.`); return }
     const amount = Math.round((flip ? -signed : signed) * 100) / 100
@@ -202,7 +214,7 @@ export interface RawSheet { name: string; data: unknown[][] }
 
 /** Lê .xlsx ou .csv sem exigir nenhum formato de colunas. */
 export async function readRawSheets(file: File): Promise<RawSheet[]> {
-  if (/\.(csv|txt)$/i.test(file.name)) return [{ name: file.name.replace(/\.[^.]+$/, ''), data: parseCsv(await file.text()) }]
+  if (/\.(csv|txt)$/i.test(file.name)) return [{ name: file.name.replace(/\.[^.]+$/, ''), data: parseCsv(fixMojibake(await file.text())) }]
   const { default: readExcelFile } = await import('read-excel-file/web-worker')
   const sheets = await readExcelFile(file)
   return sheets.map((sheet) => ({ name: sheet.sheet, data: sheet.data as unknown[][] }))
