@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildQuestions, findRefunds, questionKey } from '../assign'
+import { buildQuestions, buildRowQuestions, findRefunds, questionKey } from '../assign'
 import { classifyRows, readBankFile } from '../bankImport'
 import { buildSuggestions } from '../suggest'
 import type { Transaction } from '../../types'
@@ -107,5 +107,27 @@ describe('perguntas do robô', () => {
     const found = findRefunds(bank.rows.map((r, id) => ({ id, date: r.date, amount: r.amount })), bank.credits)
     expect(found).toHaveLength(1)
     expect(bank.rows[found[0].rowId].description).toContain('Uber')
+  })
+})
+
+describe('uma pergunta por compra', () => {
+  it('não junta compras parecidas: cada iFood é uma pergunta com o próprio palpite', () => {
+    const history = [tx('iFood *Restaurante', 'Lu', 'Alimentação'), tx('iFood *Restaurante', 'Lu', 'Alimentação')]
+    const rows = [1, 2, 3].map((id) => ({ id, description: 'iFood *Restaurante', amount: 30 + id, category: '', person: '', personFrom: '' }))
+    const questions = buildRowQuestions(rows, history)
+    expect(questions).toHaveLength(3)
+    expect(questions.map((q) => q.id)).toEqual([1, 2, 3])
+    expect(questions.every((q) => q.suggestion?.person === 'Lu')).toBe(true)
+  })
+
+  it('explica de onde veio o palpite e não inventa quando não há base', () => {
+    const [planilha, padrao, nada] = buildRowQuestions([
+      { id: 1, description: 'Padaria', amount: 10, category: '', person: 'Ana', personFrom: 'planilha' },
+      { id: 2, description: 'Posto', amount: 20, category: '', person: 'Gus', personFrom: 'padrão' },
+      { id: 3, description: 'Loja nova', amount: 30, category: '', person: '', personFrom: '' },
+    ], [])
+    expect(planilha.suggestion?.reason).toContain('Na planilha está como Ana')
+    expect(padrao.suggestion?.reason).toContain('responsável padrão')
+    expect(nada.suggestion).toBeNull()
   })
 })

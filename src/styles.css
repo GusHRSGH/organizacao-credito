@@ -1012,3 +1012,33 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .settle-option.on { border-color: var(--accent, #4f8cff); }
 .settle-option small { display: block; color: var(--muted, #8a93a6); margin-top: 2px; }
 .settle-diff { color: var(--warn, #f5a524); }
+
+/* Perguntas uma por vez (importação) */
+.ask-wizard{display:grid;gap:12px}
+.ask-progress{display:flex;align-items:center;gap:10px;font-size:12px}
+.ask-bar{flex:1;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.ask-bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s ease}
+.ask-card{display:grid;gap:8px;border:1px solid var(--accent);border-radius:16px;padding:16px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));animation:ask-in .2s ease}
+.ask-card.compact{border-color:var(--line);background:var(--surface);padding:12px 14px;animation:none}
+.ask-card p{margin:0}
+.ask-head{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.ask-tag{justify-self:start;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:99px;padding:3px 9px}
+.ask-title{font-weight:650;font-size:15px;overflow-wrap:anywhere}
+.ask-title.big{font-size:20px;letter-spacing:-.2px}
+.ask-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.ask-option{display:grid;gap:2px;text-align:left;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;min-height:48px}
+.ask-option:hover{border-color:var(--accent)}
+.ask-option.primary{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface))}
+.ask-option.chosen{outline:2px solid var(--accent);outline-offset:1px}
+.ask-option small{font-size:11px;font-weight:500;color:var(--faint)}
+.ask-other{display:flex;gap:8px;flex-wrap:wrap}
+.ask-other input{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:14px}
+.ask-nav{display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap}
+.ask-pending{display:grid;gap:10px}
+.ask-pending-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ask-pending-head h3{margin:0;font-size:15px}
+.ask-left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+@keyframes ask-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ask-card{animation:none}.ask-bar i{transition:none}}
+.ask-summary-title{margin:0;font-size:16px}
+.bank-all summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 0}

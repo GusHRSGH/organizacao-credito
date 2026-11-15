@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import MonthPicker from './MonthPicker'
-import { buildQuestions, findRefunds } from '../lib/assign'
-import { buildCategoryQuestions, categoryUncertain, classifyRows, futureInstallments, guessPeriod, readBankFile, summarizeIncoming, toImportRows, type BankFile } from '../lib/bankImport'
+import AskWizard, { type AskStep } from './AskWizard'
+import { buildRowQuestions, findRefunds } from '../lib/assign'
+import { categoryUncertain, classifyRows, futureInstallments, guessPeriod, readBankFile, summarizeIncoming, toImportRows, type BankFile } from '../lib/bankImport'
 import { readCard } from '../lib/card'
 import { fetchBills, readPluggy, toBankFile, type PluggyBill } from '../lib/pluggy'
 import { readReview, reconcile, writeReview } from '../lib/reconcile'
@@ -41,9 +42,8 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [catAnswers, setCatAnswers] = useState<Record<string, string>>({})
   const [periodOk, setPeriodOk] = useState(false)
-  const [skipped, setSkipped] = useState<string[]>([])
+  const [futureAnswer, setFutureAnswer] = useState<string | undefined>(undefined)
   const [refunds, setRefunds] = useState<Record<number, 'ignore' | 'keep'>>({})
-  const [other, setOther] = useState<Record<string, string>>({})
   const [dry, setDry] = useState<ImportResult | null>(null)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -56,7 +56,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
     setStatus('Abrindo o arquivo…'); setName(chosen.name)
     try {
       const bank = await readBankFile(chosen, { people, categories, today: new Date().toISOString().slice(0, 10) }, setStatus)
-      setFile(bank); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setSkipped([]); setRefunds({}); setDry(null)
+      setFile(bank); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setFutureAnswer(undefined); setRefunds({}); setDry(null)
       setPeriod(guessPeriod(bank.periodHint, bank.rows, readCard()))
     } catch (cause) { notify('error', messageOf(cause)) } finally { setStatus(''); if (pick.current) pick.current.value = '' }
   }
@@ -73,7 +73,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
 
   function pickBill(bill: PluggyBill) {
     const bank = toBankFile(bill)
-    setFile(bank); setName(`Meu Pluggy, fatura de ${periodLabel(bill.period)}`); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setSkipped([]); setRefunds({}); setDry(null); setPluggyBills(null)
+    setFile(bank); setName(`Meu Pluggy, fatura de ${periodLabel(bill.period)}`); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setFutureAnswer(undefined); setRefunds({}); setDry(null); setPluggyBills(null)
     setPeriod(guessPeriod(bank.periodHint, bank.rows, readCard()))
   }
 
@@ -83,34 +83,63 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const base = useMemo(() => (file ? classifyRows(file.rows, { suggestions, categories, defaultPerson, installments }) : []), [file, suggestions, categories, defaultPerson, installments])
   const recon = useMemo(() => reconcile(base, existingRows), [base, existingRows])
   const rows = useMemo(() => base.map((row) => {
-    const answered = answers[row.qkey]
-    const own = answered !== undefined && (!row.person.trim() || row.personFrom === 'histórico') ? { person: answered, personFrom: 'resposta' as const } : {}
-    const cat = catAnswers[row.qkey]
-    const ownCat = cat !== undefined && categoryUncertain(row) ? { category: cat, categoryFrom: 'resposta' as const } : {}
+    // Cada compra tem a própria resposta; o IOF segue a compra a que pertence.
+    const answered = answers[`p${row.iofOf ?? row.id}`]
+    const own = answered !== undefined ? { person: answered, personFrom: 'resposta' as const } : {}
+    const cat = catAnswers[`c${row.iofOf ?? row.id}`]
+    const ownCat = cat !== undefined ? { category: cat, categoryFrom: 'resposta' as const } : {}
     return { ...row, ...own, ...ownCat, ...edits[row.id], include: edits[row.id]?.include ?? (refunds[row.id] === 'ignore' ? false : !recon.matched.has(row.id)), match: recon.matched.get(row.id) }
   }), [base, edits, recon, answers, catAnswers, refunds])
   const refundGuesses = useMemo(() => findRefunds(base.map((row) => ({ id: row.id, date: row.date, amount: row.amount })), file?.credits ?? []), [base, file])
   const waiting = useMemo(() => new Set(refundGuesses.filter((guess) => refunds[guess.rowId] === undefined).map((guess) => guess.rowId)), [refundGuesses, refunds])
   const askable = useMemo(() => base.filter((row) => !recon.matched.has(row.id) && refunds[row.id] !== 'ignore' && !waiting.has(row.id)), [base, recon, refunds, waiting])
-  const questions = useMemo(() => buildQuestions(askable.map((row) => ({ id: row.id, qkey: row.qkey, description: row.description, amount: row.amount, category: row.category, person: row.person, personFrom: row.personFrom, iof: row.iofOf !== null })), transactions), [askable, transactions])
-  const catQuestions = useMemo(() => buildCategoryQuestions(askable.filter((row) => edits[row.id]?.category === undefined)), [askable, edits])
-  const openCats = catQuestions.filter((q) => catAnswers[q.key] === undefined)
-  const openPeriod = !!file && !file.periodHint && !periodOk
-  const answerCat = (key: string, category: string) => { const name = category.trim(); if (name) setCatAnswers((all) => ({ ...all, [key]: name })) }
-  const openQuestions = questions.filter((q) => answers[q.key] === undefined && !skipped.includes(q.key))
-  const openRefunds = refundGuesses.filter((guess) => refunds[guess.rowId] === undefined)
-  const points = openRefunds.length + openQuestions.length + openCats.length + (openPeriod ? 1 : 0)
-  const [everyone, setEveryone] = useState('')
-  const openBlank = openQuestions.filter((q) => !q.suggestion)
-  const openGuessed = openQuestions.filter((q) => q.suggestion)
-  const answerAll = (person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, ...Object.fromEntries(openBlank.map((q) => [q.key, name])) })) }
-  const confirmGuesses = () => setAnswers((all) => ({ ...all, ...Object.fromEntries(openGuessed.map((q) => [q.key, q.suggestion!.person])) }))
-  const answer = (key: string, person: string) => { const name = person.trim(); if (name) setAnswers((all) => ({ ...all, [key]: name })) }
+  const asked = useMemo(() => askable.filter((row) => row.iofOf === null), [askable])
+  const rowQuestions = useMemo(() => new Map(buildRowQuestions(asked.map((row) => ({ id: row.id, description: row.description, amount: row.amount, category: row.category, person: row.person, personFrom: row.personFrom })), transactions).map((q) => [q.id, q])), [asked, transactions])
   const chosen = useMemo(() => rows.filter((row) => row.include), [rows])
   const summary = useMemo(() => summarizeIncoming(chosen), [chosen])
   const importRows = useMemo(() => toImportRows(chosen, paid), [chosen, paid])
   const coming = useMemo(() => futureInstallments(importRows, period, transactions), [importRows, period, transactions])
   const comingLabel = coming.entries.length ? `${coming.entries.length === 1 ? coming.entries[0].label : `${coming.entries[0].label} a ${coming.entries[coming.entries.length - 1].label}`}` : ''
+  const steps = useMemo(() => {
+    const list: AskStep[] = []
+    if (file && !file.periodHint) list.push({ key: 'period', tag: 'Mês da fatura', title: `Essa fatura é de ${periodLabel(period)}?`, hint: 'O nome do arquivo não diz o mês. Pelas datas das compras, parece esse.', answer: periodOk ? 'ok' : undefined,
+      options: [{ value: 'ok', label: `Sim, ${periodLabel(period)}`, primary: true }, { value: 'pick', label: 'Não, escolher o mês' }] })
+    for (const guess of refundGuesses) {
+      const row = base[guess.rowId]
+      list.push({ key: `r${guess.rowId}`, tag: 'Estorno', title: row.description, meta: `${money(row.amount)} em ${formatDate(row.date)}`, answer: refunds[guess.rowId],
+        hint: `Tem um crédito de ${money(guess.credit.amount)} em ${formatDate(guess.credit.date)} (“${guess.credit.description}”). Foi estornada ou cancelada?`,
+        options: [{ value: 'ignore', label: 'Sim, não importar', primary: true }, { value: 'keep', label: 'Não, importar' }] })
+    }
+    if (coming.count > 0) list.push({ key: 'future', tag: 'Parcelas', title: `Achei ${coming.count} ${coming.count === 1 ? 'parcela que ainda vai vir' : 'parcelas que ainda vão vir'} (${money(coming.total)})`, hint: `Lanço desde já nas próximas faturas (${comingLabel})?`, answer: futureAnswer,
+      options: [{ value: 'sim', label: coming.count === 1 ? 'Sim, lançar' : `Sim, lançar as ${coming.count}`, primary: true }, { value: 'nao', label: 'Não, só esta fatura' }] })
+    for (const row of asked) {
+      const q = rowQuestions.get(row.id)
+      const suggested = q?.suggestion?.person
+      const meta = `${money(row.amount)} · ${formatDate(row.date)}${row.installmentCount ? ` · parcela ${row.installmentNumber}/${row.installmentCount}` : ''}`
+      list.push({ key: `p${row.id}`, tag: 'De quem é', title: row.description, meta, answer: answers[`p${row.id}`],
+        hint: q?.suggestion ? q.suggestion.reason : 'Não achei nada parecido no seu histórico. De quem é?',
+        options: [...(suggested ? [{ value: suggested, label: suggested, primary: true, note: 'costuma ser' }] : []), ...people.filter((name) => name !== suggested).slice(0, 7).map((name) => ({ value: name, label: name }))],
+        other: { placeholder: 'outra pessoa', list: 'bank-people', button: 'Atribuir' } })
+      if (categoryUncertain(row) && edits[row.id]?.category === undefined) {
+        const guess = row.categoryFrom === 'nova' ? row.category : ''
+        list.push({ key: `c${row.id}`, tag: 'Categoria', title: row.description, meta, answer: catAnswers[`c${row.id}`],
+          hint: guess ? `O banco chama isso de “${guess}”, e você não tem essa categoria. Crio uma nova ou uso outra?` : 'Não consegui adivinhar a categoria. Qual é?',
+          options: [...(guess ? [{ value: guess, label: `Criar “${guess}”`, primary: true }] : []), ...categories.filter((name) => name !== guess).slice(0, 7).map((name) => ({ value: name, label: name }))],
+          other: { placeholder: 'outra categoria', list: 'bank-cats', button: 'Usar' } })
+      }
+    }
+    return list
+  }, [file, period, periodOk, refundGuesses, base, refunds, coming, comingLabel, futureAnswer, asked, rowQuestions, answers, catAnswers, people, categories, edits])
+  function onAnswer(key: string, value: string) {
+    if (key === 'period') { if (value === 'pick') setPickMonth(true); setPeriodOk(true); return }
+    if (key === 'future') { setFutureAnswer(value); setFuture(value === 'sim'); return }
+    if (key.startsWith('r')) { setRefunds((all) => ({ ...all, [Number(key.slice(1))]: value as 'ignore' | 'keep' })); return }
+    if (key.startsWith('p')) { setAnswers((all) => ({ ...all, [key]: value })); return }
+    if (key.startsWith('c')) setCatAnswers((all) => ({ ...all, [key]: value }))
+  }
+  const guessed = steps.filter((step) => step.answer === undefined && step.options[0]?.primary)
+  const acceptGuesses = guessed.length ? { label: `Aceitar os ${guessed.length} palpites do robô`, run: () => guessed.forEach((step) => onAnswer(step.key, step.options[0].value)) } : null
+
   const previous = useMemo(() => {
     const before = [...invoices].filter((invoice) => invoice.period < period).sort((a, b) => b.period.localeCompare(a.period))[0]
     if (!before) return null
@@ -172,6 +201,11 @@ export default function BankImport({ local, invoices, transactions, people, cate
       </> : <>
         <h2>Conferi sua fatura</h2>
         <p className="hint">{name}: {file.rows.length} compras encontradas{file.ignored.length ? `, ${file.ignored.length} ${file.ignored.length === 1 ? 'linha ignorada' : 'linhas ignoradas'} (pagamentos, estornos ou ruído)` : ''}.</p>
+        {pickMonth && <MonthPicker value={period} onChange={(p) => { setPeriod(p); setPickMonth(false) }} existing={invoices.map((invoice) => invoice.period)} />}
+        <datalist id="bank-people">{people.map((p) => <option key={p} value={p} />)}</datalist>
+        <datalist id="bank-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+        <AskWizard steps={steps} onAnswer={onAnswer} bulk={acceptGuesses} summary={<>
+          <h3 className="ask-summary-title">Resumo antes de importar</h3>
         <section className="bank-top">
           <div><span className="muted">Fatura</span><b>{periodLabel(period)}</b>{existingInvoice ? <small className="muted">já existe, entra nela</small> : <small className="muted">será criada</small>}
             <button className="text-button" onClick={() => setPickMonth(!pickMonth)} aria-expanded={pickMonth}>{pickMonth ? 'Fechar' : 'Trocar mês'}</button></div>
@@ -179,10 +213,6 @@ export default function BankImport({ local, invoices, transactions, people, cate
           <label className="check"><input type="checkbox" checked={paid} onChange={(event) => setPaid(event.target.checked)} />Marcar tudo como já pago</label>
           {coming.count > 0 && <label className="check"><input type="checkbox" checked={future} onChange={(event) => setFuture(event.target.checked)} />Lançar {coming.count === 1 ? 'a' : 'as'} {coming.count} {coming.count === 1 ? 'parcela que falta' : 'parcelas que faltam'} ({money(coming.total)}) em {comingLabel}</label>}
         </section>
-        {pickMonth && <MonthPicker value={period} onChange={(p) => { setPeriod(p); setPickMonth(false) }} existing={invoices.map((invoice) => invoice.period)} />}
-        <datalist id="bank-people">{people.map((p) => <option key={p} value={p} />)}</datalist>
-        <datalist id="bank-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
-
         <section className="bank-summary" aria-label="Resumo da importação">
           <div><span className="muted">Vai entrar</span><b>{money(summary.total)}</b><small className="muted">{summary.count} lançamentos{summary.installments ? ` · ${summary.installments} ${summary.installments === 1 ? 'parcelado' : 'parcelados'}` : ''}</small></div>
           {previous && <div><span className="muted">Contra {previous.label}</span><b className={variation !== null && variation > 0 ? 'neg' : 'pos'}>{variation === null ? '—' : `${variation > 0 ? '+' : ''}${pct(variation)}`}</b><small className="muted">{money(previous.total)} lá</small></div>}
@@ -201,57 +231,9 @@ export default function BankImport({ local, invoices, transactions, people, cate
           {recon.onlyApp.length > 0 && <details className="issues"><summary>{recon.onlyApp.length} {recon.onlyApp.length === 1 ? 'lançamento seu que o banco não cobrou' : 'lançamentos seus que o banco não cobrou'}</summary><ul>{recon.onlyApp.map((row) => <li key={row.id}>{formatDate(row.occurred_on)} · {row.description} · {money(Number(row.amount))}{row.person?.name ? ` · ${row.person.name}` : ''}</li>)}</ul></details>}
         </section>}
         {newCategories.length > 0 && <p className="hint">Categorias novas que serão criadas: {newCategories.join(', ')}. Troque na lista se já tiver uma equivalente.</p>}
-        {(openRefunds.length > 0 || questions.length > 0 || catQuestions.length > 0 || openPeriod) && <section className="bank-asks" role="region" aria-label="Perguntas do robô">
-          <h3>Preciso de você em {points} {points === 1 ? 'ponto' : 'pontos'}</h3>
-          {points === 0 && <p className="hint pos">Tudo respondido. Confira a lista e importe.</p>}
-          {openGuessed.length >= 2 && <div className="bank-ask">
-            <p><b>Os palpites do robô estão certos?</b></p>
-            <p className="hint">Confirme as {openGuessed.length} sugestões de uma vez e corrija só as que estiverem erradas.</p>
-            <div className="button-row"><button className="primary-button" onClick={confirmGuesses}>Confirmar as {openGuessed.length} sugestões</button></div>
-          </div>}
-          {openBlank.length >= 2 && <div className="bank-ask">
-            <p><b>Quase tudo é da mesma pessoa?</b></p>
-            <p className="hint">Atribua as {openBlank.length} perguntas sem palpite de uma vez e corrija só as exceções na lista.</p>
-            <div className="button-row">
-              {people.slice(0, 6).map((name) => <button key={name} className="secondary-button" onClick={() => answerAll(name)}>Todas para {name}</button>)}
-              <input value={everyone} onChange={(event) => setEveryone(event.target.value)} list="bank-people" placeholder="outra pessoa" aria-label="Pessoa para todas as restantes" />
-              <button className="secondary-button" disabled={!everyone.trim()} onClick={() => answerAll(everyone)}>Atribuir a todas</button>
-            </div>
-          </div>}
-          {openPeriod && <div className="bank-ask">
-            <p><b>De que mês é essa fatura?</b></p>
-            <p className="hint">O nome do arquivo não diz o mês. Pelas datas das compras, parece {periodLabel(period)}. Está certo?</p>
-            <div className="button-row"><button className="primary-button" onClick={() => setPeriodOk(true)}>Sim, é {periodLabel(period)}</button><button className="secondary-button" onClick={() => { setPickMonth(true); setPeriodOk(true) }}>Não, escolher o mês</button></div>
-          </div>}
-          {openCats.map((q) => <div key={`c${q.key}`} className="bank-ask">
-            <p><b>{q.label}</b> <span className="muted">{q.rowIds.length} {q.rowIds.length === 1 ? 'compra' : 'compras'} · {money(q.total)} · categoria</span></p>
-            <p className="hint">{q.suggestion ? `O banco chama isso de “${q.suggestion}”, e você não tem essa categoria. Crio uma nova ou uso outra?` : 'Não consegui adivinhar a categoria. Qual é?'}</p>
-            <div className="button-row">
-              {q.suggestion && <button className="primary-button" onClick={() => answerCat(q.key, q.suggestion)}>Criar “{q.suggestion}”</button>}
-              {categories.filter((name) => name !== q.suggestion).slice(0, 6).map((name) => <button key={name} className="secondary-button" onClick={() => answerCat(q.key, name)}>{name}</button>)}
-              <input value={other[`c${q.key}`] ?? ''} onChange={(event) => setOther((all) => ({ ...all, [`c${q.key}`]: event.target.value }))} list="bank-cats" placeholder="outra categoria" aria-label={`Outra categoria para ${q.label}`} />
-              <button className="secondary-button" disabled={!(other[`c${q.key}`] ?? '').trim()} onClick={() => answerCat(q.key, other[`c${q.key}`] ?? '')}>Usar</button>
-            </div>
-          </div>)}
-          {openRefunds.map((guess) => { const row = base[guess.rowId]; return <div key={`r${guess.rowId}`} className="bank-ask">
-            <p><b>{row.description}</b> <span className="muted">{money(row.amount)} em {formatDate(row.date)}</span></p>
-            <p className="hint">Tem um crédito de {money(guess.credit.amount)} em {formatDate(guess.credit.date)} (“{guess.credit.description}”). Foi estornada ou cancelada?</p>
-            <div className="button-row"><button className="secondary-button" onClick={() => setRefunds((all) => ({ ...all, [guess.rowId]: 'ignore' }))}>Sim, não importar</button><button className="text-button" onClick={() => setRefunds((all) => ({ ...all, [guess.rowId]: 'keep' }))}>Não, é uma compra</button></div>
-          </div> })}
-          {openQuestions.map((q) => <div key={q.key} className="bank-ask">
-            <p><b>{q.label}</b> <span className="muted">{q.rowIds.length} {q.rowIds.length === 1 ? 'compra' : 'compras'} · {money(q.total)}</span></p>
-            <p className="hint">{q.suggestion ? `${q.suggestion.reason} ${q.fromHistory ? 'Confere?' : `Atribuo a ${q.suggestion.person}?`}` : 'Não achei nada parecido no seu histórico. De quem é?'}</p>
-            <div className="button-row">
-              {q.suggestion && <button className="primary-button" onClick={() => answer(q.key, q.suggestion!.person)}>Sim, é {q.suggestion.person}</button>}
-              {people.filter((name) => name !== q.suggestion?.person).slice(0, 6).map((name) => <button key={name} className="secondary-button" onClick={() => answer(q.key, name)}>{q.suggestion ? `É ${name}` : name}</button>)}
-              <input value={other[q.key] ?? ''} onChange={(event) => setOther((all) => ({ ...all, [q.key]: event.target.value }))} list="bank-people" placeholder="outra pessoa" aria-label={`Outra pessoa para ${q.label}`} />
-              <button className="secondary-button" disabled={!(other[q.key] ?? '').trim()} onClick={() => answer(q.key, other[q.key] ?? '')}>Atribuir</button>
-              <button className="text-button" onClick={() => setSkipped((all) => [...all, q.key])}>Deixar para depois</button>
-            </div>
-          </div>)}
-        </section>}
         {noPerson > 0 && <p className="hint neg">{noPerson} {noPerson === 1 ? 'compra está' : 'compras estão'} sem responsável. Preencha o responsável padrão ou cada linha.</p>}
 
+        <details className="bank-all"><summary>Ver a lista completa ({rows.length} {rows.length === 1 ? 'compra' : 'compras'})</summary>
         <div className="bank-list" role="list">{rows.map((row) => <div key={row.id} role="listitem" className={`bank-row ${row.include ? '' : 'off'}`}>
           <input type="checkbox" checked={row.include} onChange={() => edit(row.id, { include: !row.include })} aria-label={`Importar ${row.description}`} />
           <span className="bank-date">{formatDate(row.date)}</span>
@@ -261,8 +243,10 @@ export default function BankImport({ local, invoices, transactions, people, cate
           <input value={row.category} onChange={(event) => edit(row.id, { category: event.target.value })} list="bank-cats" placeholder="categoria" aria-label={`Categoria de ${row.description}`} />
           <small className="bank-why muted">{[row.match ? `já lançado: ${row.match.description}` : '', row.installmentCount ? `parcela ${row.installmentNumber}/${row.installmentCount}` : '', row.renamed ? 'nome limpo' : '', row.categoryFrom ? `categoria: ${row.categoryFrom === 'histórico' ? 'seu histórico' : row.categoryFrom === 'banco' ? 'do banco' : row.categoryFrom === 'palavras' ? 'pelo nome' : row.categoryFrom === 'resposta' ? 'sua resposta' : 'nova'}` : '', row.personFrom === 'histórico' ? 'responsável: histórico' : row.personFrom === 'resposta' ? 'responsável: sua resposta' : '', row.iofOf !== null ? 'IOF da compra internacional' : ''].filter(Boolean).join(' · ')}</small>
         </div>)}</div>
+        </details>
         {file.ignored.length > 0 && <details className="issues"><summary>{file.ignored.length} {file.ignored.length === 1 ? 'linha ignorada' : 'linhas ignoradas'}</summary><ul>{file.ignored.slice(0, 40).map((line, i) => <li key={i}>{line}</li>)}</ul></details>}
-        <div className="button-row"><button className="primary-button" disabled={busy || !chosen.length || !period} onClick={() => void confirm()}>Importar {chosen.length} lançamentos para {periodLabel(period)}</button><button className="secondary-button" onClick={() => { setFile(null); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setSkipped([]); setRefunds({}) }}>Outro arquivo</button><button className="text-button" onClick={onClose}>Cancelar</button></div>
+        <div className="button-row"><button className="primary-button" disabled={busy || !chosen.length || !period} onClick={() => void confirm()}>Importar {chosen.length} lançamentos para {periodLabel(period)}</button><button className="secondary-button" onClick={() => { setFile(null); setEdits({}); setAnswers({}); setCatAnswers({}); setPeriodOk(false); setFutureAnswer(undefined); setRefunds({}) }}>Outro arquivo</button><button className="text-button" onClick={onClose}>Cancelar</button></div>
+        </>} />
       </>}
     </div>
   </div>
