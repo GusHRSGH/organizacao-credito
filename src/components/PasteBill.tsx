@@ -42,13 +42,15 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       const hint = suggestFor(row.description, suggestions)
       const period = invoicePeriodFor(row.date, readCard())
       const list = groups.get(period) ?? []
-      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? category.trim(), status: 'pending', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })
+      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? (category.trim() || 'Outros'), status: 'pending', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })
       groups.set(period, list)
     }
     return [...groups].map(([period, rows]) => ({ period, label: periodLabel(period), rows }))
   }
 
-  const ready = picked.length > 0 && person.trim() !== '' && category.trim() !== ''
+  const ready = picked.length > 0
+  // Linhas que nem o robô nem o responsável padrão sabem de quem é: entram sem responsável e a pessoa define depois.
+  const unknown = picked.filter((row) => !(row.person ?? suggestFor(row.description, suggestions)?.person ?? person.trim())).length
   const reset = () => { setPreview(null) }
 
   async function readFile(file: File | undefined) {
@@ -110,7 +112,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
           return <label key={row.line} className={`paste-row ${off.has(row.line) ? 'off' : ''}`} role="listitem">
             <input type="checkbox" checked={!off.has(row.line)} onChange={() => { const next = new Set(off); if (next.has(row.line)) next.delete(row.line); else next.add(row.line); setOff(next); reset() }} />
             <span className="paste-date">{formatDate(row.date)}</span><span className="paste-desc">{row.description}</span>
-            <span className="paste-who">{row.person ?? hint?.person ?? (person || '?')}{row.origin ? ` · ${row.origin}` : hint ? ' · sugerido' : ''}{row.dateGuessed ? ' · data: hoje?' : ''}</span><span className="paste-amount">{money(row.amount)}</span>
+            <span className="paste-who">{row.person ?? hint?.person ?? (person || 'sem responsável')}{row.origin ? ` · ${row.origin}` : hint ? ' · sugerido' : ''}{row.dateGuessed ? ' · data: hoje?' : ''}</span><span className="paste-amount">{money(row.amount)}</span>
           </label>
         })}
         {!parsed.rows.length && <p className="empty">Nenhuma linha com data e valor foi encontrada.</p>}
@@ -119,8 +121,8 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       {preview && <p className="notice">Prévia: {preview.added} novos e {preview.duplicates} repetidos (serão ignorados){preview.invoicesCreated ? `, ${preview.invoicesCreated} fatura(s) nova(s)` : ''}.</p>}
       <div className="button-row">
         <button className="secondary-button" onClick={() => void check()} disabled={!ready}>Conferir</button>
-        <button className="primary-button" onClick={() => void confirm()} disabled={!ready || !preview || busy}><Icon name="upload" size={16} />Importar {picked.length} ({money(total)})</button>
-        {!ready && picked.length > 0 && <span className="hint">Informe o responsável e a categoria padrão.</span>}
+        <button className="primary-button" onClick={() => void confirm()} disabled={!ready || busy}><Icon name="upload" size={16} />Importar {picked.length} ({money(total)})</button>
+        {unknown > 0 && <span className="hint">{unknown === 1 ? '1 linha vai' : `${unknown} linhas vão`} sem responsável. Preencha o responsável padrão ou defina depois em Faturas.</span>}
       </div>
     </>}
   </section>

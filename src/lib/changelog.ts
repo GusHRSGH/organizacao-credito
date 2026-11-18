@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 43, date: '2026-11-18', title: 'Planilha sem data e colar mais simples',
+    items: [
+      'Planilha sem coluna de data, como um orçamento do mês: o robô agora oferece "Não tem data" e pergunta de que mês são os valores.',
+      'Em Colar, o responsável padrão é opcional: o que ficar sem dono entra como "Sem responsável" e você define depois. E o botão Importar funciona direto, sem precisar Conferir antes.',
+    ],
+  },
+  {
     n: 42, date: '2026-11-15', title: 'Perguntas uma por vez na importação',
     items: [
       'Ao importar a fatura do banco ou uma planilha, o robô agora pergunta uma coisa por vez: estorno, parcelas que ainda vão vir, de quem é cada compra e a categoria quando ele não tem certeza.',

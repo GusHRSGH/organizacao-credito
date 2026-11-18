@@ -49,3 +49,19 @@ describe('extrato da conta do Nubank', () => {
     expect(proposal.fields.indexOf('desc')).toBe(3)
   })
 })
+
+describe('planilha sem data (orçamento do mês)', () => {
+  const data = [['Orçamento - Dezembro/2026', ''], ['Descrição', 'Valor'], ['Aluguel', '1200'], ['Mercado', '850,40'], ['Internet', '99,90']]
+  it('acha o mês no título da planilha', async () => {
+    const { guessSheetMonth } = await import('../smartImport')
+    expect(guessSheetMonth('Planilha1', data, '2026-11-18')).toBe('2026-12-01')
+    expect(guessSheetMonth('Gastos', [['Aluguel', '1200']], '2026-11-18')).toBe('2026-11-01')
+  })
+  it('com um mês fixo, importa tudo nesse mês', () => {
+    const proposal = analyzeSheet('Planilha1', data)!
+    expect(proposal.fields.includes('date')).toBe(false)
+    const [sheet] = applyMapping({ ...proposal, fixedPeriod: '2026-12-01' }, data, null)
+    expect(sheet.period).toBe('2026-12-01')
+    expect(sheet.rows.map((r) => [r.date, r.description, r.amount])).toEqual([['2026-12-01', 'Aluguel', 1200], ['2026-12-01', 'Mercado', 850.4], ['2026-12-01', 'Internet', 99.9]])
+  })
+})
