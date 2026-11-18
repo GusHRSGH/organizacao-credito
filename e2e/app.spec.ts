@@ -793,3 +793,25 @@ test('PDF do extrato da conta: importa o que saiu e deixa de fora o investimento
   // A aplicação aparece só na lista de linhas ignoradas: entram 2 lançamentos (o mercado e o plano).
   await expect(page.getByRole('button', { name: /^Importar 2 / })).toBeVisible()
 })
+
+test('planilha sem data: o robô aceita "Não tem data" e pergunta o mês', async ({ page }) => {
+  await entrar(page)
+  await irPara(page, 'settings')
+  const csv = 'Orçamento - Dezembro/2026;\nDescrição;Valor\nAluguel;1200\nMercado;850,40\nInternet;99,90\n'
+  await page.locator('input[type=file][accept^=".xlsx"]').setInputFiles({ name: 'orcamento.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
+  const robo = page.getByRole('dialog', { name: 'Robô de importação' })
+  await expect(robo.getByText('Qual coluna tem data?')).toBeVisible()
+  await robo.getByRole('button', { name: /Não tem data/ }).click()
+  await expect(robo.getByText('De que mês são esses valores?')).toBeVisible()
+  await robo.getByRole('button', { name: /Dezembro 2026/ }).click()
+  await robo.getByRole('button', { name: 'Está certo, continuar' }).click()
+  await expect(page.getByRole('button', { name: /^Conferir e importar 3 lançamentos/ })).toBeVisible()
+})
+
+test('colar: dá para importar sem responsável padrão e sem conferir antes', async ({ page }) => {
+  await abrirColar(page)
+  await page.getByLabel('Texto da fatura').fill('01/12/2026 Dinheiro emprestado teste 465,00')
+  await expect(page.getByText(/1 linha vai sem responsável/)).toBeVisible()
+  await page.getByRole('button', { name: /^Importar 1/ }).click()
+  await expect(page.getByText(/1 lançamentos importados/)).toBeVisible()
+})

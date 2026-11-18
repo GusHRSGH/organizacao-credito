@@ -18,6 +18,8 @@ export interface Proposal {
   confidence: Confidence[]
   headers: string[]
   ok: boolean
+  /** Planilha sem coluna de data (ex.: orçamento do mês): todas as linhas vão para este mês (AAAA-MM-01). */
+  fixedPeriod?: string
 }
 
 /** Texto UTF-8 que foi lido como Latin-1 ("DescriÃ§Ã£o"): reverte quando dá para ter certeza. */
@@ -151,7 +153,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
   const idx = (field: Field) => proposal.fields.indexOf(field)
   const [cDate, cDesc, cAmount, cPerson, cCat, cStatus, cParcel] = (['date', 'desc', 'amount', 'person', 'category', 'status', 'parcel'] as Field[]).map(idx)
   const issues: string[] = []
-  if (cDate < 0 || cDesc < 0 || cAmount < 0) return [{ sheetName: proposal.sheetName, period: null, label: proposal.sheetName, rows: [], issues: ['Faltou indicar Data, Título ou Valor.'] }]
+  if ((cDate < 0 && !proposal.fixedPeriod) || cDesc < 0 || cAmount < 0) return [{ sheetName: proposal.sheetName, period: null, label: proposal.sheetName, rows: [], issues: ['Faltou indicar Data, Título ou Valor.'] }]
   const body = data.slice(proposal.headerIndex + 1)
   const amounts = body.map((row) => parseMoney(row?.[cAmount])).filter((v): v is number => v !== null && v !== 0)
   const flip = amounts.filter((v) => v < 0).length > amounts.length / 2
@@ -162,7 +164,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
     const line = proposal.headerIndex + offset + 2
     const description = String(raw[cDesc] ?? '').trim()
     if (!description) { issues.push(`Linha ${line}: sem título, ignorada.`); return }
-    const date = parseDate(raw[cDate])
+    const date = cDate >= 0 ? parseDate(raw[cDate]) : proposal.fixedPeriod!
     if (!date) { issues.push(`Linha ${line} (${description}): data não reconhecida, ignorada.`); return }
     if (INTERNAL_MOVE.test(strip(description))) { issues.push(`Linha ${line} (${description}): movimentação entre as suas contas, não é gasto, ignorada.`); return }
     const signed = parseMoney(raw[cAmount])
@@ -181,7 +183,7 @@ export function applyMapping(proposal: Proposal, data: unknown[][], card: Card |
   })
   if (!rows.length) return [{ sheetName: proposal.sheetName, period: null, label: proposal.sheetName, rows, issues, credits }]
   // Nome da aba com mês: uma fatura só. Senão, uma fatura para cada mês das datas.
-  const named = inferPeriod(proposal.sheetName, rows)
+  const named = proposal.fixedPeriod ?? inferPeriod(proposal.sheetName, rows)
   if (named) return [{ sheetName: proposal.sheetName, period: named, label: periodLabel(named), rows, issues, credits }]
   const byMonth = new Map<string, ImportRow[]>()
   for (const row of rows) { const key = invoicePeriodFor(row.date, card); byMonth.set(key, [...(byMonth.get(key) ?? []), row]) }
@@ -223,4 +225,16 @@ export async function readRawSheets(file: File): Promise<RawSheet[]> {
   const { default: readExcelFile } = await import('read-excel-file/web-worker')
   const sheets = await readExcelFile(file)
   return sheets.map((sheet) => ({ name: sheet.sheet, data: sheet.data as unknown[][] }))
+}
+
+const MONTH_NAMES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+
+/** Para planilha sem data: acha o mês no nome da aba ou nas primeiras células ("Orçamento - Dezembro/2026"). Sem pista, o mês de hoje. */
+export function guessSheetMonth(sheetName: string, data: unknown[][], today: string): string {
+  const text = [sheetName, ...data.slice(0, 15).flat().filter((cell) => typeof cell === 'string')].map(strip).join(' ')
+  const index = MONTH_NAMES.findIndex((name) => text.includes(name))
+  const [todayYear, todayMonth] = today.split('-').map(Number)
+  if (index < 0) return `${todayYear}-${String(todayMonth).padStart(2, '0')}-01`
+  const year = Number(text.slice(text.indexOf(MONTH_NAMES[index])).match(/\b(20\d{2})\b/)?.[1] ?? text.match(/\b(20\d{2})\b/)?.[1] ?? (index + 1 < todayMonth - 6 ? todayYear + 1 : todayYear))
+  return `${year}-${String(index + 1).padStart(2, '0')}-01`
 }

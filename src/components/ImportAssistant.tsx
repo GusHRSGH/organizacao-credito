@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import AskWizard, { type AskStep } from './AskWizard'
 import { formatDate, money } from '../lib/format'
 import { readCard } from '../lib/card'
-import { analyzeSheet, applyMapping, FIELD_LABELS, type Confidence, type Field, type Proposal, type RawSheet } from '../services/smartImport'
+import { analyzeSheet, applyMapping, FIELD_LABELS, guessSheetMonth, type Confidence, type Field, type Proposal, type RawSheet } from '../services/smartImport'
 import type { ParsedSheet } from '../services/importXlsx'
+import { periodLabel } from '../services/installments'
 
 interface Props { raw: RawSheet[]; onConfirm: (sheets: ParsedSheet[]) => void; onCancel: () => void }
 
@@ -15,14 +16,17 @@ export default function ImportAssistant({ raw, onConfirm, onCancel }: Props) {
   const initial = useMemo(() => raw.map((sheet) => ({ sheet, proposal: analyzeSheet(sheet.name, sheet.data) })).filter((item): item is { sheet: RawSheet; proposal: Proposal } => item.proposal !== null), [raw])
   const [fields, setFields] = useState<Record<string, Field[]>>(() => Object.fromEntries(initial.map(({ proposal }) => [proposal.sheetName, proposal.fields])))
   const [header, setHeader] = useState<Record<string, boolean>>(() => Object.fromEntries(initial.map(({ proposal }) => [proposal.sheetName, proposal.headerIndex >= 0])))
+  // Planilha sem data (orçamento do mês): o mês escolhido vale para todas as linhas.
+  const [noDate, setNoDate] = useState<Record<string, string>>({})
+  const [monthOk, setMonthOk] = useState<Record<string, boolean>>({})
   const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(initial.map(({ proposal }) => [proposal.sheetName, proposal.ok])))
 
   const current = initial.map(({ sheet, proposal }) => {
-    const mine: Proposal = { ...proposal, fields: fields[proposal.sheetName], headerIndex: header[proposal.sheetName] ? Math.max(proposal.headerIndex, 0) : -1 }
+    const mine: Proposal = { ...proposal, fields: fields[proposal.sheetName], headerIndex: header[proposal.sheetName] ? Math.max(proposal.headerIndex, 0) : -1, fixedPeriod: !fields[proposal.sheetName].includes('date') ? noDate[proposal.sheetName] : undefined }
     const parsed = applyMapping(mine, sheet.data, readCard())
     const count = parsed.reduce((n, s) => n + s.rows.length, 0)
     const total = parsed.reduce((sum, s) => sum + s.rows.reduce((t, r) => t + Math.round(r.amount * 100), 0), 0) / 100
-    const missing = (['date', 'desc', 'amount'] as Field[]).filter((f) => !mine.fields.includes(f))
+    const missing = (['date', 'desc', 'amount'] as Field[]).filter((f) => !mine.fields.includes(f) && !(f === 'date' && mine.fixedPeriod))
     return { sheet, proposal, mine, parsed, count, total, missing }
   })
   const chosen = current.filter((item) => on[item.proposal.sheetName] && !item.missing.length && item.count > 0)
@@ -40,19 +44,41 @@ export default function ImportAssistant({ raw, onConfirm, onCancel }: Props) {
       hint: 'Li pelo conteúdo, mas não tenho certeza.', answer: colAnswers[`col|${name}|${c}`],
       options: [{ value: field, label: `Sim, ${FIELD_LABELS[field].toLowerCase()}`, primary: true }, ...FIELDS.filter((f) => f !== field).map((f) => ({ value: f, label: f === 'ignore' ? 'Ignorar coluna' : FIELD_LABELS[f] }))],
     }])
-    const absent: AskStep[] = missing.map((f) => ({
-      key: `miss|${name}|${f}`, tag: 'Coluna', title: `Qual coluna${many} tem ${FIELD_LABELS[f].toLowerCase()}?`, hint: 'Não encontrei sozinho. Toque na coluna certa.',
-      options: proposal.headers.map((_, c) => ({ value: String(c), label: label(c), note: sample(sheet, mine.headerIndex, c) || undefined })),
+    const dateless = !mine.fields.includes('date')
+    const absent: AskStep[] = [...missing, ...(dateless && mine.fixedPeriod ? ['date' as Field] : [])].map((f) => ({
+      key: `miss|${name}|${f}`, tag: 'Coluna', title: `Qual coluna${many} tem ${FIELD_LABELS[f].toLowerCase()}?`, answer: f === 'date' && mine.fixedPeriod ? 'sem-data' : undefined,
+      hint: f === 'date' ? 'Não encontrei sozinho. Toque na coluna certa, ou diga que a planilha não tem data.' : 'Não encontrei sozinho. Toque na coluna certa.',
+      options: [...proposal.headers.map((_, c) => ({ value: String(c), label: label(c), note: sample(sheet, mine.headerIndex, c) || undefined })),
+        ...(f === 'date' ? [{ value: 'sem-data', label: 'Não tem data', note: 'Tudo entra em um mês só' }] : [])],
     }))
-    return [...unsure, ...absent]
+    // Sem coluna de data, a pergunta do mês já fica na fila logo depois (some se a pessoa indicar uma coluna).
+    const month = dateless ? noDate[name] ?? guessSheetMonth(name, sheet.data, new Date().toISOString().slice(0, 10)) : undefined
+    const shift = (iso: string, by: number) => { const [y, m] = iso.split('-').map(Number); const t = y * 12 + m - 1 + by; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}-01` }
+    const asked: AskStep[] = month ? [{
+      key: `mes|${name}`, tag: 'Mês', title: `De que mês são esses valores${many}?`, hint: 'Sem data na planilha, todas as linhas entram nesse mês.',
+      answer: monthOk[name] && noDate[name] ? month : undefined,
+      options: [shift(month, -1), month, shift(month, 1)].map((iso) => ({ value: iso, label: periodLabel(iso), primary: iso === month })),
+      other: { placeholder: 'Outro mês, ex.: 03/2027', button: 'Usar' },
+    }] : []
+    return [...unsure, ...absent, ...asked]
   })
   function onAnswer(key: string, value: string) {
     const [kind, sheetName, rest] = key.split('|')
+    // Respondeu o que faltava: a aba passa a entrar na importação.
+    if (kind !== 'col') setOn((all) => ({ ...all, [sheetName]: true }))
     if (kind === 'col') { setField(sheetName, Number(rest), value as Field); setColAnswers((all) => ({ ...all, [key]: value })) }
-    else setField(sheetName, Number(value), rest as Field)
+    else if (kind === 'mes') {
+      const typed = value.match(/^(\d{1,2})\s*[/-]\s*(\d{4})$/)
+      const iso = typed ? `${typed[2]}-${typed[1].padStart(2, '0')}-01` : value
+      if (!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(iso)) return
+      setNoDate((all) => ({ ...all, [sheetName]: iso })); setMonthOk((all) => ({ ...all, [sheetName]: true }))
+    } else if (value === 'sem-data') {
+      const item = initial.find((entry) => entry.proposal.sheetName === sheetName)
+      if (item) setNoDate((all) => ({ ...all, [sheetName]: guessSheetMonth(sheetName, item.sheet.data, new Date().toISOString().slice(0, 10)) }))
+    } else setField(sheetName, Number(value), rest as Field)
   }
   // Tudo lido com segurança: segue direto para a conferência de quem é cada compra.
-  const sure = !steps.length && chosen.length > 0 && current.every((item) => item.proposal.ok)
+  const sure = !steps.length && chosen.length > 0 && current.every((item) => item.proposal.ok && !item.mine.fixedPeriod)
   const sent = useRef(false)
   useEffect(() => { if (sure && !sent.current) { sent.current = true; onConfirm(chosen.flatMap((item) => item.parsed)) } }, [sure, chosen, onConfirm])
 
