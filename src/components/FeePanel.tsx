@@ -1,0 +1,90 @@
+import { useEffect, useState } from 'react'
+import { Icon } from './Icon'
+import { DEFAULT_FEE_NAME, splitFee, type FeeSplit } from '../lib/fee'
+import { parseMoney } from '../lib/quickEntry'
+import { money } from '../lib/format'
+import type { CardFee } from '../types'
+
+export interface FeeBlock { invoiceId: string; label: string; split: FeeSplit | null; spend: Map<string, number> }
+
+interface Props {
+  /** Uma fatura (Esta fatura) ou várias (Tudo em aberto). Só a primeira é configurável quando `editable`. */
+  blocks: FeeBlock[]
+  editable: boolean
+  onSave: (fee: CardFee) => Promise<void>
+}
+
+const blank = (invoiceId: string): CardFee => ({ invoice_id: invoiceId, name: DEFAULT_FEE_NAME, mode: 'fixed', value: 0, excluded: [], overrides: {}, paid: [] })
+
+/** Taxa de uso do cartão: valor fixo ou porcentagem, dividida pelo gasto de cada um. Só entra na cobrança. */
+export default function FeePanel({ blocks, editable, onSave }: Props) {
+  const main = blocks[0]
+  const current = main?.split?.fee ?? (main ? blank(main.invoiceId) : null)
+  const [name, setName] = useState(current?.name ?? DEFAULT_FEE_NAME)
+  const [mode, setMode] = useState<CardFee['mode']>(current?.mode ?? 'fixed')
+  const [value, setValue] = useState(current && current.value ? String(current.value).replace('.', ',') : '')
+  const [editing, setEditing] = useState<Record<string, string>>({})
+  const key = `${main?.invoiceId}|${current?.name}|${current?.mode}|${current?.value}`
+  useEffect(() => {
+    setName(current?.name ?? DEFAULT_FEE_NAME); setMode(current?.mode ?? 'fixed'); setValue(current && current.value ? String(current.value).replace('.', ',') : ''); setEditing({})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  if (!main || !current) return null
+
+  const typed = parseMoney(value.trim()) ?? (value.trim() === '' ? 0 : null)
+  const draft: CardFee = { ...current, name: name.trim() || DEFAULT_FEE_NAME, mode, value: typed ?? 0 }
+  const changed = draft.name !== current.name || draft.mode !== current.mode || draft.value !== current.value
+  const preview = splitFee(draft, main.spend)
+  const save = (fee: CardFee) => void onSave(fee)
+
+  if (!editable) {
+    const withFee = blocks.filter((block) => block.split && block.split.shares.length)
+    return <section className="fee-panel" aria-label="Taxa de uso do cartão">
+      <div className="fee-head"><Icon name="receipt" size={18} /><div><b>Taxas das faturas em aberto</b><small>Para configurar, abra “Esta fatura”.</small></div></div>
+      {!withFee.length && <p className="muted">Nenhuma fatura em aberto tem taxa.</p>}
+      {withFee.map((block) => <div key={block.invoiceId} className="fee-block">
+        <b>{block.split!.fee.name} · {block.label} · {money(block.split!.total)}</b>
+        <ul className="fee-people">{block.split!.shares.map((share) => <li key={share.name}>
+          <span className="grow">{share.name}</span><b>{money(share.share)}</b>
+          <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...block.split!.fee, paid: share.paid ? block.split!.fee.paid.filter((n) => n !== share.name) : [...block.split!.fee.paid, share.name] })} aria-label={`Taxa de ${share.name} em ${block.label} paga`} />Pago</label>
+        </li>)}</ul>
+      </div>)}
+    </section>
+  }
+
+  return <section className="fee-panel" aria-label="Taxa de uso do cartão">
+    <div className="fee-head"><Icon name="receipt" size={18} /><div><b>Taxa de uso do cartão</b><small>Dividida pelo gasto de cada um. Aparece só na cobrança.{main.split?.inherited ? ' Repetindo a configuração da fatura anterior.' : ''}</small></div></div>
+    <div className="fee-config">
+      <label>Nome na cobrança<input value={name} maxLength={60} onChange={(event) => setName(event.target.value)} aria-label="Nome da taxa" /></label>
+      <div className="mode-switch" role="radiogroup" aria-label="Tipo de taxa">
+        <button role="radio" aria-checked={mode === 'fixed'} className={mode === 'fixed' ? 'on' : ''} onClick={() => setMode('fixed')}>Valor fixo</button>
+        <button role="radio" aria-checked={mode === 'percent'} className={mode === 'percent' ? 'on' : ''} onClick={() => setMode('percent')}>Porcentagem</button>
+      </div>
+      <label>{mode === 'fixed' ? 'Valor total (R$)' : 'Porcentagem do gasto (%)'}<input inputMode="decimal" value={value} onChange={(event) => setValue(event.target.value)} placeholder={mode === 'fixed' ? 'Ex.: 60' : 'Ex.: 3'} aria-label="Valor da taxa" /></label>
+      <button className="primary-button" disabled={typed === null || (!changed && !main.split?.inherited)} onClick={() => save({ ...draft, overrides: draft.mode !== current.mode ? {} : draft.overrides })}>{draft.value === 0 && current.value ? 'Remover taxa' : 'Salvar taxa'}</button>
+    </div>
+    {typed === null && <p className="neg">Não entendi esse valor.</p>}
+    {draft.value > 0 && <>
+      <ul className="fee-people">
+        {[...main.spend].filter(([, spent]) => spent > 0).sort((a, b) => b[1] - a[1]).map(([person, spent]) => {
+          const share = preview.shares.find((item) => item.name === person)
+          const inside = !draft.excluded.includes(person)
+          return <li key={person} className={inside ? '' : 'off'}>
+            <div className="fee-who"><label className="check"><input type="checkbox" checked={inside} onChange={() => save({ ...draft, excluded: inside ? [...draft.excluded, person] : draft.excluded.filter((n) => n !== person), overrides: Object.fromEntries(Object.entries(draft.overrides).filter(([n]) => n !== person)) })} aria-label={`${person} participa da taxa`} />{person}</label>
+              <small>gastou {money(spent)}</small></div>
+            {share && <>
+              <span className="fee-pct" title="Parte da taxa">{preview.total > 0 ? `${Math.round((share.share / preview.total) * 100)}%` : ''}</span>
+              <input className="fee-share" inputMode="decimal" aria-label={`Parte de ${person}`} value={editing[person] ?? share.share.toFixed(2).replace('.', ',')}
+                onChange={(event) => setEditing({ ...editing, [person]: event.target.value })}
+                onBlur={() => { const text = editing[person]; if (text === undefined) return; const amount = parseMoney(text.trim()); setEditing((all) => Object.fromEntries(Object.entries(all).filter(([n]) => n !== person))); if (amount !== null && Math.abs(amount - share.share) > 0.004) save({ ...draft, overrides: { ...draft.overrides, [person]: amount } }) }}
+                onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} />
+              {share.manual && <button className="text-button fee-reset" onClick={() => save({ ...draft, overrides: Object.fromEntries(Object.entries(draft.overrides).filter(([n]) => n !== person)) })}>Voltar ao calculado</button>}
+              <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...draft, paid: share.paid ? draft.paid.filter((n) => n !== person) : [...draft.paid, person] })} aria-label={`Taxa de ${person} paga`} />Pago</label>
+            </>}
+          </li>
+        })}
+      </ul>
+      <p className="hint">Total da taxa: <b>{money(preview.total)}</b>{draft.mode === 'fixed' && Math.abs(preview.total - draft.value) > 0.004 ? ` (cada parte arredonda para cima no centavo)` : ''}. Mude a parte de alguém e o resto se ajusta.</p>
+    </>}
+  </section>
+}

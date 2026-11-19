@@ -39,5 +39,11 @@ export function validateBackup(input: unknown): LocalData {
     if (seen.has(row.id)) throw new Error('O backup contém lançamentos duplicados.')
     seen.add(row.id)
   }
-  return structuredClone(data) as unknown as LocalData
+  if (data.fees !== undefined && (!Array.isArray(data.fees) || data.fees.some((fee) => !isObject(fee) || !isString(fee.invoice_id) || !isString(fee.name) || typeof fee.value !== 'number' || !Array.isArray(fee.excluded) || !Array.isArray(fee.paid) || !isObject(fee.overrides)))) {
+    throw new Error('O backup contém uma taxa do cartão inválida.')
+  }
+  const clean = structuredClone(data) as unknown as LocalData
+  // Taxa de uma fatura que não existe mais é descartada, não impede a restauração.
+  if (clean.fees) clean.fees = clean.fees.filter((fee) => invoiceIds.has(fee.invoice_id))
+  return clean
 }

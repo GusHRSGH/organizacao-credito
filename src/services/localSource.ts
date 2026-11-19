@@ -1,5 +1,5 @@
 import type {
-  Category, DataSource, EntryInput, ImportInvoice, ImportResult, Invoice, LocalData, Person,
+  CardFee, Category, DataSource, EntryInput, ImportInvoice, ImportResult, Invoice, LocalData, Person,
   Transaction, TransactionRow, TransactionStatus,
 } from '../types'
 import { makeBackup, validateBackup } from './backup'
@@ -152,7 +152,7 @@ export class LocalSource implements DataSource {
     if (!record) throw new Error('Esta cópia automática não existe mais.')
     const data = validateBackup({ app: 'organizacao-credito', version: 1, data: record.data })
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, data) })
+    return this.mutate((db) => { Object.assign(db, { fees: [], ...data }) })
   }
 
   /** Altera uma cópia, grava e só então troca o cache: falha de gravação não corrompe nada. */
@@ -179,6 +179,21 @@ export class LocalSource implements DataSource {
       person: row.person_id ? { name: people.get(row.person_id) ?? '' } : null,
       category: row.category_id ? { name: categories.get(row.category_id) ?? '' } : null,
     }))
+  }
+
+  /** Taxas de uso do cartão configuradas (uma por fatura). */
+  async listFees(): Promise<CardFee[]> {
+    return structuredClone((await this.read()).fees ?? [])
+  }
+
+  /** Grava a taxa de uma fatura (cria ou substitui). */
+  saveFee(fee: CardFee) {
+    if (!(fee.value >= 0) || fee.value > 1_000_000 || (fee.mode === 'percent' && fee.value > 100)) return Promise.reject(new Error('Valor da taxa inválido.'))
+    if (!fee.name.trim() || fee.name.trim().length > 60) return Promise.reject(new Error('Dê um nome para a taxa (até 60 caracteres).'))
+    return this.mutate((db) => {
+      if (!db.invoices.some((invoice) => invoice.id === fee.invoice_id)) throw new Error('Essa fatura não existe mais.')
+      db.fees = [...(db.fees ?? []).filter((item) => item.invoice_id !== fee.invoice_id), structuredClone({ ...fee, name: fee.name.trim() })]
+    })
   }
 
   async listInvoices() {
@@ -374,11 +389,11 @@ export class LocalSource implements DataSource {
   async restoreBackup(input: unknown) {
     const data = validateBackup(input)
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, data) })
+    return this.mutate((db) => { Object.assign(db, { fees: [], ...data }) })
   }
 
   async clearAll() {
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, emptyData()) })
+    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [] }) })
   }
 }

@@ -1042,3 +1042,24 @@ h1, h2, h3 { letter-spacing: -.02em; }
 @media (prefers-reduced-motion:reduce){.ask-card{animation:none}.ask-bar i{transition:none}}
 .ask-summary-title{margin:0;font-size:16px}
 .bank-all summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 0}
+.fee-panel{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 16px;display:grid;gap:10px;background:var(--surface)}
+.fee-head{display:flex;gap:10px;align-items:center}
+.fee-head div{display:grid}
+.fee-head small{color:var(--faint);font-size:12px}
+.fee-config{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.fee-config label{display:grid;gap:4px;font-size:12px;color:var(--faint);flex:1 1 160px}
+.fee-people{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fee-people li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.fee-people li.off{opacity:.55}
+.fee-people .grow{flex:1;color:var(--faint)}
+.fee-share{width:92px;text-align:right}
+.fee-block{display:grid;gap:6px}
+.bill-fee{display:block;color:var(--faint);font-size:12px}
+.fee-panel input:not([type=checkbox]){border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:15px;min-width:0;font-family:inherit}
+.fee-config label{font-weight:600}
+.fee-people .fee-pct{font-size:12px;font-weight:600;color:var(--accent);min-width:36px;text-align:right}
+.fee-panel .fee-people li:has(.fee-who){display:grid;grid-template-columns:minmax(0,1fr) auto 96px auto;gap:6px 10px}
+.fee-who{display:grid;gap:2px;min-width:0}
+.fee-who small{color:var(--faint);font-size:12px;padding-left:28px}
+.fee-panel .fee-share{width:100%}
+.fee-reset{grid-column:1/-1;justify-self:start;padding:0}

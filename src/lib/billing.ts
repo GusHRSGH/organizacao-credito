@@ -22,13 +22,17 @@ export function billsByPerson(rows: Transaction[]): PersonBill[] {
 }
 
 /** Mensagem simples para enviar no WhatsApp com o que ainda está pendente. */
-export interface MessageOptions { receiving?: Receiving; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string> }
+export interface FeeCharge { text: string; amount: number }
+export interface MessageOptions { receiving?: Receiving; /** Taxa de uso do cartão ainda não paga: entra no detalhe e no total. */ fees?: FeeCharge[]; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string> }
 
 export function buildMessage(bill: PersonBill, invoiceLabel: string, options: MessageOptions = {}) {
   const open = bill.rows.filter((row) => row.status !== 'paid')
   const word = bill.name.split(/\s+/)[0]
   const first = word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
-  if (!open.length) return `Oi ${first}! Tudo certo com a fatura de ${invoiceLabel}, nada pendente.`
+  const fees = options.fees ?? []
+  const feeCents = fees.reduce((sum, fee) => sum + Math.round(fee.amount * 100), 0)
+  const due = (Math.round(bill.pending * 100) + feeCents) / 100
+  if (!open.length && !feeCents) return `Oi ${first}! Tudo certo com a fatura de ${invoiceLabel}, nada pendente.`
   const line = (row: Transaction) => `• ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(Number(row.amount))}`
   const labels = options.invoiceLabels
   const many = labels && new Set(open.map((row) => row.invoice_id)).size > 1
@@ -38,18 +42,20 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
     for (const row of open) byInvoice.set(row.invoice_id, [...(byInvoice.get(row.invoice_id) ?? []), row])
     detail = [...byInvoice].map(([id, list]) => `${labels.get(id) ?? 'Fatura'} (${moneyFull(list.reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100)}):\n${list.map(line).join('\n')}`).join('\n\n')
   } else detail = open.map(line).join('\n')
+  if (fees.length) detail = [detail, fees.map((fee) => `• ${fee.text}: ${moneyFull(fee.amount)}`).join('\n')].filter(Boolean).join(open.length ? '\n\n' : '')
   const paidNote = bill.paid > 0 ? `\n(Já pago: ${moneyFull(bill.paid)})` : ''
-  const pay = options.receiving ? receivingText(options.receiving, bill.pending, invoiceLabel) : ''
-  const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${moneyFull(bill.pending)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${moneyFull(bill.pending)}.`
-  return `${head}\n\nDetalhe:\n${detail}\n\nTotal: ${moneyFull(bill.pending)}${paidNote}${pay ? `\n\n${pay}` : ''}`
+  const pay = options.receiving ? receivingText(options.receiving, due, invoiceLabel) : ''
+  const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${moneyFull(due)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${moneyFull(due)}.`
+  return `${head}\n\nDetalhe:\n${detail}\n\nTotal: ${moneyFull(due)}${paidNote}${pay ? `\n\n${pay}` : ''}`
 }
 
 /** Uma mensagem só para o grupo: quanto cada um deve e como pagar. */
-export function buildGroupMessage(bills: PersonBill[], label: string, receiving?: Receiving) {
-  const owing = bills.filter((bill) => bill.pending > 0.004)
+export function buildGroupMessage(bills: PersonBill[], label: string, receiving?: Receiving, feeDue: Map<string, number> = new Map()) {
+  const dueOf = (bill: PersonBill) => (Math.round(bill.pending * 100) + Math.round((feeDue.get(bill.name) ?? 0) * 100)) / 100
+  const owing = bills.filter((bill) => dueOf(bill) > 0.004)
   if (!owing.length) return `Acerto de ${label}: tudo pago, ninguém deve nada. 🎉`
-  const total = owing.reduce((sum, bill) => sum + Math.round(bill.pending * 100), 0) / 100
-  const lines = owing.map((bill) => `• ${bill.name}: ${moneyFull(bill.pending)}`)
+  const total = owing.reduce((sum, bill) => sum + Math.round(dueOf(bill) * 100), 0) / 100
+  const lines = owing.map((bill) => `• ${bill.name}: ${moneyFull(dueOf(bill))}${feeDue.get(bill.name) ? ` (com taxa de ${moneyFull(feeDue.get(bill.name)!)})` : ''}`)
   const pay = receiving ? receivingText(receiving) : ''
   return `Acerto de ${label}:\n\n${lines.join('\n')}\n\nTotal a receber: ${moneyFull(total)}${pay ? `\n\n${pay}` : ''}`
 }

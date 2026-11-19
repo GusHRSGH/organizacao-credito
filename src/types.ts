@@ -39,6 +39,23 @@ export interface LocalData {
   transactions: TransactionRow[]
   people: Person[]
   categories: Category[]
+  /** Taxa de uso do cartão de cada fatura (só entra na cobrança, não vira lançamento). */
+  fees?: CardFee[]
+}
+
+export interface CardFee {
+  invoice_id: string
+  /** Nome que aparece na cobrança, escolhido pela pessoa. */
+  name: string
+  /** Valor fixo dividido pelo gasto de cada um, ou porcentagem do gasto de cada um. */
+  mode: 'fixed' | 'percent'
+  value: number
+  /** Quem não entra nesta fatura (por nome). Quem aparece depois entra sozinho. */
+  excluded: string[]
+  /** Partes ajustadas na mão (nome: valor); o resto se recalcula para manter o total. */
+  overrides: Record<string, number>
+  /** Quem já pagou a taxa desta fatura. */
+  paid: string[]
 }
 
 export interface BackupFile {
@@ -90,4 +107,6 @@ export interface DataSource {
   setTransactionStatus(id: string, status: TransactionStatus): Promise<void>
   setStatusMany(ids: string[], status: TransactionStatus): Promise<void>
   removeTransaction(id: string): Promise<void>
+  listFees(): Promise<CardFee[]>
+  saveFee(fee: CardFee): Promise<void>
 }
