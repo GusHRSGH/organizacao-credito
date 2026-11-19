@@ -5,7 +5,7 @@ export const ENTRIES: ChangelogEntry[] = [
   {
     n: 44, date: '2026-11-19', title: 'Taxa de uso do cartão',
     items: [
-      'Em Quem deve quanto, nova seção para a taxa de uso do cartão: você define um valor fixo (ex.: R$ 100) ou uma porcentagem, e o app divide pelo gasto de cada um. Quem gastou mais paga mais, com a % de cada um na tela.',
+      'Em Quem deve quanto, nova seção para a taxa de uso do cartão: você define um valor fixo (ex.: R$ 100) ou uma porcentagem, e o app divide pelo gasto de cada um. Quem gastou mais paga mais, com a % de cada um na tela. No modo porcentagem, um exemplo com os valores da fatura mostra quanto cada % dá.',
       'Você escolhe o nome, quem participa em cada fatura e pode ajustar a parte de alguém na mão (o resto se recalcula). A taxa se repete nas faturas seguintes até você mudar.',
       'A taxa entra só na cobrança e na mensagem do WhatsApp, com a conta explicada. Marcar tudo como pago inclui a taxa; em Pagou um valor, as compras são quitadas primeiro.',
     ],

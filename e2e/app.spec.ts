@@ -832,6 +832,10 @@ test('taxa de uso do cartão: divide pelo gasto, entra na cobrança e é paga ju
   await irPara(page, 'billing')
   const taxa = page.getByRole('region', { name: 'Taxa de uso do cartão' })
   await taxa.getByLabel('Nome da taxa').fill('Taxa de manutenção teste')
+  await taxa.getByRole('radio', { name: 'Porcentagem' }).click()
+  await taxa.getByLabel('Valor da taxa').fill('2')
+  await expect(taxa.getByText(/Ex\.: com 2%, Gusta \(gastou R\$\s1\.500,00\) paga R\$\s30,00/)).toBeVisible()
+  await taxa.getByRole('radio', { name: 'Valor fixo' }).click()
   await taxa.getByLabel('Valor da taxa').fill('100')
   await taxa.getByRole('button', { name: 'Salvar taxa' }).click()
   // Proporcional ao gasto: 1500, 900 e 600 de 3000 → 50, 30 e 20 (os outros do modelo também entram).

@@ -64,6 +64,14 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
       <button className="primary-button" disabled={typed === null || (!changed && !main.split?.inherited)} onClick={() => save({ ...draft, overrides: draft.mode !== current.mode ? {} : draft.overrides })}>{draft.value === 0 && current.value ? 'Remover taxa' : 'Salvar taxa'}</button>
     </div>
     {typed === null && <p className="neg">Não entendi esse valor.</p>}
+    {mode === 'percent' && typed !== null && (() => {
+      // Exemplo com quem mais gastou nesta fatura, para a porcentagem fazer sentido antes de salvar.
+      const top = [...main.spend].filter(([, spent]) => spent > 0).sort((a, b) => b[1] - a[1])[0]
+      const pct = typed > 0 ? typed : 3
+      const show = (n: number) => String(n).replace('.', ',')
+      if (!top) return <p className="hint fee-example">Ex.: com 3%, quem gastou R$ 1.000,00 paga R$ 30,00 de taxa.</p>
+      return <p className="hint fee-example">Ex.: com {show(pct)}%, {top[0]} (gastou {money(top[1])}) paga {money(Math.ceil(top[1] * pct) / 100)} de taxa. Com 1%, pagaria {money(Math.ceil(top[1]) / 100)}; com 5%, {money(Math.ceil(top[1] * 5) / 100)}.</p>
+    })()}
     {draft.value > 0 && <>
       <ul className="fee-people">
         {[...main.spend].filter(([, spent]) => spent > 0).sort((a, b) => b[1] - a[1]).map(([person, spent]) => {
