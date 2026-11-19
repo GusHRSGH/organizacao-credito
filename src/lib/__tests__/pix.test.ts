@@ -56,3 +56,20 @@ describe('cobrança', () => {
     expect(buildGroupMessage(billsByPerson([tx('z', 'i1', 'Ana', 10, 'paid')]), 'Outubro')).toContain('tudo pago')
   })
 })
+
+describe('cobrança com taxa de uso do cartão', () => {
+  const rows = [tx('a', 'i1', 'Ana', 1200), tx('b', 'i1', 'Bia', 800, 'paid')]
+  it('a taxa entra no detalhe e no total, com a conta', () => {
+    const [ana] = billsByPerson(rows)
+    const text = buildMessage(ana, 'Novembro', { fees: [{ text: 'Taxa teste (proporcional ao seu gasto)', amount: 30 }] })
+    expect(text).toContain('• Taxa teste (proporcional ao seu gasto): R$')
+    expect(text).toMatch(/Sua parte da fatura de Novembro: R\$\s1\.230,00/)
+    expect(text).toMatch(/Total: R\$\s1\.230,00/)
+  })
+  it('quem já pagou as compras ainda recebe a cobrança só da taxa', () => {
+    const bia = billsByPerson(rows).find((b) => b.name === 'Bia')!
+    expect(buildMessage(bia, 'Novembro')).toContain('nada pendente')
+    expect(buildMessage(bia, 'Novembro', { fees: [{ text: 'Taxa teste', amount: 20 }] })).toMatch(/Total: R\$\s20,00/)
+    expect(buildGroupMessage(billsByPerson(rows), 'Novembro', undefined, new Map([['Ana', 30], ['Bia', 20]]))).toContain('• Bia: R$')
+  })
+})
