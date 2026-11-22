@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '../components/Icon'
 import { personToken, type DrillFilter } from '../lib/drill'
 import { EmptyState, Metric, PageHeading } from '../components/ui'
 import ReceivingPanel from '../components/ReceivingPanel'
 import SettleByAmount from '../components/SettleByAmount'
 import FeePanel, { type FeeBlock } from '../components/FeePanel'
+import SettledModal from '../components/SettledModal'
+import { invoiceOptions } from '../components/InvoiceOptions'
+import { settledIds, settledMessage, settledSummary } from '../lib/settled'
 import { feeLine, feeSplitFor, spendByPerson } from '../lib/fee'
 import { billsByPerson, buildGroupMessage, buildMessage, type FeeCharge, type PersonBill } from '../lib/billing'
 import { pixCode, readReceiving } from '../lib/receiving'
@@ -57,7 +60,35 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   }, [transactions, invoiceId, all, feeDue])
   const dueOf = (bill: PersonBill) => (Math.round(bill.pending * 100) + Math.round((feeDue.get(bill.name) ?? 0) * 100)) / 100
   async function saveFee(fee: CardFee) {
-    try { await source.saveFee(fee); await loadFees() } catch (cause) { notify('error', messageOf(cause)) }
+    try { await source.saveFee(fee); await loadFees(); await onChanged() } catch (cause) { notify('error', messageOf(cause)) }
+  }
+
+  // Mês quitado: compras e taxa pagas. Comemora só na hora em que a fatura passa a ficar quitada.
+  const settled = useMemo(() => settledIds(invoices, transactions, fees), [invoices, transactions, fees])
+  const [shown, setShown] = useState<{ id: string; celebrate: boolean } | null>(null)
+  const before = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const previous = before.current
+    before.current = settled
+    if (!previous) return
+    const fresh = [...settled].find((id) => !previous.has(id))
+    if (fresh) setShown({ id: fresh, celebrate: true })
+  }, [settled])
+  const summary = shown ? settledSummary(shown.id, invoices, transactions, fees) : null
+  const settledList = invoices.filter((item) => settled.has(item.id)).sort((a, b) => b.period.localeCompare(a.period))
+
+  async function shareSettled() {
+    if (!summary) return
+    try {
+      const done = await shareText(settledMessage(summary), `${summary.label} quitada`)
+      if (done === 'copied') notify('notice', 'Mensagem do mês quitado copiada. É só colar no grupo.')
+    } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
+  }
+
+  async function removeSettled(invoice: Invoice) {
+    const count = transactions.filter((row) => row.invoice_id === invoice.id).length
+    if (!window.confirm(`Apagar a fatura de ${invoice.label} (${count} ${count === 1 ? 'lançamento' : 'lançamentos'})? Fica uma cópia em Dados e backup para restaurar, e o robô continua lembrando de quem é cada compra.`)) return
+    try { await source.removeInvoice(invoice.id); await onChanged(); notify('notice', `Fatura de ${invoice.label} apagada. Dá para restaurar em Dados e backup.`) } catch (cause) { notify('error', messageOf(cause)) }
   }
   async function payFees(name: string) {
     for (const charge of feesOf(name)) await source.saveFee({ ...charge.fee, paid: [...charge.fee.paid.filter((n) => n !== name), name] })
@@ -120,9 +151,10 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     <PageHeading title="Quem deve quanto" subtitle="Veja a parte de cada responsável, copie a cobrança e marque como paga.">
       <div className="mode-switch" role="radiogroup" aria-label="O que cobrar"><button role="radio" aria-checked={!all} className={!all ? 'on' : ''} onClick={() => setScope('month')}>Esta fatura</button><button role="radio" aria-checked={all} className={all ? 'on' : ''} onClick={() => setScope('all')}>Tudo em aberto</button></div>
       <label className="select-group"><span>Fatura</span>
-        <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
+        <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}</select></label>
     </PageHeading>
     <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />
+    {!all && settled.has(invoiceId) && <p className="settled-line"><span className="settled-badge">✓ Quitada</span> Todo mundo pagou esta fatura. <button className="text-button" onClick={() => setShown({ id: invoiceId, celebrate: false })}>Ver resumo</button></p>}
     {feeBlocks.length > 0 && <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />}
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">
@@ -160,5 +192,14 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
         })}
       </section>
     </>}
+    {settledList.length > 0 && <details className="settled-list">
+      <summary>Faturas quitadas ({settledList.length})</summary>
+      <ul>{settledList.map((item) => <li key={item.id}>
+        <span className="grow"><b>{item.label}</b> <span className="muted">{money(transactions.filter((row) => row.invoice_id === item.id).reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100)}</span></span>
+        <button className="text-button" onClick={() => setShown({ id: item.id, celebrate: false })}>Ver resumo</button>
+        <button className="text-button danger" onClick={() => void removeSettled(item)}>Apagar</button>
+      </li>)}</ul>
+    </details>}
+    {summary && shown && <SettledModal summary={summary} celebrate={shown.celebrate} onShare={() => void shareSettled()} onClose={() => setShown(null)} />}
   </>
 }

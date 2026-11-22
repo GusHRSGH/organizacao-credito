@@ -41,6 +41,8 @@ export interface LocalData {
   categories: Category[]
   /** Taxa de uso do cartão de cada fatura (só entra na cobrança, não vira lançamento). */
   fees?: CardFee[]
+  /** Lançamentos de faturas apagadas: somem da tela, mas o robô continua aprendendo com eles. */
+  memory?: TransactionRow[]
 }
 
 export interface CardFee {
@@ -113,4 +115,8 @@ export interface DataSource {
   removeTransaction(id: string): Promise<void>
   listFees(): Promise<CardFee[]>
   saveFee(fee: CardFee): Promise<void>
+  /** Apaga a fatura e os lançamentos dela (com cópia automática antes). */
+  removeInvoice(id: string): Promise<void>
+  /** O que o robô lembra de faturas apagadas. */
+  listMemory(): Promise<Transaction[]>
 }

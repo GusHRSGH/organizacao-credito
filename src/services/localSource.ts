@@ -7,6 +7,8 @@ import { addMonthsToDate, addMonthsToPeriod, isValidPeriod, periodLabel, periodO
 import { IndexedDbPersistence, type Persistence } from './persistence'
 
 export const LOCAL_USER = 'local'
+/** Quantos lançamentos de faturas apagadas o robô guarda para continuar sugerindo. */
+const MEMORY_LIMIT = 3000
 export const emptyData = (): LocalData => ({ invoices: [], transactions: [], people: [], categories: [] })
 
 export function uuid(): string {
@@ -194,6 +196,25 @@ export class LocalSource implements DataSource {
       if (!db.invoices.some((invoice) => invoice.id === fee.invoice_id)) throw new Error('Essa fatura não existe mais.')
       db.fees = [...(db.fees ?? []).filter((item) => item.invoice_id !== fee.invoice_id), structuredClone({ ...fee, name: fee.name.trim() })]
     })
+  }
+
+  /** Apaga a fatura: guarda uma cópia antes e passa os lançamentos para a memória do robô. */
+  async removeInvoice(id: string) {
+    const db = await this.read()
+    if (!db.invoices.some((invoice) => invoice.id === id)) throw new Error('Essa fatura não existe mais.')
+    await this.snapshot(db, 'antes')
+    return this.mutate((draft) => {
+      const gone = draft.transactions.filter((row) => row.invoice_id === id)
+      draft.memory = [...(draft.memory ?? []), ...gone].slice(-MEMORY_LIMIT)
+      draft.transactions = draft.transactions.filter((row) => row.invoice_id !== id)
+      draft.fees = (draft.fees ?? []).filter((fee) => fee.invoice_id !== id)
+      draft.invoices = draft.invoices.filter((invoice) => invoice.id !== id)
+    })
+  }
+
+  async listMemory() {
+    const db = await this.read()
+    return this.join(db, db.memory ?? [])
   }
 
   async listInvoices() {
@@ -394,6 +415,6 @@ export class LocalSource implements DataSource {
 
   async clearAll() {
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [] }) })
+    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [], memory: [] }) })
   }
 }

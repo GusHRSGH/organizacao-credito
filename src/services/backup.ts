@@ -45,5 +45,7 @@ export function validateBackup(input: unknown): LocalData {
   const clean = structuredClone(data) as unknown as LocalData
   // Taxa de uma fatura que não existe mais é descartada, não impede a restauração.
   if (clean.fees) clean.fees = clean.fees.filter((fee) => invoiceIds.has(fee.invoice_id))
+  // Memória do robô (faturas apagadas): só o que tem o formato certo; o resto é descartado em silêncio.
+  if (clean.memory !== undefined) clean.memory = Array.isArray(clean.memory) ? clean.memory.filter((row) => isObject(row) && isString(row.id) && isString(row.description) && typeof row.amount === 'number') : []
   return clean
 }
