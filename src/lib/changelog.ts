@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 46, date: '2026-11-22', title: 'Limite de cada pessoa',
+    items: [
+      'Na taxa de uso do cartão, cada pessoa pode ter um limite de gasto na fatura. A tela mostra quanto ela ainda pode gastar e avisa quando chega perto (80%).',
+      'Quem passar do limite paga uma % extra sobre tudo que gastou, somada à taxa normal. A cobrança explica a conta.',
+      'Ao lançar uma compra, o app avisa se ela vai deixar a pessoa perto do limite ou acima dele.',
+    ],
+  },
+  {
     n: 45, date: '2026-11-22', title: 'Pix em uma mensagem só',
     items: [
       'No card de cada pessoa, “Compartilhar Pix” manda só o Pix copia e cola já com o valor que ela deve, para copiar com um toque e colar no banco.',

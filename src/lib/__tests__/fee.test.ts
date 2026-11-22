@@ -53,3 +53,40 @@ describe('taxa de uso do cartão', () => {
     expect(feeLine(fee({ mode: 'percent', value: 2.5 }), ana)).toBe('Taxa teste (2,5% do seu gasto)')
   })
 })
+
+describe('limite de cada pessoa e extra por passar do limite', () => {
+  const spend3 = new Map([['Gusta', 1500], ['Lia', 900], ['Rui', 600]])
+  it('quem passou paga a % extra sobre tudo que gastou, por cima da parte normal', () => {
+    const r = splitFee(fee({ value: 100, limits: { Gusta: 1200, Lia: 1000 }, extraPct: 10 }), spend3)
+    const gusta = r.shares.find((s) => s.name === 'Gusta')!
+    expect([gusta.base, gusta.extra, gusta.share]).toEqual([50, 150, 200])
+    expect(r.shares.find((s) => s.name === 'Lia')!.extra).toBe(0)
+    expect(r.shares.find((s) => s.name === 'Rui')!.limit).toBeNull()
+    expect(r.total).toBe(250)
+  })
+  it('o ajuste na mão mexe só na parte normal; o extra continua', () => {
+    const r = splitFee(fee({ value: 100, limits: { Gusta: 1200 }, extraPct: 10, overrides: { Gusta: 20 } }), spend3)
+    expect(r.shares.find((s) => s.name === 'Gusta')!.share).toBe(170)
+  })
+  it('quem está fora da taxa fica livre do extra, e sem % extra não há extra', () => {
+    expect(splitFee(fee({ limits: { Gusta: 1200 }, extraPct: 10, excluded: ['Gusta'] }), spend3).shares.some((s) => s.name === 'Gusta')).toBe(false)
+    expect(splitFee(fee({ limits: { Gusta: 1200 } }), spend3).shares[0].extra).toBe(0)
+  })
+  it('aviso de perto do limite a partir de 80%', async () => {
+    const { limitLevel } = await import('../fee')
+    expect(limitLevel(799, 1000)).toBe('ok')
+    expect(limitLevel(800, 1000)).toBe('near')
+    expect(limitLevel(1000, 1000)).toBe('near')
+    expect(limitLevel(1000.5, 1000)).toBe('over')
+    expect(limitLevel(5000, null)).toBe('ok')
+  })
+  it('a cobrança explica o extra', () => {
+    const f = fee({ name: 'Taxa', value: 100, limits: { Gusta: 1200 }, extraPct: 10 })
+    const gusta = splitFee(f, spend3).shares[0]
+    expect(feeLine(f, gusta)).toMatch(/^Taxa \(proporcional ao seu gasto \+ 10% por passar do limite de R\$\s1\.200,00\)$/)
+  })
+  it('limites e % extra se repetem na fatura seguinte', () => {
+    const invoices = [{ id: 'nov', period: '2026-11-01' }, { id: 'dez', period: '2026-12-01' }] as Invoice[]
+    expect(feeFor('dez', invoices, [fee({ invoice_id: 'nov', limits: { Gusta: 1200 }, extraPct: 10 })])!.fee).toMatchObject({ limits: { Gusta: 1200 }, extraPct: 10 })
+  })
+})

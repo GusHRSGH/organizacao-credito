@@ -56,6 +56,10 @@ export interface CardFee {
   overrides: Record<string, number>
   /** Quem já pagou a taxa desta fatura. */
   paid: string[]
+  /** Limite de gasto de cada pessoa na fatura (nome: valor). Sem limite = nunca paga extra. */
+  limits?: Record<string, number>
+  /** % extra sobre todo o gasto de quem passou do próprio limite (a mesma para todos). */
+  extraPct?: number
 }
 
 export interface BackupFile {
