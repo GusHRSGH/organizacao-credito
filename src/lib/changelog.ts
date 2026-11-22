@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 47, date: '2026-11-22', title: 'Mês quitado',
+    items: [
+      'Quando todo mundo paga as compras e a taxa, a fatura ganha o selo de quitada e o app comemora na hora, com o resumo de quanto cada um pagou e a mensagem pronta pro grupo.',
+      'Faturas quitadas vão para um grupo separado na lista de faturas e para “Faturas quitadas” em Quem deve quanto, onde dá para rever o resumo.',
+      'Dá para apagar uma fatura quitada: fica uma cópia em Dados e backup, e o robô continua lembrando de quem é cada compra.',
+    ],
+  },
+  {
     n: 46, date: '2026-11-22', title: 'Limite de cada pessoa',
     items: [
       'Na taxa de uso do cartão, cada pessoa pode ter um limite de gasto na fatura. A tela mostra quanto ela ainda pode gastar e avisa quando chega perto (80%).',

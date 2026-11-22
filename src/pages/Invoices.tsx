@@ -5,6 +5,7 @@ import NewInvoiceDialog from '../components/NewInvoiceDialog'
 import PasteBill from '../components/PasteBill'
 import { addFilter, isActive, readFilters, removeFilter, suggestName, writeFilters, type SavedFilter } from '../lib/savedFilters'
 import EditDialog from '../components/EditDialog'
+import { invoiceOptions } from '../components/InvoiceOptions'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
 import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
@@ -19,6 +20,10 @@ interface Props {
   source: DataSource
   invoices: Invoice[]
   transactions: Transaction[]
+  /** Lançamentos atuais e de faturas apagadas: o robô aprende com tudo. */
+  history?: Transaction[]
+  /** Faturas quitadas (vão para um grupo separado na lista). */
+  settled?: Set<string>
   invoiceId: string
   onInvoice: (id: string) => void
   onChanged: () => Promise<void>
@@ -29,7 +34,7 @@ interface Props {
   drill: { filter: DrillFilter; nonce: number } | null
 }
 
-export default function Invoices({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
+export default function Invoices({ source, invoices, transactions, history, settled = new Set(), invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [person, setPerson] = useState('')
@@ -59,7 +64,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   const rows = useMemo(() => transactions.filter((row) => row.invoice_id === invoiceId), [transactions, invoiceId])
   const people = useMemo(() => [...new Set(transactions.map((row) => row.person?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
   const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
-  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
+  const suggestions = useMemo(() => buildSuggestions(history ?? transactions), [history, transactions])
   const descriptions = useMemo(() => knownDescriptions(transactions), [transactions])
   const summary = totals(rows)
 
@@ -162,7 +167,7 @@ export default function Invoices({ source, invoices, transactions, invoiceId, on
   return <>
     <PageHeading tour="inv-top" title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
-        <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
+        <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}</select></label>
       {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
       {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
       <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>

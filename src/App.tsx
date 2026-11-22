@@ -11,6 +11,7 @@ import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
 import { agendarLembrete, aoTocarNaNotificacao } from './lib/lembrete'
 import { agendarAvisos } from './lib/avisosFatura'
+import { settledIds } from './lib/settled'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -29,7 +30,7 @@ const Billing = lazy(() => import('./pages/Billing'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Goals = lazy(() => import('./pages/Goals'))
 const Config = lazy(() => import('./pages/Config'))
-import type { Invoice, Transaction } from './types'
+import type { CardFee, Invoice, Transaction } from './types'
 
 const ENTRY_KEY = 'oc:entry'
 const NUDGE_KEY = 'oc:nudge-until'
@@ -51,6 +52,9 @@ export default function App() {
   prefsRef.current = prefs
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  // O que o robô lembra de faturas apagadas, e as taxas (para saber quais faturas estão quitadas).
+  const [memory, setMemory] = useState<Transaction[]>([])
+  const [fees, setFees] = useState<CardFee[]>([])
   const [loaded, setLoaded] = useState(false)
   const [focusId, setFocusId] = useState('')
   const [bankOpen, setBankOpen] = useState(false)
@@ -145,13 +149,15 @@ export default function App() {
     document.addEventListener('touchend', up, { passive: true })
     return () => { document.removeEventListener('touchstart', down); document.removeEventListener('touchend', up) }
   }, [])
-  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
+  const learned = useMemo(() => (memory.length ? [...transactions, ...memory] : transactions), [transactions, memory])
+  const suggestions = useMemo(() => buildSuggestions(learned), [learned])
+  const settled = useMemo(() => settledIds(invoices, transactions, fees), [invoices, transactions, fees])
   const people = useMemo(() => [...new Set(transactions.map((row) => row.person?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
   const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
 
   const refresh = useCallback(async () => {
-    const [inv, rows] = await Promise.all([source.listInvoices(), source.listAllTransactions()])
-    setInvoices(inv); setTransactions(rows)
+    const [inv, rows, remembered, feeList] = await Promise.all([source.listInvoices(), source.listAllTransactions(), source.listMemory().catch(() => []), source.listFees().catch(() => [])])
+    setInvoices(inv); setTransactions(rows); setMemory(remembered); setFees(feeList)
     const has = (id: string) => inv.some((invoice) => invoice.id === id)
     const now = currentPeriod()
     const asc = [...inv].sort((x, y) => x.period.localeCompare(y.period))
@@ -243,11 +249,11 @@ export default function App() {
       {loaded && page !== 'settings' && page !== 'config' && <Reminders invoices={invoices} transactions={transactions} onGo={(next) => { setPage(next); window.scrollTo({ top: 0 }) }} />}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
         {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
-        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
+        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} history={learned} settled={settled} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'goals' && <Goals invoices={invoices} transactions={transactions} invoiceId={invoiceId || focusId} onInvoice={setInvoiceId} notify={notify} onDrill={goDrill} />}
         {page === 'config' && <Config people={people} categories={categories} notify={notify} />}
-        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} onBank={() => setBankOpen(true)} />}
+        {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} history={learned} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} onBank={() => setBankOpen(true)} />}
       </Suspense>}
     </main>
     <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ...(prefs.showBilling ? [['billing', 'users', 'Cobrança']] : []), ...(prefs.showGoals ? [['goals', 'trend-up', 'Metas']] : [])] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}<button data-tour="nav-more" className={page === 'config' || page === 'settings' ? 'active' : ''} onClick={() => setMenuOpen(true)} aria-label="Mais opções"><Icon name="menu" size={21} /><span>Mais</span></button></nav>
@@ -255,7 +261,7 @@ export default function App() {
     <Suspense fallback={null}>
     {legalOpen && <Legal onClose={closeLegal} />}
     {searchOpen && <SearchOverlay transactions={transactions} invoices={invoices} onClose={() => setSearchOpen(false)} onPick={(hit) => { setSearchOpen(false); goDrill({ invoiceId: hit.row.invoice_id, query: hit.row.description }) }} />}
-    {bankOpen && <BankImport local={local} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} notify={notify} onClose={() => setBankOpen(false)}
+    {bankOpen && <BankImport local={local} invoices={invoices} transactions={transactions} history={learned} people={people} categories={categories} suggestions={suggestions} notify={notify} onClose={() => setBankOpen(false)}
       onDone={async (period, where) => {
         await refresh()
         const created = (await local.listInvoices()).find((item) => item.period === period)

@@ -24,6 +24,7 @@ interface Props {
   local: LocalSource
   invoices: Invoice[]
   transactions: Transaction[]
+  history?: Transaction[]
   onCheckUpdate: () => void
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
@@ -33,7 +34,7 @@ interface Props {
   onBank: () => void
 }
 
-export default function Settings({ google, cloud, local, invoices, transactions, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews, onBank }: Props) {
+export default function Settings({ google, cloud, local, invoices, transactions, history, onCheckUpdate, onChanged, notify, onLegal, onTour, onNews, onBank }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const backupRef = useRef<HTMLInputElement>(null)
   const [sheets, setSheets] = useState<ParsedSheet[]>([])
@@ -42,7 +43,7 @@ export default function Settings({ google, cloud, local, invoices, transactions,
   const [fileName, setFileName] = useState('')
   const [raw, setRaw] = useState<RawSheet[] | null>(null)
   const [review, setReview] = useState<ImportInvoice[] | null>(null)
-  const suggestions = useMemo(() => buildSuggestions(transactions), [transactions])
+  const suggestions = useMemo(() => buildSuggestions(history ?? transactions), [history, transactions])
   const [cleaning, setCleaning] = useState(false)
   const [busy, setBusy] = useState(false)
   const [snapshots, setSnapshots] = useState<SnapshotInfo[]>([])

@@ -22,3 +22,19 @@ describe('taxa guardada com os dados (vai junto na nuvem e no backup)', () => {
     expect(validateBackup({ app: 'organizacao-credito', version: 1, data: { invoices: [], transactions: [], people: [], categories: [] } }).fees).toBeUndefined()
   })
 })
+
+describe('apagar fatura quitada', () => {
+  it('some a fatura, os lançamentos e a taxa, mas o robô lembra', async () => {
+    const source = new LocalSource(new MemoryPersistence())
+    await source.createPurchase({ invoiceId: '', description: 'Padaria Teste', amount: 20, occurredOn: '2026-11-05', personName: 'Ana', categoryName: 'Casa', installmentCount: 1, period: '2026-11-01' })
+    const [invoice] = await source.listInvoices()
+    await source.saveFee({ invoice_id: invoice.id, name: 'Taxa', mode: 'fixed', value: 10, excluded: [], overrides: {}, paid: [] })
+    await source.removeInvoice(invoice.id)
+    expect(await source.listInvoices()).toEqual([])
+    expect(await source.listAllTransactions()).toEqual([])
+    expect(await source.listFees()).toEqual([])
+    const memory = await source.listMemory()
+    expect(memory.map((row) => [row.description, row.person?.name])).toEqual([['Padaria Teste', 'Ana']])
+    expect((await source.listSnapshots()).some((item) => item.reason === 'antes')).toBe(true)
+  })
+})

@@ -913,3 +913,37 @@ test('limite de cada pessoa: extra na taxa de quem passou e aviso ao lançar', a
   await page.locator('input[placeholder*="mercado 150,90"]:visible').first().fill('farmacia limite 150 @lia #casa')
   await expect(page.locator('.quick-alert:visible', { hasText: 'vai passar do limite' }).first()).toContainText('taxa extra de 10%')
 })
+
+test('mês quitado: comemora na hora, manda o resumo pro grupo, vai para o histórico e pode ser apagado', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.addInitScript(() => {
+    const sent: string[] = []
+    ;(window as unknown as { __shared: string[] }).__shared = sent
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: { text: string }) => { sent.push(data.text) } })
+  })
+  const ultimo = async () => (await page.evaluate(() => (window as unknown as { __shared: string[] }).__shared.at(-1) ?? '')) || page.evaluate(() => navigator.clipboard.readText())
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'billing')
+  page.on('dialog', (dialog) => void dialog.accept())
+  const cards = page.locator('.bill-card')
+  await expect(cards.first()).toBeVisible()
+  for (let i = 0; i < 6; i++) {
+    const botao = page.locator('.bill-card button:enabled', { hasText: 'Marcar tudo como pago' }).first()
+    if (!(await botao.count())) break
+    await botao.click()
+    await page.waitForTimeout(300)
+  }
+  await expect(cards.first()).toBeVisible()
+  const festa = page.getByRole('dialog', { name: /quitada/ })
+  await expect(festa).toContainText('quitada!')
+  await festa.getByRole('button', { name: 'Enviar mensagem pro grupo' }).click()
+  await expect.poll(ultimo).toContain('quitada! Obrigado a todos')
+  await festa.getByRole('button', { name: 'Fechar' }).click()
+  await expect(page.getByText('✓ Quitada')).toBeVisible()
+  const lista = page.locator('details.settled-list')
+  await lista.locator('summary').click()
+  await lista.getByRole('button', { name: 'Apagar' }).first().click()
+  await expect(page.getByText(/apagada\. Dá para restaurar/)).toBeVisible()
+  await expect(page.locator('details.settled-list')).toHaveCount(0)
+})

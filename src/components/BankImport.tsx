@@ -17,6 +17,8 @@ interface Props {
   local: LocalSource
   invoices: Invoice[]
   transactions: Transaction[]
+  /** Lançamentos atuais e de faturas apagadas: usados só para o robô sugerir e perguntar. */
+  history?: Transaction[]
   people: string[]
   categories: string[]
   suggestions: Map<string, Suggestion>
@@ -29,7 +31,7 @@ interface Props {
 type Edit = Partial<{ description: string; person: string; category: string; include: boolean }>
 
 /** Importar a fatura exportada do banco: o robô lê, classifica e mostra tudo para você conferir antes de entrar. */
-export default function BankImport({ local, invoices, transactions, people, categories, suggestions, onClose, onDone, notify }: Props) {
+export default function BankImport({ local, invoices, transactions, history, people, categories, suggestions, onClose, onDone, notify }: Props) {
   const [file, setFile] = useState<BankFile | null>(null)
   const [name, setName] = useState('')
   const [status, setStatus] = useState('')
@@ -79,7 +81,8 @@ export default function BankImport({ local, invoices, transactions, people, cate
 
   const existingInvoice = invoices.find((invoice) => invoice.period === period)
   const existingRows = useMemo(() => (existingInvoice ? transactions.filter((row) => row.invoice_id === existingInvoice.id) : []), [transactions, existingInvoice])
-  const installments = useMemo(() => buildInstallmentSuggestions(transactions), [transactions])
+  const learned = history ?? transactions
+  const installments = useMemo(() => buildInstallmentSuggestions(learned), [learned])
   const base = useMemo(() => (file ? classifyRows(file.rows, { suggestions, categories, defaultPerson, installments }) : []), [file, suggestions, categories, defaultPerson, installments])
   const recon = useMemo(() => reconcile(base, existingRows), [base, existingRows])
   const rows = useMemo(() => base.map((row) => {
@@ -94,7 +97,7 @@ export default function BankImport({ local, invoices, transactions, people, cate
   const waiting = useMemo(() => new Set(refundGuesses.filter((guess) => refunds[guess.rowId] === undefined).map((guess) => guess.rowId)), [refundGuesses, refunds])
   const askable = useMemo(() => base.filter((row) => !recon.matched.has(row.id) && refunds[row.id] !== 'ignore' && !waiting.has(row.id)), [base, recon, refunds, waiting])
   const asked = useMemo(() => askable.filter((row) => row.iofOf === null), [askable])
-  const rowQuestions = useMemo(() => new Map(buildRowQuestions(asked.map((row) => ({ id: row.id, description: row.description, amount: row.amount, category: row.category, person: row.person, personFrom: row.personFrom })), transactions).map((q) => [q.id, q])), [asked, transactions])
+  const rowQuestions = useMemo(() => new Map(buildRowQuestions(asked.map((row) => ({ id: row.id, description: row.description, amount: row.amount, category: row.category, person: row.person, personFrom: row.personFrom })), learned).map((q) => [q.id, q])), [asked, learned])
   const chosen = useMemo(() => rows.filter((row) => row.include), [rows])
   const summary = useMemo(() => summarizeIncoming(chosen), [chosen])
   const importRows = useMemo(() => toImportRows(chosen, paid), [chosen, paid])

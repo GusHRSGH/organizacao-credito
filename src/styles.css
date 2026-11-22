@@ -1069,3 +1069,23 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fee-status{font-size:12px;color:var(--faint)}
 .fee-status.near{color:var(--warn);font-weight:600}
 .fee-status.over{color:var(--bad, #e5484d);font-weight:600}
+.settled-modal{position:relative;overflow:hidden}
+.settled-table{width:100%;font-size:14px}
+.settled-table td,.settled-table th{padding:6px 4px;text-align:right}
+.settled-table td:first-child,.settled-table th:first-child{text-align:left}
+.settled-table tfoot td{border-top:1px solid var(--line);font-weight:600}
+.confetti{position:absolute;inset:0 0 auto 0;height:100%;pointer-events:none}
+.confetti i{position:absolute;top:-12px;width:8px;height:12px;border-radius:2px;background:var(--accent);opacity:.85;animation:confetti 1.6s ease-in forwards}
+.confetti i:nth-child(3n){background:var(--good)}
+.confetti i:nth-child(3n+1){background:var(--warn)}
+@keyframes confetti{to{transform:translateY(520px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion: reduce){.confetti{display:none}}
+.settled-list{border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 16px;background:var(--surface)}
+.settled-list summary{cursor:pointer;font-weight:600}
+.settled-list ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
+.settled-list li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.settled-list li .grow{flex:1}
+.settled-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent);padding:3px 10px;border-radius:999px}
+.settled-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 16px;color:var(--faint);font-size:14px}
+.text-button.danger{color:var(--bad)}
+@media (max-width: 700px){.settled-list{margin-bottom:96px}}
