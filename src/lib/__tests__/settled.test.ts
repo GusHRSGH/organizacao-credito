@@ -24,3 +24,16 @@ describe('mês quitado', () => {
     expect(text).toMatch(/• Ana: R\$\s1\.230,00 \(compras R\$\s1\.200,00 \+ taxa R\$\s30,00\)/)
   })
 })
+
+describe('fatura que o app abre', () => {
+  const inv = (id: string, period: string) => ({ id, period, label: id }) as Invoice
+  const list = [inv('out', '2026-10-01'), inv('nov', '2026-11-01'), inv('dez', '2026-12-01'), inv('jan', '2027-01-01')]
+  it('pula a do mês atual quando ela já está quitada', async () => {
+    const { startInvoice } = await import('../settled')
+    expect(startInvoice(list, new Set(), '2026-11-01')).toBe('nov')
+    expect(startInvoice(list, new Set(['nov']), '2026-11-01')).toBe('dez')
+    expect(startInvoice(list, new Set(['nov', 'dez', 'jan']), '2026-11-01')).toBe('out')
+    expect(startInvoice(list, new Set(['out', 'nov', 'dez', 'jan']), '2026-11-01')).toBe('nov')
+    expect(startInvoice([], new Set(), '2026-11-01')).toBe('')
+  })
+})
