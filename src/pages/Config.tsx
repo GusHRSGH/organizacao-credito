@@ -108,8 +108,8 @@ export default function Config({ people, categories, notify }: Props) {
     </>}
 
     {tab === 'menu' && <>
-      <Panel icon="sparkle" title="Modo do app" subtitle="O modo simples mostra só o essencial: lançar gastos, ver quanto gastou e cobrar quem deve.">
-        <Toggle checked={settings.advanced} onChange={(advanced) => patch({ advanced })}>Modo avançado (gráficos, comparações, filtros, metas e todas as opções à vista)</Toggle>
+      <Panel icon="sparkle" title="Como ver o app" subtitle="Minimalista mostra só o essencial. Detalhado deixa gráficos, comparações, filtros e metas à vista.">
+        <Seg label="Modo" value={settings.advanced ? 'detalhado' : 'minimalista'} options={[['minimalista', 'Minimalista'], ['detalhado', 'Detalhado']]} onChange={(mode) => { patch({ advanced: mode === 'detalhado' }); try { localStorage.setItem('oc:modo', mode) } catch { /* vale até recarregar */ } }} />
       </Panel>
       <Panel icon="dashboard" title="Tela inicial" subtitle="Onde o app abre.">
         <Seg label="Abrir em" value={settings.startPage} options={[['dashboard', 'Visão geral'], ['invoices', 'Faturas'], ['billing', 'Cobrança'], ['goals', 'Metas']]} onChange={(startPage) => patch({ startPage })} />

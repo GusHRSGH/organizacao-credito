@@ -183,6 +183,6 @@ export default function QuickAdd({ source, invoice, invoices = [], transactions 
     {text.trim() && choosing && parsed.installments === 1 && <div className="month-picker" role="group" aria-label="Meses para lançar">
       {options.map((period) => <button type="button" key={period} className={`month-chip ${months.includes(period) ? 'on' : ''}`} aria-pressed={months.includes(period)} onClick={() => setPicked(picked.includes(period) ? picked.filter((p) => p !== period) : [...picked, period])}>{shortPeriodLabel(period)}</button>)}
       <small className="muted">Cada mês escolhido recebe o valor cheio. Para dividir, use 3x.</small></div>}
-    {!text.trim() && <p className="quick-help">Dica: cole a notificação do banco ou use o microfone, e eu monto o lançamento. Atalho: <kbd>Ctrl</kbd>+<kbd>N</kbd>. Use <b>@nome</b> para o responsável, <b>#nome</b> para a categoria, <b>3x</b> para parcelas, <b>ontem</b> ou <b>05/11</b> para a data. O que faltar eu sugiro pelo seu histórico.</p>}
+    {!text.trim() && getSettings().advanced && <p className="quick-help">Dica: cole a notificação do banco ou use o microfone, e eu monto o lançamento. Atalho: <kbd>Ctrl</kbd>+<kbd>N</kbd>. Use <b>@nome</b> para o responsável, <b>#nome</b> para a categoria, <b>3x</b> para parcelas, <b>ontem</b> ou <b>05/11</b> para a data. O que faltar eu sugiro pelo seu histórico.</p>}
   </section>
 }

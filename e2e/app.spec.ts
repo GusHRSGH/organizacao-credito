@@ -4,6 +4,11 @@ import path from 'node:path'
 const MODELO = path.resolve('public/modelo-fatura.xlsx')
 
 /** Abre o app sem conta e fecha o tour da primeira vez. */
+// A escolha entre minimalista e detalhado aparece na primeira abertura; os testes já entram com ela feita, menos o que testa a escolha.
+test.beforeEach(async ({ page }, info) => {
+  if (!info.title.includes('escolha do modo')) await page.addInitScript(() => { if (!localStorage.getItem('oc:modo')) localStorage.setItem('oc:modo', 'escolhido') })
+})
+
 async function entrar(page: Page, modo: 'avançado' | 'simples' = 'avançado') {
   // Os testes antigos usam tudo à vista (modo avançado); os do modo simples pedem 'simples'.
   await page.addInitScript((advanced) => { if (!localStorage.getItem('oc:settings')) localStorage.setItem('oc:settings', JSON.stringify({ advanced })) }, modo === 'avançado')
@@ -20,7 +25,11 @@ async function irPara(page: Page, area: 'dashboard' | 'invoices' | 'billing' | '
     if (area !== 'config' && area !== 'settings') { await barra.locator(`[data-tour="nav-${area}"]`).click(); return }
     await barra.locator('[data-tour="nav-more"]').click()
   }
-  await page.locator('.sidebar').locator(`[data-tour="nav-${area}"]`).click()
+  const item = page.locator('.sidebar').locator(`[data-tour="nav-${area}"]`)
+  // No minimalista, Configurações e Dados ficam no “Mais” da barra lateral.
+  const mais = page.locator('.sidebar .nav-more-toggle')
+  if (!(await item.isVisible()) && await mais.isVisible()) await mais.click()
+  await item.click()
 }
 
 async function abaConfig(page: Page, nome: string) {
@@ -974,9 +983,29 @@ test('modo simples: início enxuto, menu de formas de lançar, filtros escondido
   await card.getByRole('button', { name: 'Mais opções' }).click()
   await expect(card.getByRole('button', { name: 'Pagou um valor' })).toBeVisible()
   await expect(page.locator('details.fold', { hasText: 'Como você recebe' })).toBeVisible()
-  // O modo avançado volta com um toque, em Configurações.
-  await abaConfig(page, 'Menu e início')
-  await page.getByText(/Modo avançado/).click()
+  // O detalhado volta com um toque, no botão do topo.
+  await page.getByRole('button', { name: 'Trocar para o modo detalhado' }).click()
   await irPara(page, 'dashboard')
   await expect(page.getByText('Fatura mês a mês')).toBeVisible()
+  await page.getByRole('button', { name: 'Trocar para o modo minimalista' }).click()
+  await expect(page.getByText('Fatura mês a mês')).toHaveCount(0)
+})
+
+
+test('escolha do modo na primeira abertura e lista minimalista que abre ao tocar', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Continuar sem conta' }).click()
+  const escolha = page.getByRole('dialog', { name: 'Como você prefere ver o app' })
+  await expect(escolha).toBeVisible()
+  await escolha.getByRole('button', { name: /Minimalista/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Tour do app' })).toBeVisible()
+  await page.getByRole('button', { name: 'Pular' }).click()
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  const linha = page.locator('.tx-min li').first()
+  await expect(linha.getByRole('button', { name: /Pago|Pendente/ })).toHaveCount(0)
+  await linha.locator('.tx-min-row').click()
+  await expect(linha.getByRole('button', { name: /Pago|Pendente/ })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('dialog', { name: 'Como você prefere ver o app' })).toHaveCount(0)
 })
