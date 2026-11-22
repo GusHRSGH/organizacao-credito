@@ -1063,3 +1063,9 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fee-who small{color:var(--faint);font-size:12px;padding-left:28px}
 .fee-panel .fee-share{width:100%}
 .fee-reset{grid-column:1/-1;justify-self:start;padding:0}
+.fee-limit{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding-left:28px}
+.fee-limit label{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--faint)}
+.fee-panel .fee-limit input{width:120px;padding:6px 10px;font-size:14px}
+.fee-status{font-size:12px;color:var(--faint)}
+.fee-status.near{color:var(--warn);font-weight:600}
+.fee-status.over{color:var(--bad, #e5484d);font-weight:600}

@@ -2,7 +2,34 @@ import type { CardFee, Invoice, Transaction } from '../types'
 
 export const DEFAULT_FEE_NAME = 'Taxa de evolução de crédito'
 
-export interface FeeShare { name: string; spend: number; share: number; manual: boolean; paid: boolean }
+export interface FeeShare {
+  name: string
+  spend: number
+  /** Total que a pessoa paga de taxa: a parte normal mais o extra por passar do limite. */
+  share: number
+  /** Parte normal (proporcional, porcentagem ou ajustada na mão). */
+  base: number
+  /** Extra por passar do limite (0 se não passou ou não tem limite). */
+  extra: number
+  limit: number | null
+  manual: boolean
+  paid: boolean
+}
+
+export type LimitLevel = 'ok' | 'near' | 'over'
+/** Situação do gasto em relação ao limite: perto a partir de 80%, passou acima do limite. */
+export function limitLevel(spend: number, limit: number | null | undefined): LimitLevel {
+  if (!limit || limit <= 0) return 'ok'
+  if (spend > limit + 0.004) return 'over'
+  return spend >= limit * 0.8 ? 'near' : 'ok'
+}
+
+/** Extra de quem passou do limite: a % extra sobre todo o gasto, arredondado para cima no centavo. */
+export function extraFor(fee: CardFee, name: string, spend: number): number {
+  const limit = fee.limits?.[name]
+  if (!fee.extraPct || fee.extraPct <= 0 || limitLevel(spend, limit) !== 'over') return 0
+  return Math.ceil(cents(spend) * fee.extraPct / 100) / 100
+}
 export interface FeeSplit { fee: CardFee; shares: FeeShare[]; total: number; inherited: boolean }
 
 const cents = (value: number) => Math.round(Number(value) * 100)
@@ -40,8 +67,11 @@ export function splitFee(fee: CardFee, spend: Map<string, number>): { shares: Fe
   const free = people.map((_, i) => i).filter((i) => manual[i] === null)
   const parts = spread(Math.max(0, target - fixed), free.map((i) => spendCents[i]))
   const result = people.map(([name, value], i) => {
-    const share = manual[i] ?? parts[free.indexOf(i)]
-    return { name, spend: value, share: share / 100, manual: manual[i] !== null, paid: fee.paid.includes(name) }
+    const base = manual[i] ?? parts[free.indexOf(i)]
+    // O extra entra por cima da parte normal, inclusive quando ela foi ajustada na mão.
+    const extra = cents(extraFor(fee, name, value))
+    const limit = fee.limits?.[name]
+    return { name, spend: value, share: (base + extra) / 100, base: base / 100, extra: extra / 100, limit: limit && limit > 0 ? limit : null, manual: manual[i] !== null, paid: fee.paid.includes(name) }
   })
   return { shares: result, total: result.reduce((sum, item) => sum + cents(item.share), 0) / 100 }
 }
@@ -71,5 +101,8 @@ export function feeSplitFor(invoiceId: string, invoices: Invoice[], fees: CardFe
 /** Texto da linha da taxa na cobrança, com a conta. */
 export function feeLine(fee: CardFee, share: FeeShare): string {
   const how = share.manual ? 'valor combinado' : fee.mode === 'percent' ? `${String(fee.value).replace('.', ',')}% do seu gasto` : 'proporcional ao seu gasto'
-  return `${fee.name} (${how})`
+  const extra = share.extra > 0 && share.limit ? ` + ${String(fee.extraPct).replace('.', ',')}% por passar do limite de ${brl(share.limit)}` : ''
+  return `${fee.name} (${how}${extra})`
 }
+
+const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

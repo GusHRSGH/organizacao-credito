@@ -9,6 +9,8 @@ import { suggestFor, type Suggestion } from '../lib/suggest'
 import { parseNotification, toQuickLine } from '../lib/notificacao'
 import { startListening, voiceAvailable, type Listening } from '../lib/voice'
 import { goalAlerts } from '../lib/goalAlert'
+import { extraFor, feeFor, limitLevel, spendByPerson } from '../lib/fee'
+import type { CardFee } from '../types'
 import { readGoals } from '../lib/goals'
 import { marcarLancamentoHoje } from '../lib/lembrete'
 import type { DataSource, Invoice, Transaction } from '../types'
@@ -71,6 +73,28 @@ export default function QuickAdd({ source, invoice, invoices = [], transactions 
   const category = parsed.category ?? hint?.category ?? (defaults.defaultCategory || undefined) ?? last.category
   const guessed = { person: !parsed.person && !!person, category: !parsed.category && !!category }
   const missing = [!parsed.description && 'descrição', parsed.amount === null && 'valor', !person && 'responsável (@nome)', !category && 'categoria (#nome)'].filter(Boolean) as string[]
+
+  const [fees, setFees] = useState<CardFee[]>([])
+  useEffect(() => { let alive = true; void source.listFees().then((list) => { if (alive) setFees(list) }).catch(() => undefined); return () => { alive = false } }, [source, transactions])
+  // Limite de cada pessoa (na taxa do cartão): avisa quando o gasto novo deixa perto (80%) ou acima do limite.
+  const limitAlert = useMemo(() => {
+    if (!text.trim() || parsed.amount === null || !person) return null
+    const target = invoices.find((item) => item.period === periodShown)
+    if (!target) return null
+    const found = feeFor(target.id, invoices, fees)
+    const fee = found?.fee
+    const limit = fee && fee.value > 0 && !fee.excluded.includes(person) ? fee.limits?.[person] : undefined
+    if (!fee || !limit) return null
+    const here = parsed.installments > 1 ? Math.round((parsed.amount / parsed.installments) * 100) / 100 : parsed.amount
+    const before = spendByPerson(transactions.filter((row) => row.invoice_id === target.id)).get(person) ?? 0
+    const after = Math.round((before + here) * 100) / 100
+    const level = limitLevel(after, limit)
+    if (level === 'ok') return null
+    const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    if (level === 'near') return { level: 'warn', text: `${person} vai a ${brl(after)} de ${brl(limit)} do limite (pode gastar mais ${brl(Math.max(0, limit - after))}).` }
+    const extra = extraFor(fee, person, after)
+    return { level: 'over', text: `${person} vai passar do limite de ${brl(limit)}${extra > 0 ? `: taxa extra de ${String(fee.extraPct).replace('.', ',')}% sobre tudo que gastou (${brl(extra)})` : ''}.` }
+  }, [text, parsed.amount, parsed.installments, person, invoices, periodShown, fees, transactions])
 
   const alerts = useMemo(() => {
     if (!text.trim() || parsed.amount === null) return []
@@ -155,7 +179,7 @@ export default function QuickAdd({ source, invoice, invoices = [], transactions 
       <span className={`chip ${category ? '' : 'miss'}`}>{category ?? 'categoria?'}{guessed.category && category ? ' · sugerido' : ''}</span>
       {parsed.installments === 1 && <button type="button" className="chip pick" aria-expanded={choosing} onClick={() => setChoosing(!choosing)}>{months.length ? 'Trocar meses' : 'Lançar em vários meses'}</button>}
     </div>}
-    {alerts.length > 0 && <div className="quick-alerts" role="status">{alerts.map((alert) => <p key={alert.goal.id} className={`quick-alert ${alert.level}`}>{alert.text}</p>)}</div>}
+    {(alerts.length > 0 || limitAlert) && <div className="quick-alerts" role="status">{alerts.map((alert) => <p key={alert.goal.id} className={`quick-alert ${alert.level}`}>{alert.text}</p>)}{limitAlert && <p className={`quick-alert ${limitAlert.level}`}>{limitAlert.text}</p>}</div>}
     {text.trim() && choosing && parsed.installments === 1 && <div className="month-picker" role="group" aria-label="Meses para lançar">
       {options.map((period) => <button type="button" key={period} className={`month-chip ${months.includes(period) ? 'on' : ''}`} aria-pressed={months.includes(period)} onClick={() => setPicked(picked.includes(period) ? picked.filter((p) => p !== period) : [...picked, period])}>{shortPeriodLabel(period)}</button>)}
       <small className="muted">Cada mês escolhido recebe o valor cheio. Para dividir, use 3x.</small></div>}

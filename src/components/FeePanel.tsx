@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon } from './Icon'
-import { DEFAULT_FEE_NAME, splitFee, type FeeSplit } from '../lib/fee'
+import { DEFAULT_FEE_NAME, limitLevel, splitFee, type FeeSplit } from '../lib/fee'
 import { parseMoney } from '../lib/quickEntry'
 import { money } from '../lib/format'
 import type { CardFee } from '../types'
@@ -23,17 +23,33 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
   const [name, setName] = useState(current?.name ?? DEFAULT_FEE_NAME)
   const [mode, setMode] = useState<CardFee['mode']>(current?.mode ?? 'fixed')
   const [value, setValue] = useState(current && current.value ? String(current.value).replace('.', ',') : '')
+  const [extra, setExtra] = useState(current?.extraPct ? String(current.extraPct).replace('.', ',') : '')
   const [editing, setEditing] = useState<Record<string, string>>({})
-  const key = `${main?.invoiceId}|${current?.name}|${current?.mode}|${current?.value}`
+  const [limitText, setLimitText] = useState<Record<string, string>>({})
+  const key = `${main?.invoiceId}|${current?.name}|${current?.mode}|${current?.value}|${current?.extraPct}`
   useEffect(() => {
-    setName(current?.name ?? DEFAULT_FEE_NAME); setMode(current?.mode ?? 'fixed'); setValue(current && current.value ? String(current.value).replace('.', ',') : ''); setEditing({})
+    setName(current?.name ?? DEFAULT_FEE_NAME); setMode(current?.mode ?? 'fixed'); setValue(current && current.value ? String(current.value).replace('.', ',') : '')
+    setExtra(current?.extraPct ? String(current.extraPct).replace('.', ',') : '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
+  // O que está sendo digitado numa linha só é descartado ao trocar de fatura, não quando a taxa recarrega.
+  useEffect(() => { setEditing({}); setLimitText({}) }, [main?.invoiceId])
   if (!main || !current) return null
 
   const typed = parseMoney(value.trim()) ?? (value.trim() === '' ? 0 : null)
-  const draft: CardFee = { ...current, name: name.trim() || DEFAULT_FEE_NAME, mode, value: typed ?? 0 }
-  const changed = draft.name !== current.name || draft.mode !== current.mode || draft.value !== current.value
+  const extraTyped = parseMoney(extra.trim()) ?? (extra.trim() === '' ? 0 : null)
+  const draft: CardFee = { ...current, name: name.trim() || DEFAULT_FEE_NAME, mode, value: typed ?? 0, extraPct: extraTyped ?? 0 }
+  const changed = draft.name !== current.name || draft.mode !== current.mode || draft.value !== current.value || (draft.extraPct ?? 0) !== (current.extraPct ?? 0)
+  const saveLimit = (person: string) => {
+    const text = limitText[person]
+    if (text === undefined) return
+    setLimitText((all) => Object.fromEntries(Object.entries(all).filter(([n]) => n !== person)))
+    const amount = text.trim() === '' ? 0 : parseMoney(text.trim())
+    if (amount === null) return
+    const limits = Object.fromEntries(Object.entries(draft.limits ?? {}).filter(([n]) => n !== person))
+    if (amount > 0) limits[person] = amount
+    save({ ...draft, limits })
+  }
   const preview = splitFee(draft, main.spend)
   const save = (fee: CardFee) => void onSave(fee)
 
@@ -61,9 +77,10 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
         <button role="radio" aria-checked={mode === 'percent'} className={mode === 'percent' ? 'on' : ''} onClick={() => setMode('percent')}>Porcentagem</button>
       </div>
       <label>{mode === 'fixed' ? 'Valor total (R$)' : 'Porcentagem do gasto (%)'}<input inputMode="decimal" value={value} onChange={(event) => setValue(event.target.value)} placeholder={mode === 'fixed' ? 'Ex.: 60' : 'Ex.: 3'} aria-label="Valor da taxa" /></label>
-      <button className="primary-button" disabled={typed === null || (!changed && !main.split?.inherited)} onClick={() => save({ ...draft, overrides: draft.mode !== current.mode ? {} : draft.overrides })}>{draft.value === 0 && current.value ? 'Remover taxa' : 'Salvar taxa'}</button>
+      <label>Extra por passar do limite (%)<input inputMode="decimal" value={extra} onChange={(event) => setExtra(event.target.value)} placeholder="Ex.: 10 (opcional)" aria-label="Porcentagem extra por passar do limite" /></label>
+      <button className="primary-button" disabled={typed === null || extraTyped === null || (extraTyped ?? 0) > 100 || (!changed && !main.split?.inherited)} onClick={() => save({ ...draft, overrides: draft.mode !== current.mode ? {} : draft.overrides })}>{draft.value === 0 && current.value ? 'Remover taxa' : 'Salvar taxa'}</button>
     </div>
-    {typed === null && <p className="neg">Não entendi esse valor.</p>}
+    {(typed === null || extraTyped === null) && <p className="neg">Não entendi esse valor.</p>}
     {mode === 'percent' && typed !== null && (() => {
       // Exemplo com quem mais gastou nesta fatura, para a porcentagem fazer sentido antes de salvar.
       const top = [...main.spend].filter(([, spent]) => spent > 0).sort((a, b) => b[1] - a[1])[0]
@@ -82,17 +99,28 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
               <small>gastou {money(spent)}</small></div>
             {share && <>
               <span className="fee-pct" title="Parte da taxa">{preview.total > 0 ? `${Math.round((share.share / preview.total) * 100)}%` : ''}</span>
-              <input className="fee-share" inputMode="decimal" aria-label={`Parte de ${person}`} value={editing[person] ?? share.share.toFixed(2).replace('.', ',')}
+              <input className="fee-share" inputMode="decimal" aria-label={`Parte de ${person}`} value={editing[person] ?? share.base.toFixed(2).replace('.', ',')}
                 onChange={(event) => setEditing({ ...editing, [person]: event.target.value })}
-                onBlur={() => { const text = editing[person]; if (text === undefined) return; const amount = parseMoney(text.trim()); setEditing((all) => Object.fromEntries(Object.entries(all).filter(([n]) => n !== person))); if (amount !== null && Math.abs(amount - share.share) > 0.004) save({ ...draft, overrides: { ...draft.overrides, [person]: amount } }) }}
+                onBlur={() => { const text = editing[person]; if (text === undefined) return; const amount = parseMoney(text.trim()); setEditing((all) => Object.fromEntries(Object.entries(all).filter(([n]) => n !== person))); if (amount !== null && Math.abs(amount - share.base) > 0.004) save({ ...draft, overrides: { ...draft.overrides, [person]: amount } }) }}
                 onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} />
               {share.manual && <button className="text-button fee-reset" onClick={() => save({ ...draft, overrides: Object.fromEntries(Object.entries(draft.overrides).filter(([n]) => n !== person)) })}>Voltar ao calculado</button>}
               <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...draft, paid: share.paid ? draft.paid.filter((n) => n !== person) : [...draft.paid, person] })} aria-label={`Taxa de ${person} paga`} />Pago</label>
+              <div className="fee-limit">
+                <label>Limite<input inputMode="decimal" placeholder="sem limite" aria-label={`Limite de ${person}`} value={limitText[person] ?? (share.limit ? share.limit.toFixed(2).replace('.', ',') : '')}
+                  onChange={(event) => setLimitText({ ...limitText, [person]: event.target.value })} onBlur={() => saveLimit(person)}
+                  onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} /></label>
+                {share.limit && (() => {
+                  const level = limitLevel(spent, share.limit)
+                  const left = Math.max(0, Math.round((share.limit - spent) * 100) / 100)
+                  if (level === 'over') return <small className="fee-status over">Passou do limite{share.extra > 0 ? `: + ${money(share.extra)} de taxa extra` : ''}</small>
+                  return <small className={`fee-status ${level}`}>{level === 'near' ? 'Perto do limite: ' : ''}pode gastar mais {money(left)}</small>
+                })()}
+              </div>
             </>}
           </li>
         })}
       </ul>
-      <p className="hint">Total da taxa: <b>{money(preview.total)}</b>{draft.mode === 'fixed' && Math.abs(preview.total - draft.value) > 0.004 ? ` (cada parte arredonda para cima no centavo)` : ''}. Mude a parte de alguém e o resto se ajusta.</p>
+      <p className="hint">Total da taxa: <b>{money(preview.total)}</b>{draft.mode === 'fixed' && Math.abs(preview.total - draft.value) > 0.004 ? ` (cada parte arredonda para cima no centavo)` : ''}. Mude a parte de alguém e o resto se ajusta.{preview.shares.some((item) => item.extra > 0) ? ` Inclui ${money(preview.shares.reduce((sum, item) => sum + Math.round(item.extra * 100), 0) / 100)} de extra por limite.` : ''}</p>
     </>}
   </section>
 }
