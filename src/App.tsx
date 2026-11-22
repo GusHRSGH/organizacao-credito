@@ -11,7 +11,7 @@ import { useTheme } from './lib/theme'
 import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/native'
 import { agendarLembrete, aoTocarNaNotificacao } from './lib/lembrete'
 import { agendarAvisos } from './lib/avisosFatura'
-import { settledIds } from './lib/settled'
+import { settledIds, startInvoice } from './lib/settled'
 import ModeChooser from './components/ModeChooser'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
@@ -167,9 +167,10 @@ export default function App() {
     const has = (id: string) => inv.some((invoice) => invoice.id === id)
     const now = currentPeriod()
     const asc = [...inv].sort((x, y) => x.period.localeCompare(y.period))
-    const pickIndex = Math.max(0, asc.filter((invoice) => invoice.period <= now).length - 1)
-    const defaultFocus = asc[pickIndex]?.id ?? ''
-    const defaultCompare = asc[pickIndex - 1]?.id ?? asc[pickIndex + 1]?.id ?? ''
+    // Abre numa fatura que não está quitada: a do mês atual ou a próxima; se todas daqui pra frente estiverem quitadas, a mais recente em aberto.
+    const defaultFocus = startInvoice(inv, settledIds(inv, rows, feeList), now)
+    const focusAt = asc.findIndex((invoice) => invoice.id === defaultFocus)
+    const defaultCompare = asc[focusAt - 1]?.id ?? asc[focusAt + 1]?.id ?? ''
     setFocusId((current) => (has(current) ? current : defaultFocus))
     setCompareId((current) => (has(current) ? current : defaultCompare))
     setInvoiceId((current) => (has(current) ? current : defaultFocus))

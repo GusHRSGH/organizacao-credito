@@ -41,3 +41,16 @@ export function settledMessage(summary: SettledSummary): string {
   const lines = summary.lines.map((line) => `• ${line.name}: ${moneyFull(line.total)}${line.fee > 0 ? ` (compras ${moneyFull(line.spent)} + taxa ${moneyFull(line.fee)})` : ''}`)
   return `${summary.label} quitada! Obrigado a todos 🎉\n\nResumo do mês:\n${lines.join('\n')}\n\nTotal: ${moneyFull(summary.total)}`
 }
+
+/**
+ * Fatura que o app abre: a do mês atual ou a próxima que não está quitada.
+ * Se todas daqui pra frente estiverem quitadas, a mais recente em aberto; se tudo estiver quitado, a do mês atual (ou a última antes dele).
+ */
+export function startInvoice(invoices: Invoice[], settled: Set<string>, now: string): string {
+  const asc = [...invoices].sort((a, b) => a.period.localeCompare(b.period))
+  const open = asc.filter((invoice) => !settled.has(invoice.id))
+  const pick = open.find((invoice) => invoice.period >= now) ?? [...open].reverse().find((invoice) => invoice.period < now)
+  if (pick) return pick.id
+  const before = asc.filter((invoice) => invoice.period <= now)
+  return (before[before.length - 1] ?? asc[0])?.id ?? ''
+}

@@ -3,6 +3,12 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 51, date: '2026-11-22', title: 'Abre na fatura em aberto',
+    items: [
+      'O app não abre mais numa fatura já quitada: ele vai direto para a fatura do mês que ainda tem coisa a receber, ou para a próxima.',
+    ],
+  },
+  {
     n: 50, date: '2026-11-22', title: 'Tela de cobrança mais limpa',
     items: [
       'Os avisos agora aparecem só no Início, em uma linha; os outros ficam em “+N avisos”.',
