@@ -853,3 +853,33 @@ test('taxa de uso do cartão: divide pelo gasto, entra na cobrança e é paga ju
   await gusta.getByRole('button', { name: 'Marcar tudo como pago' }).click()
   await expect(taxa.getByLabel('Taxa de gusta paga')).toBeChecked({ timeout: 10_000 })
 })
+
+test('cobrança: Compartilhar Pix manda só o copia e cola e Enviar detalhes vai sem a chave', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  // No celular abre o compartilhar do sistema; aqui ele é trocado por uma captura do texto.
+  await page.addInitScript(() => {
+    const sent: string[] = []
+    ;(window as unknown as { __shared: string[] }).__shared = sent
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: { text: string }) => { sent.push(data.text) } })
+  })
+  const ultimo = async () => {
+    const shared = await page.evaluate(() => (window as unknown as { __shared: string[] }).__shared.at(-1) ?? '')
+    return shared || page.evaluate(() => navigator.clipboard.readText())
+  }
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'billing')
+  const card = page.locator('.bill-card').first()
+  // Sem chave cadastrada: o botão leva ao cadastro.
+  await card.getByRole('button', { name: 'Compartilhar Pix' }).click()
+  await expect(page.getByText('Cadastre sua chave Pix')).toBeVisible()
+  await expect(page.getByLabel('Chave Pix')).toBeFocused()
+  await page.getByLabel('Chave Pix').fill('teste@email.com')
+  await page.getByLabel('Nome de quem recebe').fill('Gus Teste')
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await card.getByRole('button', { name: 'Compartilhar Pix' }).click()
+  await expect.poll(ultimo).toMatch(/^000201[^\n]*6304[0-9A-F]{4}$/)
+  await card.getByRole('button', { name: 'Enviar detalhes' }).click()
+  await expect.poll(ultimo).toContain('É só copiar o Pix que te mandei.')
+  expect(await ultimo()).not.toContain('teste@email.com')
+})

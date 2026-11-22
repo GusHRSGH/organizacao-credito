@@ -23,7 +23,7 @@ export function billsByPerson(rows: Transaction[]): PersonBill[] {
 
 /** Mensagem simples para enviar no WhatsApp com o que ainda está pendente. */
 export interface FeeCharge { text: string; amount: number }
-export interface MessageOptions { receiving?: Receiving; /** Taxa de uso do cartão ainda não paga: entra no detalhe e no total. */ fees?: FeeCharge[]; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string> }
+export interface MessageOptions { receiving?: Receiving; /** O Pix vai numa mensagem separada: aqui não entra a chave, só o recado e o aviso. */ pixSeparate?: boolean; /** Taxa de uso do cartão ainda não paga: entra no detalhe e no total. */ fees?: FeeCharge[]; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string> }
 
 export function buildMessage(bill: PersonBill, invoiceLabel: string, options: MessageOptions = {}) {
   const open = bill.rows.filter((row) => row.status !== 'paid')
@@ -44,7 +44,9 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
   } else detail = open.map(line).join('\n')
   if (fees.length) detail = [detail, fees.map((fee) => `• ${fee.text}: ${moneyFull(fee.amount)}`).join('\n')].filter(Boolean).join(open.length ? '\n\n' : '')
   const paidNote = bill.paid > 0 ? `\n(Já pago: ${moneyFull(bill.paid)})` : ''
-  const pay = options.receiving ? receivingText(options.receiving, due, invoiceLabel) : ''
+  const pay = options.pixSeparate
+    ? [options.receiving?.include && options.receiving.note.trim() ? options.receiving.note.trim() : '', 'É só copiar o Pix que te mandei.'].filter(Boolean).join('\n')
+    : options.receiving ? receivingText(options.receiving, due, invoiceLabel) : ''
   const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${moneyFull(due)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${moneyFull(due)}.`
   return `${head}\n\nDetalhe:\n${detail}\n\nTotal: ${moneyFull(due)}${paidNote}${pay ? `\n\n${pay}` : ''}`
 }

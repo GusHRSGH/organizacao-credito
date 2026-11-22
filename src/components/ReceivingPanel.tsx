@@ -1,14 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { detectPixKey, PIX_KIND_LABEL } from '../lib/pix'
 import { hasReceiving, writeReceiving, type Receiving } from '../lib/receiving'
 
-interface Props { value: Receiving; onChange: (value: Receiving) => void; preview: string }
+interface Props { value: Receiving; onChange: (value: Receiving) => void; preview: string; /** Muda quando alguém pede para cadastrar a chave (ex.: botão Compartilhar Pix sem chave). */ openSignal?: number }
 
 /** Onde a pessoa recebe: chave Pix e recado. Entra no fim de toda cobrança copiada. */
-export default function ReceivingPanel({ value, onChange, preview }: Props) {
+export default function ReceivingPanel({ value, onChange, preview, openSignal = 0 }: Props) {
   const [editing, setEditing] = useState(!hasReceiving(value))
   const [draft, setDraft] = useState(value)
+  const keyRef = useRef<HTMLInputElement>(null)
+  const boxRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (!openSignal) return
+    setDraft(value); setEditing(true)
+    window.setTimeout(() => { boxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); keyRef.current?.focus() }, 50)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSignal])
   const pix = detectPixKey(draft.key)
   const invalidKey = draft.key.trim() !== '' && !pix
 
@@ -27,10 +35,10 @@ export default function ReceivingPanel({ value, onChange, preview }: Props) {
     </section>
   }
 
-  return <section className="receiving editing" data-tour="bill-receive" aria-label="Como você recebe">
+  return <section ref={boxRef} className="receiving editing" data-tour="bill-receive" aria-label="Como você recebe">
     <div className="receiving-line"><Icon name="wallet" size={18} /><div><b>Como você recebe</b><small>Aparece no fim de cada cobrança que você copiar. Fica só neste aparelho.</small></div></div>
     <div className="receiving-grid">
-      <label>Chave Pix<input value={draft.key} onChange={(event) => setDraft({ ...draft, key: event.target.value })} placeholder="CPF, e-mail, celular ou chave aleatória" autoComplete="off" /></label>
+      <label>Chave Pix<input ref={keyRef} value={draft.key} onChange={(event) => setDraft({ ...draft, key: event.target.value })} placeholder="CPF, e-mail, celular ou chave aleatória" autoComplete="off" /></label>
       <label>Nome de quem recebe<input value={draft.holder} onChange={(event) => setDraft({ ...draft, holder: event.target.value })} placeholder="Como aparece no banco" maxLength={25} /></label>
       <label>Cidade (opcional)<input value={draft.city} onChange={(event) => setDraft({ ...draft, city: event.target.value })} placeholder="Maringá" maxLength={15} /></label>
     </div>

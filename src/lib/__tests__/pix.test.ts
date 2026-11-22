@@ -73,3 +73,26 @@ describe('cobrança com taxa de uso do cartão', () => {
     expect(buildGroupMessage(billsByPerson(rows), 'Novembro', undefined, new Map([['Ana', 30], ['Bia', 20]]))).toContain('• Bia: R$')
   })
 })
+
+describe('Pix separado da mensagem de detalhes', () => {
+  const rows = [tx('a', 'i1', 'Ana', 120)]
+  const receiving = { ...EMPTY_RECEIVING, key: 'ana@email.com', holder: 'Gus Teste', note: 'Manda o comprovante.' }
+  it('os detalhes não levam a chave, só o recado e o aviso', async () => {
+    const [ana] = billsByPerson(rows)
+    const text = buildMessage(ana, 'Novembro', { receiving, pixSeparate: true })
+    expect(text).not.toContain('ana@email.com')
+    expect(text).not.toContain('000201')
+    expect(text).toContain('Manda o comprovante.')
+    expect(text.trim().endsWith('É só copiar o Pix que te mandei.')).toBe(true)
+  })
+  it('o Pix copia e cola sai sozinho, com o valor, e só quando dá para gerar', async () => {
+    const { pixCode } = await import('../receiving')
+    const code = pixCode(receiving, 120, 'Novembro')!
+    expect(code.startsWith('000201')).toBe(true)
+    expect(code).toContain('5406120.00')
+    expect(code).toMatch(/^000201[^\n]*6304[0-9A-F]{4}$/)
+    expect(pixCode({ ...receiving, holder: '' }, 120)).toBeNull()
+    expect(pixCode({ ...receiving, key: 'xyz' }, 120)).toBeNull()
+    expect(pixCode(receiving, 0)).toBeNull()
+  })
+})
