@@ -14,6 +14,7 @@ import { messageOf, money } from '../lib/format'
 import { periodLabel } from '../services/installments'
 import { readReview, writeReview } from '../lib/reconcile'
 import { totals } from '../services/stats'
+import { useSettings } from '../lib/settings'
 import type { DataSource, Invoice, Transaction, TransactionRow } from '../types'
 
 interface Props {
@@ -43,6 +44,10 @@ export default function Invoices({ source, invoices, transactions, history, sett
   const [showForm, setShowForm] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [showPaste, setShowPaste] = useState(false)
+  // Modo simples: as outras formas de lançar ficam num menu e os filtros atrás de um botão.
+  const [{ advanced }] = useSettings()
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [undo, setUndo] = useState<{ rows: TransactionRow[]; text: string } | null>(null)
@@ -168,10 +173,18 @@ export default function Invoices({ source, invoices, transactions, history, sett
     <PageHeading tour="inv-top" title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}</select></label>
-      {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
-      {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
-      <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
+      {advanced ? <>
+        {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
+        {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
+        <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
+      </> : <button className="secondary-button" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)}><Icon name="plus" size={16} />Mais formas de lançar</button>}
     </PageHeading>
+    {!advanced && moreOpen && <div className="more-menu" role="menu" aria-label="Mais formas de lançar">
+      {local && <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); onBank() }}><Icon name="upload" size={16} />Importar fatura do banco<small>CSV ou PDF exportado do app do banco</small></button>}
+      {local && <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setShowPaste(true) }}><Icon name="upload" size={16} />Colar fatura<small>Texto, notificação, conversa ou foto</small></button>}
+      <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setShowForm(true) }}><Icon name="plus" size={16} />Formulário completo<small>Campo por campo</small></button>
+      <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setNewOpen(true) }}><Icon name="plus" size={16} />Criar fatura de outro mês<small>Qualquer mês, passado ou futuro</small></button>
+    </div>}
 
     {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
@@ -196,9 +209,14 @@ export default function Invoices({ source, invoices, transactions, history, sett
 
     <section className="metric-grid">
       <Hero label={invoices.find((invoice) => invoice.id === invoiceId)?.label ?? 'Fatura'} total={money(summary.total)} count={summary.count} paid={money(summary.paid)} pending={money(summary.pending)} paidShare={summary.total ? summary.paid / summary.total : 0} />
-      <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><button className="secondary-button" onClick={() => setNewOpen(true)}><Icon name="plus" size={16} />Criar fatura de outro mês…</button></div><div className="metric-foot">Qualquer mês, passado ou futuro.</div></article>
+      {advanced && <article className="metric-card new-invoice"><div className="metric-label">Nova fatura</div><div className="inline-form"><button className="secondary-button" onClick={() => setNewOpen(true)}><Icon name="plus" size={16} />Criar fatura de outro mês…</button></div><div className="metric-foot">Qualquer mês, passado ou futuro.</div></article>}
     </section>
 
+    {!advanced && !filtersOpen && <div className="button-row filter-toggle">
+      <button className="secondary-button" onClick={() => setFiltersOpen(true)}><Icon name="search" size={16} />Buscar e filtrar</button>
+      <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
+    </div>}
+    {(advanced || filtersOpen) && <>
     {saved.length > 0 && <div className="saved-filters" role="group" aria-label="Filtros salvos"><span className="saved-label">Filtros salvos</span>
       {saved.map((item) => <span key={item.id} className="saved-chip">
         <button onClick={() => { setPerson(item.person); setCategory(item.category); setStatus(item.status); setQuery(item.query); setSelected(new Set()) }}>{item.name}</button>
@@ -216,6 +234,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
     {naming !== null && <form className="saved-form" onSubmit={(event) => { event.preventDefault(); const next = addFilter(saved, naming, { person, category, status, query }, crypto.randomUUID()); setSaved(next); writeFilters(next); setNaming(null); notify('notice', `Filtro “${naming.trim()}” salvo.`) }}>
       <input value={naming} onChange={(event) => setNaming(event.target.value)} maxLength={40} aria-label="Nome do filtro" autoFocus placeholder="Nome do filtro" />
       <button className="primary-button" disabled={!naming.trim()}>Salvar</button><button type="button" className="text-button" onClick={() => setNaming(null)}>Cancelar</button></form>}
+    </>}
 
     {(person || category || status) && <div className="filter-chip" role="status">
       <span>Mostrando: <b>{[person === NO_PERSON ? 'Sem responsável' : person, category === NO_CATEGORY ? 'Sem categoria' : category, status === 'pending' ? 'Pendentes' : status === 'paid' ? 'Pagos' : ''].filter(Boolean).join(' · ')}</b></span>

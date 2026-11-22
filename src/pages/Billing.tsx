@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../components/Icon'
 import { personToken, type DrillFilter } from '../lib/drill'
 import { EmptyState, Metric, PageHeading } from '../components/ui'
@@ -10,7 +10,8 @@ import { invoiceOptions } from '../components/InvoiceOptions'
 import { settledIds, settledMessage, settledSummary } from '../lib/settled'
 import { feeLine, feeSplitFor, spendByPerson } from '../lib/fee'
 import { billsByPerson, buildGroupMessage, buildMessage, type FeeCharge, type PersonBill } from '../lib/billing'
-import { pixCode, readReceiving } from '../lib/receiving'
+import { hasReceiving, pixCode, readReceiving } from '../lib/receiving'
+import { useSettings } from '../lib/settings'
 import { shareText } from '../lib/share'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { CardFee, DataSource, Invoice, Transaction } from '../types'
@@ -101,6 +102,13 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const feeTotal = [...feeDue.values()].reduce((sum, value) => sum + Math.round(value * 100), 0) / 100
 
   const [askKey, setAskKey] = useState(0)
+  // Modo simples: Como você recebe e a taxa ficam recolhidos, e cada card mostra só Pix e Marcar como pago.
+  const [{ advanced }] = useSettings()
+  const [recvOpen, setRecvOpen] = useState(false)
+  const [feeOpen, setFeeOpen] = useState(false)
+  const [moreFor, setMoreFor] = useState<string | null>(null)
+  const fold = (title: string, sub: string, isOpen: boolean, setIsOpen: (value: boolean) => void, child: ReactNode) => advanced ? child
+    : <details className="fold" open={isOpen} onToggle={(event) => setIsOpen((event.currentTarget as HTMLDetailsElement).open)}><summary><b>{title}</b><small>{sub}</small></summary>{child}</details>
   const pixOf = (bill: PersonBill) => pixCode(receiving, dueOf(bill), scopeLabel)
 
   /** Detalhes das compras e o total, sem a chave: o Pix vai no outro botão. */
@@ -116,7 +124,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   async function sharePix(bill: PersonBill) {
     const code = pixOf(bill)
     if (!code) {
-      setAskKey((n) => n + 1)
+      setAskKey((n) => n + 1); setRecvOpen(true)
       notify('notice', 'Cadastre sua chave Pix e o nome de quem recebe para gerar o Pix copia e cola.')
       return
     }
@@ -153,9 +161,11 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}</select></label>
     </PageHeading>
-    <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />
+    {fold('Como você recebe', hasReceiving(receiving) ? (receiving.key ? `Pix: ${receiving.key}` : 'Só o recado') : 'Cadastre sua chave Pix', recvOpen, setRecvOpen,
+      <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />)}
     {!all && settled.has(invoiceId) && <p className="settled-line"><span className="settled-badge">✓ Quitada</span> Todo mundo pagou esta fatura. <button className="text-button" onClick={() => setShown({ id: invoiceId, celebrate: false })}>Ver resumo</button></p>}
-    {feeBlocks.length > 0 && <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />}
+    {feeBlocks.length > 0 && fold('Taxa de uso do cartão', feeBlocks[0]?.split ? `${feeBlocks[0].split.fee.name} · ${money(feeBlocks[0].split.total)}` : 'Nenhuma taxa nesta fatura', feeOpen, setFeeOpen,
+      <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />)}
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">
         <Metric label={all ? 'Total em aberto' : 'Total da fatura'} value={money(total)} icon="wallet" foot={`${bills.length} ${bills.length === 1 ? 'responsável' : 'responsáveis'}`} />
@@ -178,11 +188,14 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
             <div className="bill-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
             <div className="bill-actions">
               <button className="secondary-button" disabled={due <= 0} onClick={() => void sharePix(bill)}><Icon name="wallet" size={16} />Compartilhar Pix</button>
-              <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Enviar detalhes</button>
+              {(advanced || moreFor === bill.name) && <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Enviar detalhes</button>}
               <button className="secondary-button" disabled={due <= 0} onClick={() => void settle(bill)}><Icon name="check" size={16} />Marcar tudo como pago</button>
-              <button className="secondary-button" disabled={due <= 0} onClick={() => setPaying(paying === bill.name ? null : bill.name)} aria-expanded={paying === bill.name}><Icon name="wallet" size={16} />Pagou um valor</button>
-              {bill.pending > 0 && <button className="text-button" onClick={() => onDrill({ invoiceId, person: personToken(bill.name), status: 'pending' })}>Ver o que falta →</button>}
-              <button className="text-button" onClick={() => setOpen(expanded ? null : bill.name)} aria-expanded={expanded}>{expanded ? 'Ocultar detalhes' : 'Ver detalhes'}</button>
+              {(advanced || moreFor === bill.name) && <>
+                <button className="secondary-button" disabled={due <= 0} onClick={() => setPaying(paying === bill.name ? null : bill.name)} aria-expanded={paying === bill.name}><Icon name="wallet" size={16} />Pagou um valor</button>
+                {bill.pending > 0 && <button className="text-button" onClick={() => onDrill({ invoiceId, person: personToken(bill.name), status: 'pending' })}>Ver o que falta →</button>}
+                <button className="text-button" onClick={() => setOpen(expanded ? null : bill.name)} aria-expanded={expanded}>{expanded ? 'Ocultar detalhes' : 'Ver detalhes'}</button>
+              </>}
+              {!advanced && <button className="text-button" aria-expanded={moreFor === bill.name} onClick={() => setMoreFor(moreFor === bill.name ? null : bill.name)}>{moreFor === bill.name ? 'Menos opções' : 'Mais opções'}</button>}
             </div>
             {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={fee} onConfirm={(ids, feePaid) => settleSome(bill, ids, feePaid)} onCancel={() => setPaying(null)} />}
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>
