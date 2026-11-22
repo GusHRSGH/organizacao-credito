@@ -9,6 +9,12 @@ test.beforeEach(async ({ page }, info) => {
   if (!info.title.includes('escolha do modo')) await page.addInitScript(() => { if (!localStorage.getItem('oc:modo')) localStorage.setItem('oc:modo', 'escolhido') })
 })
 
+/** Abre uma seção recolhida da cobrança (Como você recebe, Taxa de uso do cartão). */
+async function abrirDobra(page: Page, titulo: string) {
+  const dobra = page.locator('details.fold', { hasText: titulo })
+  if (!(await dobra.evaluate((el) => (el as HTMLDetailsElement).open))) await dobra.locator(':scope > summary').click()
+}
+
 async function entrar(page: Page, modo: 'avançado' | 'simples' = 'avançado') {
   // Os testes antigos usam tudo à vista (modo avançado); os do modo simples pedem 'simples'.
   await page.addInitScript((advanced) => { if (!localStorage.getItem('oc:settings')) localStorage.setItem('oc:settings', JSON.stringify({ advanced })) }, modo === 'avançado')
@@ -371,6 +377,7 @@ test('a cobrança guarda a chave Pix e leva no fim da mensagem', async ({ page }
   await entrar(page)
   await importarModelo(page)
   await irPara(page, 'billing')
+  await abrirDobra(page, 'Como você recebe')
   await page.getByLabel('Chave Pix').fill('ana@email.com')
   await page.getByLabel('Nome de quem recebe').fill('Ana Souza')
   await expect(page.getByText('Reconheci como E-mail')).toBeVisible()
@@ -380,6 +387,7 @@ test('a cobrança guarda a chave Pix e leva no fim da mensagem', async ({ page }
   await expect(page.locator('.receiving-preview')).toContainText('Pix copia e cola')
   await page.reload()
   await irPara(page, 'billing')
+  await abrirDobra(page, 'Como você recebe')
   await expect(page.getByText('Pix e-mail: ana@email.com')).toBeVisible()
   await page.getByRole('radio', { name: 'Tudo em aberto' }).click()
   await expect(page.getByText('Total em aberto')).toBeVisible()
@@ -841,6 +849,7 @@ test('taxa de uso do cartão: divide pelo gasto, entra na cobrança e é paga ju
   }
   await page.keyboard.press('Escape')
   await irPara(page, 'billing')
+  await abrirDobra(page, 'Taxa de uso do cartão')
   const taxa = page.getByRole('region', { name: 'Taxa de uso do cartão' })
   await taxa.getByLabel('Nome da taxa').fill('Taxa de manutenção teste')
   await taxa.getByRole('radio', { name: 'Porcentagem' }).click()
@@ -909,10 +918,12 @@ test('limite de cada pessoa: extra na taxa de quem passou e aviso ao lançar', a
   }
   await page.keyboard.press('Escape')
   await irPara(page, 'billing')
+  await abrirDobra(page, 'Taxa de uso do cartão')
   const taxa = page.getByRole('region', { name: 'Taxa de uso do cartão' })
   await taxa.getByLabel('Valor da taxa').fill('100')
   await taxa.getByLabel('Porcentagem extra por passar do limite').fill('10')
   await taxa.getByRole('button', { name: 'Salvar taxa' }).click()
+  await taxa.getByRole('button', { name: 'Definir limites' }).click()
   await taxa.getByLabel('Limite de Gusta').fill('1200')
   await taxa.getByLabel('Limite de Gusta').press('Enter')
   await expect(taxa).toContainText(/Passou do limite: \+ R\$\s150,00 de taxa extra/)
