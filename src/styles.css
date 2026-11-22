@@ -1131,3 +1131,8 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .tx-min-amount{font-weight:700;font-variant-numeric:tabular-nums}
 .tx-min-more{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 14px 12px;color:var(--faint);font-size:13px}
 .tx-min-more .tx-actions{margin-left:auto}
+.reminder .icon-button{font-size:18px;line-height:1;width:28px;height:28px}
+.reminder-more{display:flex;gap:12px;padding:0 4px}
+.fee-summary{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:0;font-size:14px;color:var(--muted)}
+.fold .receiving-line > div > b{display:none}
+.fold > .fee-panel{padding-top:10px}

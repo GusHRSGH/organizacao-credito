@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 50, date: '2026-11-22', title: 'Tela de cobrança mais limpa',
+    items: [
+      'Os avisos agora aparecem só no Início, em uma linha; os outros ficam em “+N avisos”.',
+      'Em Quem deve quanto, “Como você recebe” e a taxa ficam sempre recolhidos numa linha. A configuração da taxa vira um resumo com “Editar”, e os limites só aparecem em “Definir limites”.',
+    ],
+  },
+  {
     n: 49, date: '2026-11-22', title: 'Minimalista ou Detalhado',
     items: [
       'Na primeira vez que abre, você escolhe como prefere ver o app: Minimalista (só o essencial) ou Detalhado (gráficos, comparações, filtros e metas). Dá para trocar a qualquer hora no botão do topo ou em Configurações.',

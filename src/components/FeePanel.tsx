@@ -26,7 +26,12 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
   const [extra, setExtra] = useState(current?.extraPct ? String(current.extraPct).replace('.', ',') : '')
   const [editing, setEditing] = useState<Record<string, string>>({})
   const [limitText, setLimitText] = useState<Record<string, string>>({})
+  // Limites só aparecem para editar quando a pessoa pede; o status de quem tem limite fica sempre à vista.
+  const [limitsOpen, setLimitsOpen] = useState(false)
+  // Depois de salva, a configuração vira uma linha com “Editar”.
+  const [configOpen, setConfigOpen] = useState(!current?.value)
   const key = `${main?.invoiceId}|${current?.name}|${current?.mode}|${current?.value}|${current?.extraPct}`
+  useEffect(() => { setConfigOpen(!current?.value) }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     setName(current?.name ?? DEFAULT_FEE_NAME); setMode(current?.mode ?? 'fixed'); setValue(current && current.value ? String(current.value).replace('.', ',') : '')
     setExtra(current?.extraPct ? String(current.extraPct).replace('.', ',') : '')
@@ -69,7 +74,10 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
   }
 
   return <section className="fee-panel" aria-label="Taxa de uso do cartão">
-    <div className="fee-head"><Icon name="receipt" size={18} /><div><b>Taxa de uso do cartão</b><small>Dividida pelo gasto de cada um. Aparece só na cobrança.{main.split?.inherited ? ' Repetindo a configuração da fatura anterior.' : ''}</small></div></div>
+    {!configOpen && <p className="fee-summary">
+      <span>{current.mode === 'fixed' ? `Valor fixo de ${money(current.value)}, dividido pelo gasto` : `${String(current.value).replace('.', ',')}% do gasto de cada um`}{current.extraPct ? ` · extra de ${String(current.extraPct).replace('.', ',')}% acima do limite` : ''}{main.split?.inherited ? ' · repetindo a fatura anterior' : ''}</span>
+      <button className="text-button" onClick={() => setConfigOpen(true)}>Editar</button></p>}
+    {configOpen && <><p className="hint">Dividida pelo gasto de cada um. Aparece só na cobrança.</p>
     <div className="fee-config">
       <label>Nome na cobrança<input value={name} maxLength={60} onChange={(event) => setName(event.target.value)} aria-label="Nome da taxa" /></label>
       <div className="mode-switch" role="radiogroup" aria-label="Tipo de taxa">
@@ -79,9 +87,10 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
       <label>{mode === 'fixed' ? 'Valor total (R$)' : 'Porcentagem do gasto (%)'}<input inputMode="decimal" value={value} onChange={(event) => setValue(event.target.value)} placeholder={mode === 'fixed' ? 'Ex.: 60' : 'Ex.: 3'} aria-label="Valor da taxa" /></label>
       <label>Extra por passar do limite (%)<input inputMode="decimal" value={extra} onChange={(event) => setExtra(event.target.value)} placeholder="Ex.: 10 (opcional)" aria-label="Porcentagem extra por passar do limite" /></label>
       <button className="primary-button" disabled={typed === null || extraTyped === null || (extraTyped ?? 0) > 100 || (!changed && !main.split?.inherited)} onClick={() => save({ ...draft, overrides: draft.mode !== current.mode ? {} : draft.overrides })}>{draft.value === 0 && current.value ? 'Remover taxa' : 'Salvar taxa'}</button>
-    </div>
+      {current.value > 0 && <button className="text-button" onClick={() => setConfigOpen(false)}>Fechar</button>}
+    </div></>}
     {(typed === null || extraTyped === null) && <p className="neg">Não entendi esse valor.</p>}
-    {mode === 'percent' && typed !== null && (() => {
+    {mode === 'percent' && typed !== null && changed && (() => {
       // Exemplo com quem mais gastou nesta fatura, para a porcentagem fazer sentido antes de salvar.
       const top = [...main.spend].filter(([, spent]) => spent > 0).sort((a, b) => b[1] - a[1])[0]
       const pct = typed > 0 ? typed : 3
@@ -105,21 +114,22 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
                 onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} />
               {share.manual && <button className="text-button fee-reset" onClick={() => save({ ...draft, overrides: Object.fromEntries(Object.entries(draft.overrides).filter(([n]) => n !== person)) })}>Voltar ao calculado</button>}
               <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...draft, paid: share.paid ? draft.paid.filter((n) => n !== person) : [...draft.paid, person] })} aria-label={`Taxa de ${person} paga`} />Pago</label>
-              <div className="fee-limit">
-                <label>Limite<input inputMode="decimal" placeholder="sem limite" aria-label={`Limite de ${person}`} value={limitText[person] ?? (share.limit ? share.limit.toFixed(2).replace('.', ',') : '')}
+              {(limitsOpen || share.limit) && <div className="fee-limit">
+                {limitsOpen && <label>Limite<input inputMode="decimal" placeholder="sem limite" aria-label={`Limite de ${person}`} value={limitText[person] ?? (share.limit ? share.limit.toFixed(2).replace('.', ',') : '')}
                   onChange={(event) => setLimitText({ ...limitText, [person]: event.target.value })} onBlur={() => saveLimit(person)}
-                  onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} /></label>
+                  onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} /></label>}
                 {share.limit && (() => {
                   const level = limitLevel(spent, share.limit)
                   const left = Math.max(0, Math.round((share.limit - spent) * 100) / 100)
                   if (level === 'over') return <small className="fee-status over">Passou do limite{share.extra > 0 ? `: + ${money(share.extra)} de taxa extra` : ''}</small>
                   return <small className={`fee-status ${level}`}>{level === 'near' ? 'Perto do limite: ' : ''}pode gastar mais {money(left)}</small>
                 })()}
-              </div>
+              </div>}
             </>}
           </li>
         })}
       </ul>
+      <button className="text-button" onClick={() => setLimitsOpen(!limitsOpen)}>{limitsOpen ? 'Pronto' : 'Definir limites'}</button>
       <p className="hint">Total da taxa: <b>{money(preview.total)}</b>{draft.mode === 'fixed' && Math.abs(preview.total - draft.value) > 0.004 ? ` (cada parte arredonda para cima no centavo)` : ''}. Mude a parte de alguém e o resto se ajusta.{preview.shares.some((item) => item.extra > 0) ? ` Inclui ${money(preview.shares.reduce((sum, item) => sum + Math.round(item.extra * 100), 0) / 100)} de extra por limite.` : ''}</p>
     </>}
   </section>
