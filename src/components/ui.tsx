@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { useSettings } from '../lib/settings'
 import { useReveal } from '../hooks/useReveal'
 import { Icon, Logo, PersonDot, type IconName } from './Icon'
 import { categoryIcon } from '../lib/categoryIcon'
@@ -6,7 +7,9 @@ import { formatDate, money } from '../lib/format'
 import type { Transaction } from '../types'
 
 export function PageHeading({ title, subtitle, children, tour }: { title: string; subtitle?: string; children?: ReactNode; tour?: string }) {
-  return <div className="page-heading"><div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{children && <div className="heading-actions" data-tour={tour}>{children}</div>}</div>
+  // Minimalista: sem o texto de explicação embaixo do título.
+  const [{ advanced }] = useSettings()
+  return <div className="page-heading"><div><h1>{title}</h1>{subtitle && advanced && <p>{subtitle}</p>}</div>{children && <div className="heading-actions" data-tour={tour}>{children}</div>}</div>
 }
 
 export function Metric({ label, value, foot, tone, icon }: { label: string; value: string; foot?: string; tone?: 'warning' | 'good' | 'bad'; icon?: IconName }) {
@@ -41,6 +44,9 @@ interface TableProps {
 }
 
 export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort, selected, onSelect, onSelectAll, onEdit, review }: TableProps) {
+  const [{ advanced }] = useSettings()
+  const [open, setOpen] = useState<string | null>(null)
+  if (!advanced && !busy && rows.length) return <MinimalList rows={rows} open={open} setOpen={setOpen} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} review={review} />
   if (busy) return <p className="empty">Carregando lançamentos…</p>
   if (!rows.length) return <p className="empty">Nenhum lançamento por aqui.</p>
   const head = (key: SortKey, label: string, className = '') => onSort
@@ -70,6 +76,27 @@ export function TransactionTable({ rows, busy, onToggle, onDelete, sort, onSort,
     <td className="num">{money(Number(row.amount))}</td>
     <td className="actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento" title="Editar"><Icon name="edit" size={16} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento" title="Excluir"><Icon name="trash" size={16} /></button></td>
   </tr>)}</tbody></table></div>{cards}</>
+}
+
+/** Lista minimalista: nome, quem e valor. Tocar abre data, categoria, parcela, status e ações. */
+function MinimalList({ rows, open, setOpen, onToggle, onDelete, onEdit, review }: { rows: Transaction[]; open: string | null; setOpen: (id: string | null) => void; onToggle: (row: Transaction) => void; onDelete: (row: Transaction) => void; onEdit?: (row: Transaction) => void; review?: Set<string> }) {
+  return <ul className="tx-min">{rows.map((row) => {
+    const expanded = open === row.id
+    return <li key={row.id} className={`${row.status === 'paid' ? '' : 'is-pending'} ${expanded ? 'open' : ''}`}>
+      <button className="tx-min-row" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : row.id)}>
+        <b>{row.description}{review?.has(row.id) && <span className="tag review">Conferir</span>}</b>
+        <span className="tx-min-who">{row.person?.name ?? '—'}</span>
+        <span className="tx-min-amount">{money(Number(row.amount))}</span>
+      </button>
+      {expanded && <div className="tx-min-more">
+        <span>{formatDate(row.occurred_on)}</span>
+        {row.category?.name && <span className="tag cat"><Icon name={categoryIcon(row.category.name)} size={13} />{row.category.name}</span>}
+        {row.installment_count ? <span className="tag">{row.installment_number}/{row.installment_count}</span> : null}
+        <button className={`tag ${row.status === 'paid' ? 'paid' : 'pending'}`} onClick={() => onToggle(row)}><Icon name={row.status === 'paid' ? 'check' : 'clock'} size={12} />{row.status === 'paid' ? 'Pago' : 'Pendente'}</button>
+        <span className="tx-actions">{onEdit && <button className="icon-button" onClick={() => onEdit(row)} aria-label="Editar lançamento"><Icon name="edit" size={18} /></button>}<button className="icon-button danger" onClick={() => onDelete(row)} aria-label="Excluir lançamento"><Icon name="trash" size={18} /></button></span>
+      </div>}
+    </li>
+  })}</ul>
 }
 
 export interface HeroProps {

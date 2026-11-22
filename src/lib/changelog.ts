@@ -3,11 +3,18 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 49, date: '2026-11-22', title: 'Minimalista ou Detalhado',
+    items: [
+      'Na primeira vez que abre, você escolhe como prefere ver o app: Minimalista (só o essencial) ou Detalhado (gráficos, comparações, filtros e metas). Dá para trocar a qualquer hora no botão do topo ou em Configurações.',
+      'No Minimalista, as telas ficam sem textos de explicação, o menu do computador guarda Configurações e Dados em “Mais”, e a lista de lançamentos mostra só nome, quem e valor; toque para ver data, categoria, status e editar.',
+    ],
+  },
+  {
     n: 48, date: '2026-11-22', title: 'Modo simples',
     items: [
       'O app agora abre no modo simples, com só o essencial: o total do mês, quanto falta receber e quem deve, com um botão para cobrar.',
       'Em Faturas, as outras formas de lançar ficam no menu “Mais formas de lançar”, e a busca e os filtros em “Buscar e filtrar”. Em Cobrança, cada pessoa mostra só “Compartilhar Pix” e “Marcar tudo como pago”; o resto fica em “Mais opções”.',
-      'Quer tudo à vista (gráficos, comparações, metas)? Ligue o Modo avançado em Configurações, Menu e início.',
+      'Quer tudo à vista (gráficos, comparações, metas)? Use o modo Detalhado.',
     ],
   },
   {

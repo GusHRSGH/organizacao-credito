@@ -1109,3 +1109,25 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fold[open]>summary::after{transform:rotate(90deg)}
 .fold>summary small{color:var(--faint);font-size:12px}
 .fold>.receiving,.fold>.fee-panel{border:0;margin:0;border-top:1px solid var(--line);border-radius:0 0 14px 14px}
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.mode-options{grid-template-columns:1fr}}
+.mode-option{display:grid;gap:6px;justify-items:start;text-align:left;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);cursor:pointer;font:inherit}
+.mode-option:hover,.mode-option:focus-visible{border-color:var(--primary);box-shadow:0 0 0 3px var(--focus)}
+.mode-option b{font-size:17px}
+.mode-option small{color:var(--faint);font-size:13px;line-height:1.4}
+.mode-option svg{color:var(--primary)}
+.theme-toggle.mode-toggle{width:auto;padding:0 12px;gap:6px;font-size:13px;font-weight:600}
+@media (max-width:700px){.theme-toggle.mode-toggle span{display:none}.theme-toggle.mode-toggle{width:44px;padding:0;justify-content:center}}
+@media (min-width:701px){.sidebar.minimal:not(.show-extra) .nav-extra{display:none}}
+.nav-more-toggle{display:none}
+@media (min-width:701px){.sidebar.minimal .nav-more-toggle{display:flex}}
+.tx-min{list-style:none;margin:0;padding:0}
+.tx-min li{border-top:1px solid var(--line);border-left:3px solid transparent}
+.tx-min li:first-child{border-top:0}
+.tx-min li.is-pending{border-left-color:var(--bad)}
+.tx-min-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;width:100%;padding:12px 14px;border:0;background:transparent;color:var(--text);text-align:left;font:inherit;cursor:pointer}
+.tx-min-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.tx-min-who{color:var(--faint);font-size:13px}
+.tx-min-amount{font-weight:700;font-variant-numeric:tabular-nums}
+.tx-min-more{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 14px 12px;color:var(--faint);font-size:13px}
+.tx-min-more .tx-actions{margin-left:auto}

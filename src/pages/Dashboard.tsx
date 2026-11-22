@@ -82,7 +82,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
           <button className="secondary-button" onClick={() => onGo('billing')}>Cobrar</button>
         </li>)}</ul> : <p className="empty">Ninguém deve nada nesta fatura. 🎉</p>}
       </Panel>
-      <button className="text-button more-link" onClick={() => updateSettings({ advanced: true })}>Ver gráficos e comparações (modo avançado)</button>
+      <button className="text-button more-link" onClick={() => updateSettings({ advanced: true })}>Ver gráficos e comparações (modo detalhado)</button>
     </>
   }
 

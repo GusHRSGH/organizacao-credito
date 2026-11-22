@@ -12,6 +12,7 @@ import { isNative, registerBack, useBackHandler, watchShortcuts } from './lib/na
 import { agendarLembrete, aoTocarNaNotificacao } from './lib/lembrete'
 import { agendarAvisos } from './lib/avisosFatura'
 import { settledIds } from './lib/settled'
+import ModeChooser from './components/ModeChooser'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -35,6 +36,7 @@ import type { CardFee, Invoice, Transaction } from './types'
 const ENTRY_KEY = 'oc:entry'
 const NUDGE_KEY = 'oc:nudge-until'
 const TOUR_KEY = 'oc:tour'
+const MODE_KEY = 'oc:modo'
 const NEWS_KEY = 'oc:news-seen'
 const NUDGE_DAYS = 7
 type Page = 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings'
@@ -69,6 +71,10 @@ export default function App() {
   const [updateSignal, setUpdateSignal] = useState(0)
   const [legalOpen, setLegalOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
+  // Primeira vez: a pessoa escolhe entre minimalista e detalhado antes do tour.
+  const [chooseMode, setChooseMode] = useState(() => { try { return localStorage.getItem(MODE_KEY) === null } catch { return false } })
+  const [sidebarMore, setSidebarMore] = useState(false)
+  const pickMode = (advanced: boolean) => { updateSettings({ advanced }); try { localStorage.setItem(MODE_KEY, advanced ? 'detalhado' : 'minimalista') } catch { /* vale até recarregar */ } setChooseMode(false) }
   const [searchOpen, setSearchOpen] = useState(false)
   const [news, setNews] = useState<ChangelogEntry[] | null>(null)
   const [nudgeHidden, setNudgeHidden] = useState(() => { try { return Number(localStorage.getItem(NUDGE_KEY) ?? 0) > Date.now() } catch { return false } })
@@ -216,18 +222,19 @@ export default function App() {
 
   const local = source
   const googleUi = { ...google, signOut: signOutGoogle }
-  const nav = (id: Page, icon: IconName, label: string) => <button data-tour={`nav-${id}`} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setMenuOpen(false) }} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
+  const nav = (id: Page, icon: IconName, label: string, extra = '') => <button data-tour={`nav-${id}`} className={`nav-item ${extra} ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setMenuOpen(false) }} aria-current={page === id ? 'page' : undefined}><span className="nav-icon"><Icon name={icon} size={19} /></span><span className="nav-text">{label}</span></button>
 
   return <div className={`app-shell ${menuOpen ? 'menu-open' : ''}`}>
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
-    <aside className="sidebar">
+    <aside className={`sidebar ${prefs.advanced ? '' : 'minimal'} ${sidebarMore ? 'show-extra' : ''}`}>
       <div className="brand"><LogoMark size={34} /><span className="wordmark">Chacun</span></div>
       {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{prefs.showBilling && nav('billing', 'users', 'Quem deve quanto')}{prefs.advanced && prefs.showGoals && nav('goals', 'trend-up', 'Metas e limites')}
-      <div className="nav-section">Preferências</div>
-      {nav('config', 'sparkle', 'Configurações')}{nav('settings', 'database', 'Dados e backup')}
-      <div className="nav-section">Ajuda</div>
-      <button className="nav-item" onClick={() => { setTourOpen(true); setMenuOpen(false) }}><span className="nav-icon"><Icon name="search" size={19} /></span><span className="nav-text">Tutorial</span></button>
-      <button className="nav-item" onClick={() => { setNews(ENTRIES); setMenuOpen(false) }}><span className="nav-icon"><Icon name="sparkle" size={19} /></span><span className="nav-text">Novidades</span></button>
+      {!prefs.advanced && <button className="nav-item nav-more-toggle" aria-expanded={sidebarMore} onClick={() => setSidebarMore(!sidebarMore)}><span className="nav-icon"><Icon name="menu" size={19} /></span><span className="nav-text">{sidebarMore ? 'Menos' : 'Mais'}</span></button>}
+      <div className="nav-section nav-extra">Preferências</div>
+      {nav('config', 'sparkle', 'Configurações', 'nav-extra')}{nav('settings', 'database', 'Dados e backup', 'nav-extra')}
+      <div className="nav-section nav-extra">Ajuda</div>
+      <button className="nav-item nav-extra" onClick={() => { setTourOpen(true); setMenuOpen(false) }}><span className="nav-icon"><Icon name="search" size={19} /></span><span className="nav-text">Tutorial</span></button>
+      <button className="nav-item nav-extra" onClick={() => { setNews(ENTRIES); setMenuOpen(false) }}><span className="nav-icon"><Icon name="sparkle" size={19} /></span><span className="nav-text">Novidades</span></button>
       <div className="sidebar-footer">
         {google.status?.signedIn
           ? <>{google.status.picture ? <img className="avatar-img" src={google.status.picture} alt="" referrerPolicy="no-referrer" /> : <span className="avatar">{(google.status.email ?? '?')[0].toUpperCase()}</span>}<span>{google.status.name ?? google.status.email}<br /><small>Google conectado · {counts.invoices} faturas</small></span></>
@@ -240,6 +247,7 @@ export default function App() {
       <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb"><b>{TITLES[page]}</b></div></div>
         <div className="topbar-actions">
           <button className="theme-toggle" onClick={() => updateSettings({ hideValues: !prefs.hideValues })} aria-label={prefs.hideValues ? 'Mostrar os valores' : 'Ocultar os valores'} aria-pressed={prefs.hideValues} title={prefs.hideValues ? 'Mostrar valores (Ctrl+H)' : 'Ocultar valores (Ctrl+H)'}><Icon name="lock" size={18} /></button>
+          <button className="theme-toggle mode-toggle" onClick={() => pickMode(!prefs.advanced)} aria-label={prefs.advanced ? 'Trocar para o modo minimalista' : 'Trocar para o modo detalhado'} title={prefs.advanced ? 'Modo minimalista' : 'Modo detalhado'}><Icon name={prefs.advanced ? 'check' : 'pie'} size={18} /><span>{prefs.advanced ? 'Minimalista' : 'Detalhado'}</span></button>
           <button className="theme-toggle" data-tour="search" onClick={() => setSearchOpen(true)} aria-label="Buscar em todas as faturas" title="Buscar (Ctrl+K ou /)"><Icon name="search" size={18} /></button>
           <button className="theme-toggle" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}><span key={theme} className="theme-icon"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} /></span></button></div></header>
       <UpdateBanner manualSignal={updateSignal} />
@@ -269,8 +277,9 @@ export default function App() {
         if (created) { setFocusId(created.id); setInvoiceId(created.id) }
         setPage(where); window.scrollTo({ top: 0 })
       }} />}
-    {news && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
-    {tourOpen && !news && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
+    {chooseMode && entered && loaded && <ModeChooser onChoose={pickMode} />}
+    {news && !chooseMode && <WhatsNew entries={news} onClose={() => { closeNews(); try { if (localStorage.getItem(TOUR_KEY) !== 'done') setTourOpen(true) } catch { /* ignora */ } }} />}
+    {tourOpen && !news && !chooseMode && <Tour onClose={closeTour} onPage={setPage} onAction={(action) => { closeTour(); if (action === 'add') setSheetOpen(true); else setPage('settings') }} />}
     </Suspense>
     <QuickSheet open={sheetOpen} onClose={closeSheet} source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} onSaved={refresh} notify={notify} />
   </div>
