@@ -29,3 +29,10 @@ export function receivingText(r: Receiving, amount?: number, reference?: string)
   if (r.note.trim()) lines.push(r.note.trim())
   return lines.join('\n')
 }
+
+/** Pix copia e cola já com o valor, ou null se faltar chave válida ou o nome de quem recebe. */
+export function pixCode(r: Receiving, amount: number, reference?: string): string | null {
+  const pix = detectPixKey(r.key)
+  if (!pix || !r.holder.trim() || !(amount > 0)) return null
+  return pixPayload({ key: pix.key, name: r.holder, city: r.city || 'BRASIL', amount, reference })
+}

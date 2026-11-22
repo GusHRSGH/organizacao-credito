@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 45, date: '2026-11-22', title: 'Pix em uma mensagem só',
+    items: [
+      'No card de cada pessoa, “Compartilhar Pix” manda só o Pix copia e cola já com o valor que ela deve, para copiar com um toque e colar no banco.',
+      '“Enviar detalhes” manda as compras e o total, sem a chave, avisando que o Pix vem separado. No celular os dois abrem o compartilhar (WhatsApp e outros); no computador, copiam.',
+      'Sem chave cadastrada, o botão do Pix leva direto ao cadastro em Como você recebe.',
+    ],
+  },
+  {
     n: 44, date: '2026-11-19', title: 'Taxa de uso do cartão',
     items: [
       'Em Quem deve quanto, nova seção para a taxa de uso do cartão: você define um valor fixo (ex.: R$ 100) ou uma porcentagem, e o app divide pelo gasto de cada um. Quem gastou mais paga mais, com a % de cada um na tela. No modo porcentagem, um exemplo com os valores da fatura mostra quanto cada % dá.',

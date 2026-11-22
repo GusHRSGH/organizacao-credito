@@ -7,7 +7,8 @@ import SettleByAmount from '../components/SettleByAmount'
 import FeePanel, { type FeeBlock } from '../components/FeePanel'
 import { feeLine, feeSplitFor, spendByPerson } from '../lib/fee'
 import { billsByPerson, buildGroupMessage, buildMessage, type FeeCharge, type PersonBill } from '../lib/billing'
-import { readReceiving } from '../lib/receiving'
+import { pixCode, readReceiving } from '../lib/receiving'
+import { shareText } from '../lib/share'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { CardFee, DataSource, Invoice, Transaction } from '../types'
 
@@ -68,11 +69,30 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const pending = bills.reduce((sum, bill) => sum + Math.round(dueOf(bill) * 100), 0) / 100
   const feeTotal = [...feeDue.values()].reduce((sum, value) => sum + Math.round(value * 100), 0) / 100
 
-  async function copy(bill: PersonBill) {
+  const [askKey, setAskKey] = useState(0)
+  const pixOf = (bill: PersonBill) => pixCode(receiving, dueOf(bill), scopeLabel)
+
+  /** Detalhes das compras e o total, sem a chave: o Pix vai no outro botão. */
+  async function sendDetails(bill: PersonBill) {
     try {
-      await navigator.clipboard.writeText(buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name) }))
-      notify('notice', `Mensagem de ${bill.name} copiada. É só colar no WhatsApp.`)
-    } catch { notify('error', 'Não consegui copiar. Libere o acesso à área de transferência e tente de novo.') }
+      const text = buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name), pixSeparate: !!pixOf(bill) })
+      const done = await shareText(text, `Cobrança de ${bill.name}`)
+      if (done === 'copied') notify('notice', `Detalhes de ${bill.name} copiados. É só colar no WhatsApp.`)
+    } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
+  }
+
+  /** Só o Pix copia e cola, já com o valor que a pessoa deve, para ela copiar com um toque. */
+  async function sharePix(bill: PersonBill) {
+    const code = pixOf(bill)
+    if (!code) {
+      setAskKey((n) => n + 1)
+      notify('notice', 'Cadastre sua chave Pix e o nome de quem recebe para gerar o Pix copia e cola.')
+      return
+    }
+    try {
+      const done = await shareText(code, `Pix de ${bill.name}`)
+      if (done === 'copied') notify('notice', `Pix de ${bill.name} (${money(dueOf(bill))}) copiado. É só colar no WhatsApp.`)
+    } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
   }
 
   async function copyGroup() {
@@ -102,7 +122,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
       <label className="select-group"><span>Fatura</span>
         <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoices.map((item) => <option key={item.id} value={item.id}>{item.label}</option>) : <option value="">Nenhuma fatura</option>}</select></label>
     </PageHeading>
-    <ReceivingPanel value={receiving} onChange={setReceiving} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />
+    <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />
     {feeBlocks.length > 0 && <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />}
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">
@@ -125,7 +145,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
             </div>
             <div className="bill-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
             <div className="bill-actions">
-              <button className="secondary-button" onClick={() => void copy(bill)}><Icon name="copy" size={16} />Copiar cobrança</button>
+              <button className="secondary-button" disabled={due <= 0} onClick={() => void sharePix(bill)}><Icon name="wallet" size={16} />Compartilhar Pix</button>
+              <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Enviar detalhes</button>
               <button className="secondary-button" disabled={due <= 0} onClick={() => void settle(bill)}><Icon name="check" size={16} />Marcar tudo como pago</button>
               <button className="secondary-button" disabled={due <= 0} onClick={() => setPaying(paying === bill.name ? null : bill.name)} aria-expanded={paying === bill.name}><Icon name="wallet" size={16} />Pagou um valor</button>
               {bill.pending > 0 && <button className="text-button" onClick={() => onDrill({ invoiceId, person: personToken(bill.name), status: 'pending' })}>Ver o que falta →</button>}
