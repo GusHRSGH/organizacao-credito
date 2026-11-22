@@ -16,12 +16,14 @@ export interface Settings {
   remindDue: 0 | 1 | 3 | 7
   remindDebts: boolean
   remindGoals: boolean
+  /** Modo avançado: gráficos, comparações, filtros e opções extras à vista. Desligado, o app mostra só o essencial. */
+  advanced: boolean
 }
 
 export const DEFAULTS: Settings = {
   fontScale: 'normal', density: 'comfortable', reduceMotion: false, dateStyle: 'full', cents: true, hideValues: false,
   startPage: 'dashboard', showBilling: true, showGoals: true, defaultPerson: '', defaultCategory: '',
-  remindDue: 3, remindDebts: true, remindGoals: true,
+  remindDue: 3, remindDebts: true, remindGoals: true, advanced: false,
 }
 
 const KEY = 'oc:settings'
@@ -41,7 +43,7 @@ function sanitize(raw: unknown): Settings {
     reduceMotion: pick('reduceMotion'), dateStyle: pick('dateStyle', ['full', 'short']), cents: pick('cents'), hideValues: pick('hideValues'),
     startPage: pick('startPage', ['dashboard', 'invoices', 'billing', 'goals']), showBilling: pick('showBilling'), showGoals: pick('showGoals'),
     defaultPerson: pick('defaultPerson'), defaultCategory: pick('defaultCategory'),
-    remindDue: pick('remindDue', [0, 1, 3, 7]), remindDebts: pick('remindDebts'), remindGoals: pick('remindGoals'),
+    remindDue: pick('remindDue', [0, 1, 3, 7]), remindDebts: pick('remindDebts'), remindGoals: pick('remindGoals'), advanced: pick('advanced'),
   }
 }
 

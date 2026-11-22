@@ -13,7 +13,10 @@ import { useInsightVisible } from '../lib/prefs'
 import { summarize } from '../lib/insight'
 import { readGoals } from '../lib/goals'
 import { compareGroups, groupBy, monthlyTotals, totals, variation } from '../services/stats'
-import type { Invoice, Transaction } from '../types'
+import type { CardFee, Invoice, Transaction } from '../types'
+import { feeSplitFor } from '../lib/fee'
+import { updateSettings } from '../lib/settings'
+import { invoiceOptions } from '../components/InvoiceOptions'
 
 interface Props {
   invoices: Invoice[]
@@ -22,7 +25,11 @@ interface Props {
   compareId: string
   onFocus: (id: string) => void
   onCompare: (id: string) => void
-  onGo: (page: 'invoices' | 'settings') => void
+  onGo: (page: 'invoices' | 'settings' | 'billing') => void
+  /** Modo avançado: comparações e gráficos. Desligado, só o essencial. */
+  advanced?: boolean
+  settled?: Set<string>
+  fees?: CardFee[]
   onDrill: (filter: DrillFilter) => void
   canImport: boolean
   onLaunchSubs?: (period: string, subs: Subscription[]) => Promise<void>
@@ -30,7 +37,7 @@ interface Props {
 
 const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? 'pos' : '')
 
-export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs }: Props) {
+export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs, advanced = true, settled = new Set(), fees = [] }: Props) {
   const [showInsight, setShowInsight] = useInsightVisible()
   const personLimits = useMemo(() => Object.fromEntries(readGoals().filter((g) => g.scope === 'person' && !g.category).map((g) => [g.name, g.limit])), [])
   const focus = invoices.find((invoice) => invoice.id === focusId)
@@ -50,6 +57,32 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
         {canImport && <button className="primary-button" onClick={() => onGo('settings')}>Importar minha planilha</button>}
         <button className="secondary-button" onClick={() => onGo('invoices')}>Adicionar uma compra</button>
       </>}>Ainda não há faturas neste banco de dados. Você pode trazer a planilha .xlsx que já usa ou cadastrar a primeira compra.</EmptyState>
+    </>
+  }
+
+  if (!advanced) {
+    // Modo simples: o total do mês, quanto falta receber e quem deve, com atalho para cobrar.
+    const split = feeSplitFor(focusId, invoices, fees, transactions)
+    const owed = new Map(data.people.filter((row) => row.pendingA > 0.004).map((row) => [row.name, Math.round(row.pendingA * 100)]))
+    for (const share of split?.shares ?? []) if (!share.paid && share.share > 0) owed.set(share.name, (owed.get(share.name) ?? 0) + Math.round(share.share * 100))
+    const debtors = [...owed].map(([name, value]) => ({ name, value: value / 100 })).sort((a, b) => b.value - a.value)
+    const toReceive = debtors.reduce((sum, row) => sum + Math.round(row.value * 100), 0) / 100
+    return <>
+      <PageHeading tour="dash-select" title="Visão geral" subtitle="O resumo do mês e quem ainda deve.">
+        <label className="select-group"><span>Fatura</span>
+          <select value={focusId} onChange={(event) => onFocus(event.target.value)} aria-label="Fatura">{invoiceOptions(invoices, settled)}</select></label>
+      </PageHeading>
+      <section className="metric-grid simple-home">
+        <Hero label={focus?.label ?? '—'} total={money(data.a.total)} count={data.a.count} paid={money(data.a.paid)} pending={money(data.a.pending)} paidShare={data.a.total ? data.a.paid / data.a.total : 0} onPending={() => onDrill({ invoiceId: focusId, status: 'pending' })} />
+        <Metric icon="clock" label="Falta receber" value={money(toReceive)} tone={toReceive > 0 ? 'bad' : 'good'} foot={debtors.length ? `${debtors.length} ${debtors.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />
+      </section>
+      <Panel tour="dash-people" icon="users" title="Quem deve" subtitle={focus?.label}>
+        {debtors.length ? <ul className="debtor-list">{debtors.map((row) => <li key={row.name}>
+          <span className="avatar">{row.name[0]?.toUpperCase()}</span><b className="grow">{row.name}</b><span className="neg">{money(row.value)}</span>
+          <button className="secondary-button" onClick={() => onGo('billing')}>Cobrar</button>
+        </li>)}</ul> : <p className="empty">Ninguém deve nada nesta fatura. 🎉</p>}
+      </Panel>
+      <button className="text-button more-link" onClick={() => updateSettings({ advanced: true })}>Ver gráficos e comparações (modo avançado)</button>
     </>
   }
 

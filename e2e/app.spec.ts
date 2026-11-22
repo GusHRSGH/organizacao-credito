@@ -4,7 +4,9 @@ import path from 'node:path'
 const MODELO = path.resolve('public/modelo-fatura.xlsx')
 
 /** Abre o app sem conta e fecha o tour da primeira vez. */
-async function entrar(page: Page) {
+async function entrar(page: Page, modo: 'avançado' | 'simples' = 'avançado') {
+  // Os testes antigos usam tudo à vista (modo avançado); os do modo simples pedem 'simples'.
+  await page.addInitScript((advanced) => { if (!localStorage.getItem('oc:settings')) localStorage.setItem('oc:settings', JSON.stringify({ advanced })) }, modo === 'avançado')
   await page.goto('/')
   await page.getByRole('button', { name: 'Continuar sem conta' }).click()
   await page.getByRole('button', { name: 'Pular' }).click()
@@ -946,4 +948,35 @@ test('mês quitado: comemora na hora, manda o resumo pro grupo, vai para o hist�
   await lista.getByRole('button', { name: 'Apagar' }).first().click()
   await expect(page.getByText(/apagada\. Dá para restaurar/)).toBeVisible()
   await expect(page.locator('details.settled-list')).toHaveCount(0)
+})
+
+
+test('modo simples: início enxuto, menu de formas de lançar, filtros escondidos e card de cobrança com o essencial', async ({ page }) => {
+  await entrar(page, 'simples')
+  await importarModelo(page)
+  await irPara(page, 'dashboard')
+  await expect(page.getByRole('heading', { name: 'Quem deve' })).toBeVisible()
+  await expect(page.getByText('Fatura mês a mês')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Cobrar' }).first()).toBeVisible()
+  await irPara(page, 'invoices')
+  await expect(page.getByRole('button', { name: 'Importar fatura do banco' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Mais formas de lançar' }).click()
+  await expect(page.getByRole('menuitem', { name: /Importar fatura do banco/ })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: /Criar fatura de outro mês/ })).toBeVisible()
+  await expect(page.getByPlaceholder('Buscar lançamento')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Buscar e filtrar' }).click()
+  await expect(page.getByPlaceholder('Buscar lançamento')).toBeVisible()
+  await irPara(page, 'billing')
+  const card = page.locator('.bill-card').first()
+  await expect(card.getByRole('button', { name: 'Compartilhar Pix' })).toBeVisible()
+  await expect(card.getByRole('button', { name: 'Marcar tudo como pago' })).toBeVisible()
+  await expect(card.getByRole('button', { name: 'Pagou um valor' })).toHaveCount(0)
+  await card.getByRole('button', { name: 'Mais opções' }).click()
+  await expect(card.getByRole('button', { name: 'Pagou um valor' })).toBeVisible()
+  await expect(page.locator('details.fold', { hasText: 'Como você recebe' })).toBeVisible()
+  // O modo avançado volta com um toque, em Configurações.
+  await abaConfig(page, 'Menu e início')
+  await page.getByText(/Modo avançado/).click()
+  await irPara(page, 'dashboard')
+  await expect(page.getByText('Fatura mês a mês')).toBeVisible()
 })

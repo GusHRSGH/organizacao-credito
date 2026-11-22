@@ -46,7 +46,7 @@ export default function App() {
   const [offer, setOffer] = useState<{ modifiedTime: string } | null>(null)
   const source = getSource()
   const [prefs] = useSettings()
-  const [page, setPage] = useState<Page>(() => { const start = prefs.startPage; return (start === 'billing' && !prefs.showBilling) || (start === 'goals' && !prefs.showGoals) ? 'dashboard' : start })
+  const [page, setPage] = useState<Page>(() => { const start = prefs.startPage; return (start === 'billing' && !prefs.showBilling) || (start === 'goals' && (!prefs.showGoals || !prefs.advanced)) ? 'dashboard' : start })
   useEffect(() => { applySettings() }, [])
   const prefsRef = useRef(prefs)
   prefsRef.current = prefs
@@ -222,7 +222,7 @@ export default function App() {
     <div className="menu-backdrop" onClick={closeMenu} aria-hidden="true" />
     <aside className="sidebar">
       <div className="brand"><LogoMark size={34} /><span className="wordmark">Chacun</span></div>
-      {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{prefs.showBilling && nav('billing', 'users', 'Quem deve quanto')}{prefs.showGoals && nav('goals', 'trend-up', 'Metas e limites')}
+      {nav('dashboard', 'dashboard', 'Visão geral')}{nav('invoices', 'invoices', 'Faturas e lançamentos')}{prefs.showBilling && nav('billing', 'users', 'Quem deve quanto')}{prefs.advanced && prefs.showGoals && nav('goals', 'trend-up', 'Metas e limites')}
       <div className="nav-section">Preferências</div>
       {nav('config', 'sparkle', 'Configurações')}{nav('settings', 'database', 'Dados e backup')}
       <div className="nav-section">Ajuda</div>
@@ -248,7 +248,7 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {loaded && page !== 'settings' && page !== 'config' && <Reminders invoices={invoices} transactions={transactions} onGo={(next) => { setPage(next); window.scrollTo({ top: 0 }) }} />}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
-        {page === 'dashboard' && <Dashboard invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
+        {page === 'dashboard' && <Dashboard advanced={prefs.advanced} settled={settled} fees={fees} invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} history={learned} settled={settled} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'goals' && <Goals invoices={invoices} transactions={transactions} invoiceId={invoiceId || focusId} onInvoice={setInvoiceId} notify={notify} onDrill={goDrill} />}
@@ -256,7 +256,7 @@ export default function App() {
         {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} history={learned} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} onBank={() => setBankOpen(true)} />}
       </Suspense>}
     </main>
-    <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ...(prefs.showBilling ? [['billing', 'users', 'Cobrança']] : []), ...(prefs.showGoals ? [['goals', 'trend-up', 'Metas']] : [])] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}<button data-tour="nav-more" className={page === 'config' || page === 'settings' ? 'active' : ''} onClick={() => setMenuOpen(true)} aria-label="Mais opções"><Icon name="menu" size={21} /><span>Mais</span></button></nav>
+    <nav className="tabbar" aria-label="Navegação principal">{([['dashboard', 'dashboard', 'Início'], ['invoices', 'invoices', 'Faturas'], ...(prefs.showBilling ? [['billing', 'users', 'Cobrança']] : []), ...(prefs.advanced && prefs.showGoals ? [['goals', 'trend-up', 'Metas']] : [])] as [Page, IconName, string][]).map(([id, icon, label]) => <button key={id} data-tour={`nav-${id}`} className={page === id ? 'active' : ''} onClick={() => setPage(id)} aria-current={page === id ? 'page' : undefined}><Icon name={icon} size={21} /><span>{label}</span></button>)}<button data-tour="nav-more" className={page === 'config' || page === 'settings' ? 'active' : ''} onClick={() => setMenuOpen(true)} aria-label="Mais opções"><Icon name="menu" size={21} /><span>Mais</span></button></nav>
     {!sheetOpen && <button data-tour="fab" className="fab" onClick={() => setSheetOpen(true)} aria-label="Novo gasto"><Icon name="plus" size={26} /></button>}
     <Suspense fallback={null}>
     {legalOpen && <Legal onClose={closeLegal} />}

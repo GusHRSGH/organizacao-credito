@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 48, date: '2026-11-22', title: 'Modo simples',
+    items: [
+      'O app agora abre no modo simples, com só o essencial: o total do mês, quanto falta receber e quem deve, com um botão para cobrar.',
+      'Em Faturas, as outras formas de lançar ficam no menu “Mais formas de lançar”, e a busca e os filtros em “Buscar e filtrar”. Em Cobrança, cada pessoa mostra só “Compartilhar Pix” e “Marcar tudo como pago”; o resto fica em “Mais opções”.',
+      'Quer tudo à vista (gráficos, comparações, metas)? Ligue o Modo avançado em Configurações, Menu e início.',
+    ],
+  },
+  {
     n: 47, date: '2026-11-22', title: 'Mês quitado',
     items: [
       'Quando todo mundo paga as compras e a taxa, a fatura ganha o selo de quitada e o app comemora na hora, com o resumo de quanto cada um pagou e a mensagem pronta pro grupo.',

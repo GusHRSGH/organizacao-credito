@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
+import { getSettings } from '../lib/settings'
 
 type TourPage = 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings'
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
   onAction: (action: 'add' | 'import') => void
 }
 
-interface Step { target?: string; page?: TourPage; tab?: string; section: string; icon: IconName; title: string; text: string; example?: ReactNode }
+interface Step { /** Só aparece no modo avançado. */ advanced?: boolean; target?: string; page?: TourPage; tab?: string; section: string; icon: IconName; title: string; text: string; example?: ReactNode }
 
 const Example = ({ children }: { children: ReactNode }) => <div className="tour-example"><span className="tour-tag">Exemplo</span>{children}</div>
 const Row = ({ a, b }: { a: ReactNode; b?: ReactNode }) => <div className="ex-row"><b>{a}</b>{b !== undefined && <span>{b}</span>}</div>
@@ -16,27 +17,27 @@ const Bad = ({ children }: { children: ReactNode }) => <span className="ex-badge
 const Ok = ({ children }: { children: ReactNode }) => <span className="ex-badge ok">{children}</span>
 const Chips = ({ items }: { items: string[] }) => <div className="ex-chips">{items.map((item) => <span key={item}>{item}</span>)}</div>
 
-const STEPS: Step[] = [
+const ALL_STEPS: Step[] = [
   { section: 'Boas-vindas', page: 'dashboard', icon: 'sparkle', title: 'Bem-vindo ao Chacun', text: 'Em cerca de 2 minutos eu acendo, na própria tela, cada parte do app e mostro um exemplo de uso. Você pode pular quando quiser. Toque na parte destacada ou em Próximo para seguir.',
     example: <Example><Chips items={['Início', 'Faturas', 'Cobrança', 'Metas', 'Configurações']} /></Example> },
 
   { section: 'Início', target: 'nav-dashboard', page: 'dashboard', icon: 'dashboard', title: 'Início: o resumo do mês', text: 'Aqui você bate o olho e sabe quanto gastou, quanto já foi pago e quanto ainda falta. Tudo é calculado sozinho a partir dos seus lançamentos.',
     example: <Example><Row a="Falta pagar" b={<Bad>R$ 1.240,00</Bad>} /><div className="ex-meta">de R$ 3.180,00 · 38 lançamentos · R$ 1.940,00 já pago</div></Example> },
-  { section: 'Início', target: 'dash-select', page: 'dashboard', icon: 'repeat', title: 'Escolha o mês e compare', text: 'Selecione a fatura que quer ver e outra para comparar. O app mostra a diferença entre os dois meses em valor e em porcentagem.',
+  { advanced: true, section: 'Início', target: 'dash-select', page: 'dashboard', icon: 'repeat', title: 'Escolha o mês e compare', text: 'Selecione a fatura que quer ver e outra para comparar. O app mostra a diferença entre os dois meses em valor e em porcentagem.',
     example: <Example><Row a="Nov/2026 x Out/2026" b="+8%" /><div className="ex-meta">Você gastou R$ 236,00 a mais que no mês anterior</div></Example> },
   { section: 'Início', target: 'dash-hero', page: 'dashboard', icon: 'clock', title: 'O que falta pagar, em vermelho', text: 'O total pendente aparece grande e em vermelho. Toque nele para abrir só os lançamentos que ainda faltam pagar naquela fatura.',
     example: <Example><Row a="Falta pagar" b={<Bad>R$ 1.240,00</Bad>} /><div className="ex-arrow">toque: abre os 12 lançamentos pendentes</div></Example> },
-  { section: 'Início', target: 'dash-insight', page: 'dashboard', icon: 'sparkle', title: 'O resumo do mês em uma frase', text: 'Logo abaixo dos números, o app escreve o que aconteceu: quanto você gastou, como ficou contra o outro mês e qual categoria puxou a diferença. Escolha “Comparar com” lá em cima para ele comparar. Não quer ver? Toque no × dele; volta em Dados > Aparência.',
+  { advanced: true, section: 'Início', target: 'dash-insight', page: 'dashboard', icon: 'sparkle', title: 'O resumo do mês em uma frase', text: 'Logo abaixo dos números, o app escreve o que aconteceu: quanto você gastou, como ficou contra o outro mês e qual categoria puxou a diferença. Escolha “Comparar com” lá em cima para ele comparar. Não quer ver? Toque no × dele; volta em Dados > Aparência.',
     example: <Example><div className="ex-arrow">Em Novembro você gastou R$ 1.080,00, 8,0% a mais que em Outubro, puxado por Lazer (+R$ 100,00).</div></Example> },
-  { section: 'Início', target: 'dash-radar', page: 'dashboard', icon: 'shield', title: 'O radar avisa o que importa', text: 'O app olha o mês e destaca o que merece atenção: cobrança duplicada, valor muito acima do seu normal, gasto novo e caro, categoria que disparou. Toque em “Ver” para abrir os lançamentos, ou “Ignorar” se estiver tudo bem.',
+  { advanced: true, section: 'Início', target: 'dash-radar', page: 'dashboard', icon: 'shield', title: 'O radar avisa o que importa', text: 'O app olha o mês e destaca o que merece atenção: cobrança duplicada, valor muito acima do seu normal, gasto novo e caro, categoria que disparou. Toque em “Ver” para abrir os lançamentos, ou “Ignorar” se estiver tudo bem.',
     example: <Example><div className="ex-code">Luz veio bem acima do normal</div><div className="ex-arrow">R$ 260,00 desta vez, normalmente cerca de R$ 100,00</div></Example> },
-  { section: 'Início', target: 'dash-subs', page: 'dashboard', icon: 'repeat', title: 'Assinaturas descobertas sozinhas', text: 'O que se repete todo mês aparece aqui com o custo fixo somado. Se uma assinatura sobe de preço, o app avisa; se parou de ser cobrada, também.',
+  { advanced: true, section: 'Início', target: 'dash-subs', page: 'dashboard', icon: 'repeat', title: 'Assinaturas descobertas sozinhas', text: 'O que se repete todo mês aparece aqui com o custo fixo somado. Se uma assinatura sobe de preço, o app avisa; se parou de ser cobrada, também.',
     example: <Example><Row a="Netflix" b={<Bad>R$ 55,90</Bad>} /><div className="ex-arrow">subiu de R$ 39,90</div></Example> },
-  { section: 'Início', target: 'dash-forecast', page: 'dashboard', icon: 'trend-up', title: 'Previsão da fatura aberta', text: 'O app soma o que já está lançado, as assinaturas que ainda vão cair e a média do seu dia a dia, e estima quanto a fatura fecha. Um botão lança as assinaturas que faltam.',
+  { advanced: true, section: 'Início', target: 'dash-forecast', page: 'dashboard', icon: 'trend-up', title: 'Previsão da fatura aberta', text: 'O app soma o que já está lançado, as assinaturas que ainda vão cair e a média do seu dia a dia, e estima quanto a fatura fecha. Um botão lança as assinaturas que faltam.',
     example: <Example><Row a="Já lançado" b="R$ 620" /><Row a="Assinaturas" b="R$ 120" /><Row a="Dia a dia" b="R$ 900" /><div className="ex-arrow">≈ R$ 1.640 no fim do mês</div></Example> },
-  { section: 'Início', target: 'dash-people', page: 'dashboard', icon: 'pie', title: 'Os gráficos são clicáveis', text: 'Toque numa barra, numa fatia ou numa coluna e o app abre os lançamentos exatos por trás dela, já filtrados, para você resolver ali mesmo.',
+  { advanced: true, section: 'Início', target: 'dash-people', page: 'dashboard', icon: 'pie', title: 'Os gráficos são clicáveis', text: 'Toque numa barra, numa fatia ou numa coluna e o app abre os lançamentos exatos por trás dela, já filtrados, para você resolver ali mesmo.',
     example: <Example><Row a="Toque na barra da Ana" b="R$ 412,00" /><div className="ex-arrow">abre só os lançamentos da Ana nessa fatura</div></Example> },
-  { section: 'Início', target: 'dash-months', page: 'dashboard', icon: 'trend-up', title: 'Mês a mês', text: 'Cada coluna é uma fatura, com a parte paga e a parte pendente. Dá para ver de relance em que mês o gasto subiu.',
+  { advanced: true, section: 'Início', target: 'dash-months', page: 'dashboard', icon: 'trend-up', title: 'Mês a mês', text: 'Cada coluna é uma fatura, com a parte paga e a parte pendente. Dá para ver de relance em que mês o gasto subiu.',
     example: <Example><Chips items={['Set R$ 2.900', 'Out R$ 2.944', 'Nov R$ 3.180']} /></Example> },
   { section: 'Início', target: 'search', page: 'dashboard', icon: 'search', title: 'Busca em todas as faturas', text: 'A lupa (ou as teclas Ctrl+K e /) procura em todos os meses de uma vez. Digite várias palavras: o nome, a pessoa, a categoria, o mês ou o valor. Enter abre a fatura já filtrada.',
     example: <Example><div className="ex-code">uber ana novembro</div><div className="ex-arrow">App de transporte · Ana · R$ 23,90 · Novembro 2026</div></Example> },
@@ -51,7 +52,7 @@ const STEPS: Step[] = [
     example: <Example><div className="ex-code">Nubank_2026-12-07.csv</div><div className="ex-arrow">→ Fatura de Dezembro 2026 · 42 lançamentos · +8% vs Novembro</div></Example> },
   { section: 'Faturas', target: 'inv-top', page: 'invoices', icon: 'upload', title: 'Colar a fatura do banco', text: 'Em “Colar fatura”, cole as linhas do banco, uma notificação, uma conversa do WhatsApp, ou anexe o PDF da fatura ou uma foto dela. O app lê tudo no seu aparelho, separa os gastos, sugere responsável e categoria, e você só confere. Para um lançamento completo, use “Formulário completo”.',
     example: <Example><div className="ex-code">fatura.pdf  ou  📷 foto</div><div className="ex-arrow">vira lançamentos prontos para conferir</div></Example> },
-  { section: 'Faturas', target: 'filters', page: 'invoices', icon: 'tag', title: 'Busque e filtre', text: 'Procure por palavra ou filtre por responsável, categoria e situação. Gostou do resultado? Toque em “Salvar este filtro” e ele vira um atalho fixo, para usar de novo com um toque. Com um filtro ativo, dá para marcar todos os pendentes visíveis como pagos de uma vez.',
+  { advanced: true, section: 'Faturas', target: 'filters', page: 'invoices', icon: 'tag', title: 'Busque e filtre', text: 'Procure por palavra ou filtre por responsável, categoria e situação. Gostou do resultado? Toque em “Salvar este filtro” e ele vira um atalho fixo, para usar de novo com um toque. Com um filtro ativo, dá para marcar todos os pendentes visíveis como pagos de uma vez.',
     example: <Example><Chips items={['Ana', 'Pendentes']} /><div className="ex-arrow">Salvar este filtro: “Pendentes · Ana”</div></Example> },
   { section: 'Faturas', target: 'tx-list', page: 'invoices', icon: 'edit', title: 'Cada lançamento tem ações', text: 'Toque no status para marcar pago ou pendente, use o lápis para editar (inclusive todas as parcelas de uma vez) e a lixeira para excluir. Se errar, o botão Desfazer aparece na hora. Marque várias caixinhas para agir em lote.',
     example: <Example><Row a="Mercado Extra 1/3" b={<>R$ 63,30 <Bad>Pendente</Bad></>} /><Chips items={['Editar', 'Marcar pago', 'Excluir', 'Desfazer']} /></Example> },
@@ -63,7 +64,7 @@ const STEPS: Step[] = [
   { section: 'Cobrança', target: 'bill-card', page: 'billing', icon: 'copy', title: 'Cobrar sem digitar nada', text: '“Enviar detalhes” manda as compras e o total, e “Compartilhar Pix” manda só o Pix copia e cola com o valor certo, para a pessoa copiar com um toque. Quando a pessoa pagar, “Marcar tudo como pago” dá baixa em todos os lançamentos dela.',
     example: <Example><div className="ex-code">Oi Ana! Sua parte na fatura de novembro: R$ 412,00</div><div className="ex-arrow">é só colar no WhatsApp</div></Example> },
 
-  { section: 'Metas', target: 'nav-goals', page: 'goals', icon: 'trend-up', title: 'Metas e limites', text: 'Defina quanto quer gastar por fatura no total, em uma categoria ou por pessoa. A barra fica amarela perto do limite e vermelha quando passa. Dá para aceitar sugestões pela média dos meses anteriores.',
+  { advanced: true, section: 'Metas', target: 'nav-goals', page: 'goals', icon: 'trend-up', title: 'Metas e limites', text: 'Defina quanto quer gastar por fatura no total, em uma categoria ou por pessoa. A barra fica amarela perto do limite e vermelha quando passa. Dá para aceitar sugestões pela média dos meses anteriores.',
     example: <Example><Row a="Mercado" b="R$ 640 de R$ 800" /><div className="ex-arrow">80% → a barra avisa</div></Example> },
   { section: 'Configurações', target: 'nav-config', page: 'config', tab: 'aparencia', icon: 'settings', title: 'Configurações: do seu jeito', text: 'Aqui ficam aparência, tamanho do texto, menu e tela inicial, formatos de data e valor, padrões de lançamento, privacidade e avisos. No celular, abra pelo botão “Mais”.',
     example: <Example><Chips items={['Aparência', 'Menu', 'Formatos', 'Lançamentos', 'Privacidade', 'Avisos']} /></Example> },
@@ -98,6 +99,8 @@ function findTarget(name: string): HTMLElement | null {
 
 /** Tour interativo: acende os botões reais do app e mostra exemplos. */
 export default function Tour({ onClose, onPage, onAction }: Props) {
+  // No modo simples, o tour pula gráficos, comparações, filtros e metas (que ficam escondidos).
+  const STEPS = useMemo(() => (getSettings().advanced ? ALL_STEPS : ALL_STEPS.filter((item) => !item.advanced)), [])
   const [index, setIndex] = useState(0)
   const [box, setBox] = useState<Box | null>(null)
   const probe = useRef<HTMLDivElement>(null)
@@ -151,7 +154,7 @@ export default function Tour({ onClose, onPage, onAction }: Props) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, STEPS.length])
 
   const cardAtTop = !!box && box.top * ((probe.current?.getBoundingClientRect().width ?? 100) / 100 || 1) > window.innerHeight * 0.5
   return <div className="tour-layer" role="dialog" aria-modal="true" aria-label="Tour do app">
