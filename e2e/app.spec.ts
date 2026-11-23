@@ -1020,3 +1020,16 @@ test('escolha do modo na primeira abertura e lista minimalista que abre ao tocar
   await page.reload()
   await expect(page.getByRole('dialog', { name: 'Como você prefere ver o app' })).toHaveCount(0)
 })
+
+test('a gaveta do menu no celular vai até o fim da tela, sem faixa embaixo', async ({ page }) => {
+  test.skip(test.info().project.name !== 'celular', 'Só existe gaveta no celular')
+  await entrar(page)
+  await page.locator('.tabbar [data-tour="nav-more"]').click()
+  const sidebar = page.locator('.sidebar')
+  await expect(sidebar).toBeInViewport()
+  await page.waitForTimeout(400)
+  const box = await sidebar.boundingBox()
+  const height = await page.evaluate(() => window.innerHeight)
+  expect(box!.y).toBeLessThanOrEqual(0.5)
+  expect(box!.y + box!.height).toBeGreaterThanOrEqual(height - 0.5)
+})

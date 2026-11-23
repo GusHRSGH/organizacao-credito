@@ -3,6 +3,10 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 52, date: '2026-11-23', title: 'Menu do celular até o fim da tela',
+    items: ['A gaveta do menu no celular agora vai até o fim da tela, sem a faixa estranha embaixo.'],
+  },
+  {
     n: 51, date: '2026-11-22', title: 'Abre na fatura em aberto',
     items: [
       'O app não abre mais numa fatura já quitada: ele vai direto para a fatura do mês que ainda tem coisa a receber, ou para a próxima.',
