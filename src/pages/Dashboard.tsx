@@ -31,6 +31,8 @@ interface Props {
   advanced?: boolean
   settled?: Set<string>
   fees?: CardFee[]
+  /** Apagar a fatura (só aparece quando ela está quitada). */
+  onRemove?: (id: string) => void
   onDrill: (filter: DrillFilter) => void
   canImport: boolean
   onLaunchSubs?: (period: string, subs: Subscription[]) => Promise<void>
