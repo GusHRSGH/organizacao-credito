@@ -175,6 +175,14 @@ export default function App() {
     setCompareId((current) => (has(current) ? current : defaultCompare))
     setInvoiceId((current) => (has(current) ? current : defaultFocus))
   }, [source])
+  // Apagar fatura quitada (Visão geral e Faturas): confirma, guarda cópia e o robô continua lembrando.
+  const removeSettled = useCallback(async (id: string) => {
+    const invoice = invoices.find((item) => item.id === id)
+    if (!invoice) return
+    const count = transactions.filter((row) => row.invoice_id === id).length
+    if (!window.confirm(`Apagar a fatura de ${invoice.label} (${count} ${count === 1 ? 'lançamento' : 'lançamentos'})? Fica uma cópia em Dados e backup para restaurar, e o robô continua lembrando de quem é cada compra.`)) return
+    try { await source.removeInvoice(id); await refresh(); notify('notice', `Fatura de ${invoice.label} apagada. Dá para restaurar em Dados e backup.`) } catch (cause) { notify('error', messageOf(cause)) }
+  }, [invoices, transactions, source, refresh, notify])
   const launchSubs = useCallback(async (period: string, subs: Subscription[]) => {
     try {
       for (const sub of subs) {
@@ -257,8 +265,8 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {loaded && page === 'dashboard' && <Reminders invoices={invoices} transactions={transactions} onGo={(next) => { setPage(next); window.scrollTo({ top: 0 }) }} />}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
-        {page === 'dashboard' && <Dashboard advanced={prefs.advanced} settled={settled} fees={fees} invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
-        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} history={learned} settled={settled} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
+        {page === 'dashboard' && <Dashboard advanced={prefs.advanced} settled={settled} onRemove={(id) => void removeSettled(id)} fees={fees} invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
+        {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} history={learned} settled={settled} onRemove={(id) => void removeSettled(id)} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
         {page === 'billing' && <Billing source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'goals' && <Goals invoices={invoices} transactions={transactions} invoiceId={invoiceId || focusId} onInvoice={setInvoiceId} notify={notify} onDrill={goDrill} />}
         {page === 'config' && <Config people={people} categories={categories} notify={notify} />}

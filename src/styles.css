@@ -1136,3 +1136,4 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fee-summary{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:0;font-size:14px;color:var(--muted)}
 .fold .receiving-line > div > b{display:none}
 .fold > .fee-panel{padding-top:10px}
+.secondary-button.danger-soft{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line));margin-left:auto}
