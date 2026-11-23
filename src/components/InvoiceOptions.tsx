@@ -9,3 +9,4 @@ export function invoiceOptions(invoices: Invoice[], settled: Set<string>) {
     {done.length > 0 && <optgroup label="Faturas quitadas">{done.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label} ✓</option>)}</optgroup>}
   </>
 }
+

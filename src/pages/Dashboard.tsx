@@ -17,6 +17,7 @@ import type { CardFee, Invoice, Transaction } from '../types'
 import { feeSplitFor } from '../lib/fee'
 import { updateSettings } from '../lib/settings'
 import { invoiceOptions } from '../components/InvoiceOptions'
+import SettledBar from '../components/SettledBar'
 
 interface Props {
   invoices: Invoice[]
@@ -30,6 +31,8 @@ interface Props {
   advanced?: boolean
   settled?: Set<string>
   fees?: CardFee[]
+  /** Apagar a fatura (só aparece quando ela está quitada). */
+  onRemove?: (id: string) => void
   onDrill: (filter: DrillFilter) => void
   canImport: boolean
   onLaunchSubs?: (period: string, subs: Subscription[]) => Promise<void>
@@ -37,7 +40,7 @@ interface Props {
 
 const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? 'pos' : '')
 
-export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs, advanced = true, settled = new Set(), fees = [] }: Props) {
+export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs, advanced = true, settled = new Set(), fees = [], onRemove }: Props) {
   const [showInsight, setShowInsight] = useInsightVisible()
   const personLimits = useMemo(() => Object.fromEntries(readGoals().filter((g) => g.scope === 'person' && !g.category).map((g) => [g.name, g.limit])), [])
   const focus = invoices.find((invoice) => invoice.id === focusId)
@@ -72,6 +75,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
         <label className="select-group"><span>Fatura</span>
           <select value={focusId} onChange={(event) => onFocus(event.target.value)} aria-label="Fatura">{invoiceOptions(invoices, settled)}</select></label>
       </PageHeading>
+      {settled.has(focusId) && onRemove && <SettledBar onRemove={() => onRemove(focusId)} />}
       <section className="metric-grid simple-home">
         <Hero label={focus?.label ?? '—'} total={money(data.a.total)} count={data.a.count} paid={money(data.a.paid)} pending={money(data.a.pending)} paidShare={data.a.total ? data.a.paid / data.a.total : 0} onPending={() => onDrill({ invoiceId: focusId, status: 'pending' })} />
         <Metric icon="clock" label="Falta receber" value={money(toReceive)} tone={toReceive > 0 ? 'bad' : 'good'} foot={debtors.length ? `${debtors.length} ${debtors.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />
@@ -104,6 +108,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <label className="select-group"><span>Comparar com</span>
         <select value={compareId} onChange={(event) => onCompare(event.target.value)}><option value="">Sem comparação</option>{invoices.filter((invoice) => invoice.id !== focusId).map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.label}</option>)}</select></label>
     </PageHeading>
+    {settled.has(focusId) && onRemove && <SettledBar onRemove={() => onRemove(focusId)} />}
 
     <section className="metric-grid">
       <Hero label={labelA} total={money(data.a.total)} count={data.a.count} paid={money(data.a.paid)} pending={money(data.a.pending)} paidShare={data.a.total ? data.a.paid / data.a.total : 0} onPending={() => onDrill({ invoiceId: focusId, status: 'pending' })}

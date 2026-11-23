@@ -1033,3 +1033,33 @@ test('a gaveta do menu no celular vai até o fim da tela, sem faixa embaixo', as
   expect(box!.y).toBeLessThanOrEqual(0.5)
   expect(box!.y + box!.height).toBeGreaterThanOrEqual(height - 0.5)
 })
+
+test('lista começa pelo último adicionado e fatura quitada tem botão de apagar', async ({ page }) => {
+  await entrar(page, 'simples')
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+  if (!(await page.locator('input[placeholder*="mercado 150,90"]:visible').first().isVisible())) await page.locator('[data-tour="fab"]').click()
+  const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+  await campo.fill('compra antiga recente 10 @ana #casa 02/01')
+  await page.keyboard.press('Enter')
+  await expect(campo).toHaveValue('', { timeout: 10_000 })
+  await page.keyboard.press('Escape')
+  await irPara(page, 'invoices')
+  await expect(page.locator('.tx-min li').first()).toContainText('antiga recente')
+  // Quitar tudo e apagar pela Visão geral.
+  await irPara(page, 'billing')
+  page.on('dialog', (dialog) => void dialog.accept())
+  await expect(page.locator('.bill-card').first()).toBeVisible()
+  for (let i = 0; i < 6; i++) {
+    const botao = page.locator('.bill-card button:enabled', { hasText: 'Marcar tudo como pago' }).first()
+    if (!(await botao.count())) break
+    await botao.click()
+    await page.waitForTimeout(300)
+  }
+  const festa = page.getByRole('dialog', { name: /quitada/ })
+  if (await festa.isVisible()) await festa.getByRole('button', { name: 'Fechar' }).click()
+  await irPara(page, 'dashboard')
+  await page.getByRole('button', { name: 'Apagar fatura' }).click()
+  await expect(page.getByText(/apagada\. Dá para restaurar/)).toBeVisible()
+})

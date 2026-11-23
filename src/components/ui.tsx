@@ -25,7 +25,7 @@ export function EmptyState({ title, children, actions }: { title: string; childr
   return <section className="panel empty-state"><Logo size={56} /><h2>{title}</h2><p>{children}</p>{actions && <div className="empty-actions">{actions}</div>}</section>
 }
 
-export type SortKey = 'date' | 'person' | 'amount'
+export type SortKey = 'added' | 'date' | 'person' | 'amount'
 export interface Sort { key: SortKey; dir: 'asc' | 'desc' }
 
 interface TableProps {

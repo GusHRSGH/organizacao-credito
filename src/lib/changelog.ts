@@ -3,6 +3,13 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 53, date: '2026-11-23', title: 'Último adicionado primeiro',
+    items: [
+      'A lista de lançamentos agora começa pelo último que você adicionou. Para mudar, use “Ordenar” em Buscar e filtrar (data da compra, maior valor ou responsável).',
+      'Fatura quitada mostra o botão “Apagar fatura” também na Visão geral e em Faturas. Fica uma cópia em Dados e backup, e o robô continua lembrando de quem é cada compra.',
+    ],
+  },
+  {
     n: 52, date: '2026-11-23', title: 'Menu do celular até o fim da tela',
     items: ['A gaveta do menu no celular agora vai até o fim da tela, sem a faixa estranha embaixo.'],
   },

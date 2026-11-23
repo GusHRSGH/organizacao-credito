@@ -6,6 +6,7 @@ import PasteBill from '../components/PasteBill'
 import { addFilter, isActive, readFilters, removeFilter, suggestName, writeFilters, type SavedFilter } from '../lib/savedFilters'
 import EditDialog from '../components/EditDialog'
 import { invoiceOptions } from '../components/InvoiceOptions'
+import SettledBar from '../components/SettledBar'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
 import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
@@ -25,6 +26,7 @@ interface Props {
   history?: Transaction[]
   /** Faturas quitadas (vão para um grupo separado na lista). */
   settled?: Set<string>
+  onRemove?: (id: string) => void
   invoiceId: string
   onInvoice: (id: string) => void
   onChanged: () => Promise<void>
@@ -35,12 +37,13 @@ interface Props {
   drill: { filter: DrillFilter; nonce: number } | null
 }
 
-export default function Invoices({ source, invoices, transactions, history, settled = new Set(), invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
+export default function Invoices({ source, invoices, transactions, history, settled = new Set(), onRemove, invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
   const [person, setPerson] = useState('')
   const [category, setCategory] = useState('')
-  const [sort, setSort] = useState<Sort>({ key: 'date', dir: 'desc' })
+  // Padrão: o último adicionado primeiro (empate, como numa importação: a compra mais recente).
+  const [sort, setSort] = useState<Sort>({ key: 'added', dir: 'desc' })
   const [showForm, setShowForm] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [showPaste, setShowPaste] = useState(false)
@@ -82,6 +85,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
     return [...filtered].sort((a, b) => {
       if (sort.key === 'amount') return (Number(a.amount) - Number(b.amount)) * sign
       if (sort.key === 'person') return (a.person?.name ?? '').localeCompare(b.person?.name ?? '', 'pt-BR') * sign || b.occurred_on.localeCompare(a.occurred_on)
+      if (sort.key === 'added') return ((a.created_at ?? '').localeCompare(b.created_at ?? '') || a.occurred_on.localeCompare(b.occurred_on)) * sign
       return a.occurred_on.localeCompare(b.occurred_on) * sign
     })
   }, [rows, query, status, person, category, sort])
@@ -127,7 +131,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
   }
 
   function toggleSort(key: SortKey) {
-    setSort((current) => current.key === key ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'amount' || key === 'date' ? 'desc' : 'asc' })
+    setSort((current) => current.key === key ? { key, dir: current.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'amount' || key === 'date' || key === 'added' ? 'desc' : 'asc' })
   }
 
   async function saveEntry(event: FormEvent<HTMLFormElement>) {
@@ -186,6 +190,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
       <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setNewOpen(true) }}><Icon name="plus" size={16} />Criar fatura de outro mês<small>Qualquer mês, passado ou futuro</small></button>
     </div>}
 
+    {settled.has(invoiceId) && onRemove && <SettledBar onRemove={() => onRemove(invoiceId)} />}
     {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
     {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
@@ -227,6 +232,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
       <select value={person} onChange={(event) => setPerson(event.target.value)} aria-label="Responsável"><option value="">Todos os responsáveis</option>{people.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.person) && <option value={NO_PERSON}>Sem responsável</option>}</select>
       <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Categoria"><option value="">Todas as categorias</option>{categories.map((name) => <option key={name}>{name}</option>)}{rows.some((row) => !row.category) && <option value={NO_CATEGORY}>Sem categoria</option>}</select>
       <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status"><option value="">Todos os status</option><option value="paid">Pago</option><option value="pending">Pendente</option></select>
+      <select value={sort.key} onChange={(event) => { const key = event.target.value as SortKey; setSort({ key, dir: key === 'person' ? 'asc' : 'desc' }) }} aria-label="Ordenar"><option value="added">Último adicionado</option><option value="date">Data da compra</option><option value="amount">Maior valor</option><option value="person">Responsável</option></select>
       {pendingVisible.length > 0 && (person || category || query || status) && <button className="secondary-button" onClick={markVisiblePaid}>Marcar {pendingVisible.length} como pagos</button>}
       <span className="count-pill">{visible.length} lançamentos · {money(visibleSum)}</span>
       {isActive({ person, category, status, query }) && naming === null && <button className="secondary-button" onClick={() => setNaming(suggestName({ person, category, status, query }))}><Icon name="tag" size={16} />Salvar este filtro</button>}
