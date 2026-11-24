@@ -1177,3 +1177,4 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .other-cards li{display:flex;justify-content:space-between;gap:10px}
 .other-cards li.here{color:var(--text)}
 .other-cards .total{display:flex;justify-content:space-between;font-weight:700}
+.settled-badge.empty{color:var(--faint);background:color-mix(in srgb,var(--faint) 14%,transparent)}

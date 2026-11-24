@@ -3,6 +3,10 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 59, date: '2026-11-24', title: 'Apagar fatura vazia',
+    items: ['Fatura sem nenhum lançamento agora mostra “Vazia” com o botão “Apagar fatura”, igual à fatura quitada.'],
+  },
+  {
     n: 58, date: '2026-11-24', title: 'Fatura de destino e outros cartões',
     items: [
       'Ao colar ou anexar uma fatura, escolha a fatura de destino. Se o texto ou o print tiver o vencimento (“Vencimento 10 de dezembro”), o app já escolhe a fatura certa e oferece salvar esse dia como vencimento do cartão.',
