@@ -14,7 +14,8 @@ import { hasReceiving, pixCode, readReceiving } from '../lib/receiving'
 import { useSettings } from '../lib/settings'
 import { shareText } from '../lib/share'
 import { getKnownWallets, useActiveWallet } from '../lib/wallet'
-import { unifiedMessage, type PersonDebt, type UnifiedDebts } from '../lib/unified'
+import { findDebt, unifiedDebts, unifiedMessage, type Everything, type PersonDebt, type UnifiedMode } from '../lib/unified'
+import { currentPeriod, periodLabel } from '../services/installments'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { CardFee, DataSource, Invoice, Transaction } from '../types'
 
@@ -27,11 +28,11 @@ interface Props {
   onChanged: () => Promise<void>
   notify: (kind: 'notice' | 'error', text: string) => void
   onDrill: (filter: DrillFilter) => void
-  /** Com mais de uma carteira: o que cada um deve somando todas. */
-  unified?: UnifiedDebts | null
+  /** Com mais de uma carteira: tudo de todas, para somar o mesmo mês de vencimento. */
+  everything?: Everything | null
 }
 
-export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, onDrill, unified }: Props) {
+export default function Billing({ source, invoices, transactions, invoiceId, onInvoice, onChanged, notify, onDrill, everything }: Props) {
   const [open, setOpen] = useState<string | null>(null)
   const [paying, setPaying] = useState<string | null>(null)
   const [scope, setScope] = useState<'month' | 'all'>('month')
@@ -114,7 +115,13 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const [feeOpen, setFeeOpen] = useState(false)
   const [allOpen, setAllOpen] = useState(false)
   const [othersFor, setOthersFor] = useState<string | null>(null)
-  const debtOf = (name: string) => unified?.people.find((person) => person.name.trim().toLocaleLowerCase('pt-BR') === name.trim().toLocaleLowerCase('pt-BR'))
+  // Todas as carteiras, no mesmo mês de vencimento da fatura aberta aqui.
+  const refPeriod = invoice?.period ?? currentPeriod()
+  const unified = useMemo(() => (everything ? unifiedDebts(everything, refPeriod) : null), [everything, refPeriod])
+  const debtOf = (name: string) => findDebt(unified, name)
+  const hasOthers = (name: string) => !!debtOf(name)?.parts.some((part) => part.walletId !== activeWallet)
+  // Escolha antes de mandar: Pix só deste cartão ou de todos; mensagem por carteira ou cada compra.
+  const [choice, setChoice] = useState<{ name: string; kind: 'pix' | 'msg'; where: 'card' | 'fold' } | null>(null)
   const [moreFor, setMoreFor] = useState<string | null>(null)
   const fold = (title: string, sub: string, isOpen: boolean, setIsOpen: (value: boolean) => void, child: ReactNode) => <details className="fold" open={isOpen} onToggle={(event) => setIsOpen((event.currentTarget as HTMLDetailsElement).open)}><summary><b>{title}</b><small>{sub}</small></summary>{child}</details>
   const pixOf = (bill: PersonBill) => pixCode(receiving, dueOf(bill), scopeLabel)
@@ -148,6 +155,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
 
   /** Pix com o total de todas as carteiras. */
   async function shareUnifiedPix(debt: PersonDebt) {
+    setChoice(null)
     const code = pixCode(receiving, debt.total, 'Total')
     if (!code) {
       setAskKey((n) => n + 1); setRecvOpen(true)
@@ -160,11 +168,28 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
   }
 
-  async function sendUnified(debt: PersonDebt) {
+  async function sendUnified(debt: PersonDebt, mode: UnifiedMode) {
+    setChoice(null)
     try {
-      const done = await shareText(unifiedMessage(debt, !!pixCode(receiving, debt.total, 'Total')), `Cobrança de ${debt.name}`)
+      const done = await shareText(unifiedMessage(debt, { mode, period: refPeriod, pixSeparate: !!pixCode(receiving, debt.total, 'Total') }), `Cobrança de ${debt.name}`)
       if (done === 'copied') notify('notice', `Total de ${debt.name} copiado. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
+  }
+
+  /** Caixinha de escolha que abre no lugar do botão tocado. */
+  function choiceBox(debt: PersonDebt, bill: PersonBill | null, where: 'card' | 'fold') {
+    if (!choice || choice.name !== debt.name || choice.where !== where) return null
+    const here = bill ? dueOf(bill) : 0
+    return <div className="choice-box" role="group" aria-label={choice.kind === 'pix' ? 'Qual Pix mandar' : 'Como mandar a cobrança'}>
+      {choice.kind === 'pix'
+        ? <><b>Qual Pix mandar para {debt.name}?</b>
+          {bill && here > 0 && <button className="secondary-button" onClick={() => { setChoice(null); void sharePix(bill) }}>Só deste cartão · {money(here)}</button>}
+          <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}>Todos somados · {money(debt.total)}</button></>
+        : <><b>Como mandar a cobrança de {periodLabel(refPeriod)}?</b>
+          <button className="secondary-button" onClick={() => void sendUnified(debt, 'total')}>Total por carteira</button>
+          <button className="secondary-button" onClick={() => void sendUnified(debt, 'items')}>Cada compra</button></>}
+      <button className="text-button" onClick={() => setChoice(null)}>Cancelar</button>
+    </div>
   }
 
   async function settle(bill: PersonBill) {
@@ -192,15 +217,19 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     </PageHeading>
     {fold('Como você recebe', hasReceiving(receiving) ? (receiving.key ? `Pix: ${receiving.key}` : 'Só o recado') : 'Ainda sem chave Pix', recvOpen, setRecvOpen,
       <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />)}
-    {unified && fold('Todas as carteiras', unified.total > 0 ? `Total geral · ${money(unified.total)}` : 'Todo mundo em dia', allOpen, setAllOpen,
-      unified.people.length ? <ul className="unified-list">{unified.people.map((debt) => <li key={debt.name}>
-        <div className="unified-head"><b>{debt.name}</b><span>{money(debt.total)}</span></div>
-        <ul className="unified-parts">{debt.parts.map((part) => <li key={part.invoiceId}><span>{part.wallet} · {part.invoice}</span><span>{money(part.amount)}</span></li>)}</ul>
-        <div className="button-row">
-          <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}><Icon name="wallet" size={16} />Pix do total</button>
-          <button className="secondary-button" onClick={() => void sendUnified(debt)}><Icon name="copy" size={16} />Detalhes do total</button>
-        </div>
-      </li>)}</ul> : <p className="muted">Ninguém deve nada em nenhuma carteira.</p>)}
+    {unified && fold('Todas as carteiras', unified.total > 0 ? `${periodLabel(refPeriod)} · ${money(unified.total)}` : `${periodLabel(refPeriod)} · todo mundo em dia`, allOpen, setAllOpen,
+      <>
+        <p className="muted unified-note">O que vence em {periodLabel(refPeriod)} em cada cartão, e a parcela do mês dos empréstimos. Troque a fatura lá em cima para ver outro mês.</p>
+        {unified.people.length ? <ul className="unified-list">{unified.people.map((debt) => <li key={debt.name}>
+          <div className="unified-head"><b>{debt.name}</b><span>{money(debt.total)}</span></div>
+          <ul className="unified-parts">{debt.parts.map((part) => <li key={part.invoiceId}><span>{part.wallet} · {part.invoice}{part.remaining ? ` · faltam ${part.remaining.count} (${money(part.remaining.amount)})` : ''}</span><span>{money(part.amount)}</span></li>)}</ul>
+          <div className="button-row">
+            <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}><Icon name="wallet" size={16} />Pix do total</button>
+            <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'msg', where: 'fold' })}><Icon name="copy" size={16} />Cobrar todos</button>
+          </div>
+          {choiceBox(debt, null, 'fold')}
+        </li>)}</ul> : <p className="muted">Ninguém deve nada em {periodLabel(refPeriod)} em nenhuma carteira.</p>}
+      </>)}
     {!all && settled.has(invoiceId) && <p className="settled-line"><span className="settled-badge">✓ Quitada</span> Todo mundo pagou esta fatura. <button className="text-button" onClick={() => setShown({ id: invoiceId, celebrate: false })}>Ver resumo</button></p>}
     {!isLoan && feeBlocks.length > 0 && fold('Taxa de uso do cartão', feeBlocks[0]?.split ? `${feeBlocks[0].split.fee.name} · ${money(feeBlocks[0].split.total)}` : 'Nenhuma taxa nesta fatura', feeOpen, setFeeOpen,
       <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />)}
@@ -225,7 +254,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
             </div>
             <div className="bill-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
             <div className="bill-actions">
-              <button className="secondary-button" disabled={due <= 0} onClick={() => void sharePix(bill)}><Icon name="wallet" size={16} />Compartilhar Pix</button>
+              <button className="secondary-button" disabled={due <= 0 && !hasOthers(bill.name)} onClick={() => { if (hasOthers(bill.name)) setChoice({ name: debtOf(bill.name)!.name, kind: 'pix', where: 'card' }); else void sharePix(bill) }}><Icon name="wallet" size={16} />Compartilhar Pix</button>
               {(advanced || moreFor === bill.name) && <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Enviar detalhes</button>}
               <button className="secondary-button" disabled={due <= 0} onClick={() => void settle(bill)}><Icon name="check" size={16} />Marcar tudo como pago</button>
               {(advanced || moreFor === bill.name) && <>
@@ -235,6 +264,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
               </>}
               {!advanced && <button className="text-button" aria-expanded={moreFor === bill.name} onClick={() => setMoreFor(moreFor === bill.name ? null : bill.name)}>{moreFor === bill.name ? 'Menos opções' : 'Mais opções'}</button>}
             </div>
+            {(() => { const debt = debtOf(bill.name); return debt ? choiceBox(debt, bill, 'card') : null })()}
             {(() => {
               const debt = debtOf(bill.name)
               const others = debt?.parts.filter((part) => part.walletId !== activeWallet) ?? []
@@ -253,8 +283,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
                   <div className="total"><span>Total em todos</span><span>{money(debt.total)}</span></div>
                   <div className="button-row">
                     <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Cobrar só este</button>
-                    <button className="secondary-button" onClick={() => void sendUnified(debt)}><Icon name="copy" size={16} />Cobrar todos</button>
-                    <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}><Icon name="wallet" size={16} />Pix do total</button>
+                    <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'msg', where: 'card' })}><Icon name="copy" size={16} />Cobrar todos</button>
+                    <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'pix', where: 'card' })}><Icon name="wallet" size={16} />Pix</button>
                   </div>
                 </>}
               </div>

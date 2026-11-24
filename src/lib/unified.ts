@@ -1,25 +1,37 @@
 import { feeSplitFor } from './fee'
-import { moneyFull } from './format'
-import { settledIds, startInvoice } from './settled'
+import { formatDate, moneyFull } from './format'
+import { settledIds } from './settled'
 import { walletOf, type Wallet } from './wallet'
+import { periodLabel } from '../services/installments'
 import type { CardFee, Invoice, Transaction } from '../types'
 
 /** Tudo de todas as carteiras, para somar a cobrança de cada pessoa. */
 export interface Everything { wallets: Wallet[]; invoices: Invoice[]; transactions: Transaction[]; fees: CardFee[] }
 
-export interface DebtPart { walletId: string; wallet: string; invoiceId: string; invoice: string; amount: number }
+export interface DebtPart {
+  walletId: string; wallet: string; kind: Wallet['kind']
+  invoiceId: string; invoice: string; period: string
+  /** Quanto a pessoa deve nesta fatura (compras pendentes mais a taxa não paga). */
+  amount: number
+  /** Compras pendentes da pessoa nesta fatura, para a mensagem detalhada. */
+  rows: Transaction[]
+  fee: number
+  /** Empréstimo: o que ainda vai vencer depois deste mês (só informação, não entra no total). */
+  remaining?: { count: number; amount: number }
+}
 export interface PersonDebt { name: string; total: number; parts: DebtPart[] }
-export interface UnifiedDebts { people: PersonDebt[]; total: number; wallets: number }
+export interface UnifiedDebts { period: string; people: PersonDebt[]; total: number; wallets: number }
 
 const cents = (value: number) => Math.round(Number(value) * 100)
+const key = (name: string) => name.trim().toLocaleLowerCase('pt-BR')
 
 /**
- * O que cada pessoa deve somando todas as carteiras.
- * Em cada carteira entra a fatura em aberto que o app abriria (a do mês atual ou a próxima) e as anteriores ainda não quitadas.
- * Parcelas futuras de empréstimo e faturas de meses à frente ficam de fora.
+ * O que cada pessoa deve no mês de vencimento `period`, somando todas as carteiras.
+ * Cartão: só a fatura que vence nesse mês. Empréstimo: a parcela desse mês e as atrasadas;
+ * as parcelas seguintes aparecem como saldo, sem entrar no total.
  */
-export function unifiedDebts(data: Everything, now: string): UnifiedDebts {
-  const people = new Map<string, DebtPart[]>()
+export function unifiedDebts(data: Everything, period: string): UnifiedDebts {
+  const people = new Map<string, { name: string; parts: DebtPart[] }>()
   const used = new Set<string>()
   for (const wallet of data.wallets) {
     const invoices = data.invoices.filter((invoice) => walletOf(invoice) === wallet.id)
@@ -27,35 +39,82 @@ export function unifiedDebts(data: Everything, now: string): UnifiedDebts {
     const ids = new Set(invoices.map((invoice) => invoice.id))
     const rows = data.transactions.filter((row) => ids.has(row.invoice_id))
     const settled = settledIds(invoices, rows, data.fees)
-    const limit = invoices.find((invoice) => invoice.id === startInvoice(invoices, settled, now))?.period
-    if (!limit) continue
-    for (const invoice of invoices) {
-      if (invoice.period > limit || settled.has(invoice.id)) continue
-      const owed = new Map<string, number>()
+    const loan = wallet.kind === 'loan'
+    const due = invoices.filter((invoice) => !settled.has(invoice.id) && (loan ? invoice.period <= period : invoice.period === period))
+      .sort((a, b) => a.period.localeCompare(b.period))
+    const future = loan ? new Set(invoices.filter((invoice) => invoice.period > period).map((invoice) => invoice.id)) : new Set<string>()
+    const byPerson = new Map<string, DebtPart[]>()
+    for (const invoice of due) {
+      const pending = new Map<string, { name: string; rows: Transaction[]; cents: number; fee: number }>()
+      const slot = (name: string) => { const k = key(name); const hit = pending.get(k) ?? { name, rows: [], cents: 0, fee: 0 }; pending.set(k, hit); return hit }
       for (const row of rows) {
         if (row.invoice_id !== invoice.id || row.status === 'paid') continue
-        const name = row.person?.name || 'Sem responsável'
-        owed.set(name, (owed.get(name) ?? 0) + cents(row.amount))
+        const hit = slot(row.person?.name || 'Sem responsável')
+        hit.rows.push(row); hit.cents += cents(row.amount)
       }
       for (const share of feeSplitFor(invoice.id, invoices, data.fees, rows)?.shares ?? []) {
-        if (!share.paid && share.share > 0) owed.set(share.name, (owed.get(share.name) ?? 0) + cents(share.share))
+        if (!share.paid && share.share > 0) { const hit = slot(share.name); hit.fee += cents(share.share); hit.cents += cents(share.share) }
       }
-      for (const [name, value] of owed) {
-        if (value <= 0) continue
+      for (const [k, item] of pending) {
+        if (item.cents <= 0) continue
         used.add(wallet.id)
-        people.set(name, [...(people.get(name) ?? []), { walletId: wallet.id, wallet: wallet.name, invoiceId: invoice.id, invoice: invoice.label, amount: value / 100 }])
+        const part: DebtPart = { walletId: wallet.id, wallet: wallet.name, kind: wallet.kind, invoiceId: invoice.id, invoice: invoice.label, period: invoice.period, amount: item.cents / 100, rows: item.rows.sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)), fee: item.fee / 100 }
+        byPerson.set(k, [...(byPerson.get(k) ?? []), part])
+        if (!people.has(k)) people.set(k, { name: item.name, parts: [] })
       }
     }
+    for (const [k, parts] of byPerson) {
+      if (loan && future.size) {
+        const later = rows.filter((row) => future.has(row.invoice_id) && row.status !== 'paid' && key(row.person?.name || 'Sem responsável') === k)
+        if (later.length) parts[parts.length - 1].remaining = { count: later.length, amount: later.reduce((sum, row) => sum + cents(row.amount), 0) / 100 }
+      }
+      people.get(k)!.parts.push(...parts)
+    }
   }
-  const list = [...people].map(([name, parts]) => ({ name, parts, total: parts.reduce((sum, part) => sum + cents(part.amount), 0) / 100 }))
+  const list = [...people.values()].filter((person) => person.parts.length)
+    .map(({ name, parts }) => ({ name, parts, total: parts.reduce((sum, part) => sum + cents(part.amount), 0) / 100 }))
     .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'pt-BR'))
-  return { people: list, total: list.reduce((sum, person) => sum + cents(person.total), 0) / 100, wallets: used.size }
+  return { period, people: list, total: list.reduce((sum, person) => sum + cents(person.total), 0) / 100, wallets: used.size }
 }
 
-/** Mensagem com o total de tudo, carteira por carteira. O Pix, se tiver, vai separado. */
-export function unifiedMessage(debt: PersonDebt, pixSeparate = false): string {
+export const findDebt = (debts: UnifiedDebts | null | undefined, name: string) => debts?.people.find((person) => key(person.name) === key(name))
+
+const parcelOf = (part: DebtPart) => {
+  const row = part.rows.find((item) => item.installment_count)
+  return row ? `parcela ${row.installment_number}/${row.installment_count}` : ''
+}
+const remainingLine = (part: DebtPart) => part.remaining ? `depois desta, faltam ${part.remaining.count} (${moneyFull(part.remaining.amount)})` : ''
+
+/** Agrupa as partes por carteira, na ordem em que aparecem. */
+function byWallet(parts: DebtPart[]) {
+  const groups = new Map<string, DebtPart[]>()
+  for (const part of parts) groups.set(part.walletId, [...(groups.get(part.walletId) ?? []), part])
+  return [...groups.values()]
+}
+
+export type UnifiedMode = 'total' | 'items'
+
+/**
+ * Mensagem de cobrança de todas as carteiras.
+ * `total`: uma linha por carteira. `items`: cada compra, agrupada por carteira. O Pix, se tiver, vai separado.
+ */
+export function unifiedMessage(debt: PersonDebt, options: { mode?: UnifiedMode; period: string; pixSeparate?: boolean }): string {
   const word = debt.name.split(/\s+/)[0]
   const first = word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
-  const lines = debt.parts.map((part) => `• ${part.wallet} (${part.invoice}): ${moneyFull(part.amount)}`)
-  return `Oi ${first}! Segue tudo o que está em aberto:\n\n${lines.join('\n')}\n\nTotal: ${moneyFull(debt.total)}${pixSeparate ? '\n\nO Pix com o total vai na próxima mensagem.' : ''}`
+  const blocks = byWallet(debt.parts).map((parts) => {
+    const head = parts[0]
+    const sum = parts.reduce((acc, part) => acc + cents(part.amount), 0) / 100
+    const last = parts[parts.length - 1]
+    if (options.mode !== 'items') {
+      const extra = head.kind === 'loan' ? [parts.length > 1 ? `${parts.length} parcelas` : parcelOf(last), remainingLine(last)].filter(Boolean).join('; ') : ''
+      return `• ${head.wallet}: ${moneyFull(sum)}${extra ? ` (${extra})` : ''}`
+    }
+    const lines = parts.flatMap((part) => [
+      ...part.rows.map((row) => `  - ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count && !row.description.includes(`${row.installment_number}/${row.installment_count}`) ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(Number(row.amount))}`),
+      ...(part.fee > 0 ? [`  - Taxa de uso do cartão: ${moneyFull(part.fee)}`] : []),
+    ])
+    const tail = head.kind === 'loan' && last.remaining ? [`  (${remainingLine(last)})`] : []
+    return [`*${head.wallet}*: ${moneyFull(sum)}`, ...lines, ...tail].join('\n')
+  })
+  return `Oi ${first}! Segue o que vence em ${periodLabel(options.period)}:\n\n${blocks.join(options.mode === 'items' ? '\n\n' : '\n')}\n\nTotal: ${moneyFull(debt.total)}${options.pixSeparate ? '\n\nO Pix com o total vai na próxima mensagem.' : ''}`
 }

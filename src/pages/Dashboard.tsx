@@ -18,7 +18,7 @@ import { feeSplitFor } from '../lib/fee'
 import { updateSettings } from '../lib/settings'
 import { invoiceOptions } from '../components/InvoiceOptions'
 import SettledBar from '../components/SettledBar'
-import type { UnifiedDebts } from '../lib/unified'
+import { unifiedDebts, type Everything } from '../lib/unified'
 
 interface Props {
   invoices: Invoice[]
@@ -38,15 +38,17 @@ interface Props {
   canImport: boolean
   onLaunchSubs?: (period: string, subs: Subscription[]) => Promise<void>
   /** Com mais de uma carteira: o que cada um deve somando todas. */
-  unified?: UnifiedDebts | null
+  everything?: Everything | null
 }
 
 const diffClass = (value: number) => (value > 0.004 ? 'neg' : value < -0.004 ? 'pos' : '')
 
-export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs, advanced = true, settled = new Set(), fees = [], onRemove, unified }: Props) {
+export default function Dashboard({ invoices, transactions, focusId, compareId, onFocus, onCompare, onGo, onDrill, canImport, onLaunchSubs, advanced = true, settled = new Set(), fees = [], onRemove, everything }: Props) {
   const [showInsight, setShowInsight] = useInsightVisible()
   const personLimits = useMemo(() => Object.fromEntries(readGoals().filter((g) => g.scope === 'person' && !g.category).map((g) => [g.name, g.limit])), [])
   const focus = invoices.find((invoice) => invoice.id === focusId)
+  // Com mais de uma carteira: o que cada um deve no mesmo mês de vencimento da fatura em foco, em todas.
+  const unified = useMemo(() => (everything && focus ? unifiedDebts(everything, focus.period) : null), [everything, focus])
   const other = invoices.find((invoice) => invoice.id === compareId)
   const data = useMemo(() => {
     const rowsA = transactions.filter((row) => row.invoice_id === focusId)
@@ -82,7 +84,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <section className="metric-grid simple-home">
         <Hero label={focus?.label ?? '—'} total={money(data.a.total)} count={data.a.count} paid={money(data.a.paid)} pending={money(data.a.pending)} paidShare={data.a.total ? data.a.paid / data.a.total : 0} onPending={() => onDrill({ invoiceId: focusId, status: 'pending' })} />
         {unified
-          ? <Metric icon="clock" label="Falta receber (todas as carteiras)" value={money(unified.total)} tone={unified.total > 0 ? 'bad' : 'good'} foot={unified.total > 0 ? `${money(toReceive)} nesta carteira · ${unified.people.length} ${unified.people.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />
+          ? <Metric icon="clock" label={`Falta receber em ${focus ? shortPeriodLabel(focus.period) : ''} (todas as carteiras)`} value={money(unified.total)} tone={unified.total > 0 ? 'bad' : 'good'} foot={unified.total > 0 ? `${money(toReceive)} nesta carteira · ${unified.people.length} ${unified.people.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />
           : <Metric icon="clock" label="Falta receber" value={money(toReceive)} tone={toReceive > 0 ? 'bad' : 'good'} foot={debtors.length ? `${debtors.length} ${debtors.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />}
       </section>
       <Panel tour="dash-people" icon="users" title="Quem deve" subtitle={focus?.label}>
@@ -121,7 +123,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <Metric icon="receipt" label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
       <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
-    {unified && unified.total > 0 && <p className="unified-strip"><Icon name="wallet" size={16} /><span>Falta receber em todas as carteiras: <b>{money(unified.total)}</b> de {unified.people.length} {unified.people.length === 1 ? 'pessoa' : 'pessoas'}</span><button className="text-button" onClick={() => onGo('billing')}>Ver cobrança</button></p>}
+    {unified && unified.total > 0 && <p className="unified-strip"><Icon name="wallet" size={16} /><span>Falta receber em {focus ? shortPeriodLabel(focus.period) : ''}, todas as carteiras: <b>{money(unified.total)}</b> de {unified.people.length} {unified.people.length === 1 ? 'pessoa' : 'pessoas'}</span><button className="text-button" onClick={() => onGo('billing')}>Ver cobrança</button></p>}
     {showInsight && <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} /><span>{insight}</span><button className="insight-x" aria-label="Ocultar o resumo" title="Ocultar (volta em Dados > Aparência)" onClick={() => setShowInsight(false)}>×</button></p>}
 
     <ForecastPanel invoices={invoices} transactions={transactions} onLaunch={onLaunchSubs} />
