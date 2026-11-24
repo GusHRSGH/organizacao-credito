@@ -1137,3 +1137,14 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fold .receiving-line > div > b{display:none}
 .fold > .fee-panel{padding-top:10px}
 .secondary-button.danger-soft{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line));margin-left:auto}
+.wallet-switch{position:relative}
+.wallet-chip{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font-weight:600;font-size:14px;max-width:52vw}
+.wallet-chip span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wallet-menu{position:absolute;z-index:60;top:calc(100% + 6px);left:0;min-width:260px;max-width:86vw;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px #0a112633;padding:8px;display:grid;gap:4px}
+.wallet-row{display:flex;align-items:center;gap:4px;border-radius:10px}
+.wallet-row.on{background:var(--surface-2)}
+.wallet-pick{flex:1;text-align:left;border:0;background:transparent;color:var(--text);padding:10px;font:inherit;font-weight:600;cursor:pointer;border-radius:10px}
+.wallet-form{display:flex;gap:6px;padding:4px;flex:1}
+.wallet-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text);font-size:15px}
+.wallet-new{justify-content:flex-start;padding:10px}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
