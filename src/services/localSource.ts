@@ -5,6 +5,7 @@ import type {
 import { makeBackup, validateBackup } from './backup'
 import { addMonthsToDate, addMonthsToPeriod, isValidPeriod, periodLabel, periodOfDate, splitCents } from './installments'
 import { IndexedDbPersistence, type Persistence } from './persistence'
+import { getActiveWallet, MAIN_WALLET, walletOf, withMain, type Wallet } from '../lib/wallet'
 
 export const LOCAL_USER = 'local'
 /** Quantos lançamentos de faturas apagadas o robô guarda para continuar sugerindo. */
@@ -23,10 +24,11 @@ export function uuid(): string {
 const norm = (value: string) => value.trim().toLocaleLowerCase('pt-BR')
 const cents = (value: number) => Math.round(value * 100)
 
-function ensureInvoice(db: LocalData, period: string): Invoice {
-  const found = db.invoices.find((invoice) => invoice.period === period)
+/** Fatura do mês na carteira (a aberta agora, se não disser outra); cria se não existir. */
+function ensureInvoice(db: LocalData, period: string, wallet = getActiveWallet()): Invoice {
+  const found = db.invoices.find((invoice) => invoice.period === period && walletOf(invoice) === wallet)
   if (found) return found
-  const invoice: Invoice = { id: uuid(), user_id: LOCAL_USER, period, label: periodLabel(period), status: 'open', created_at: new Date().toISOString() }
+  const invoice: Invoice = { id: uuid(), user_id: LOCAL_USER, period, label: periodLabel(period), status: 'open', created_at: new Date().toISOString(), ...(wallet === MAIN_WALLET ? {} : { wallet_id: wallet }) }
   db.invoices.push(invoice)
   return invoice
 }
@@ -53,18 +55,21 @@ function dedupeKey(period: string, row: { date: string; description: string; cen
 
 function applyImport(db: LocalData, batch: ImportInvoice[]): ImportResult {
   const result: ImportResult = { invoices: [], added: 0, duplicates: 0, invoicesCreated: 0 }
-  const periodById = new Map(db.invoices.map((invoice) => [invoice.id, invoice.period]))
+  const wallet = getActiveWallet()
+  // Repetidos só contam dentro da mesma carteira: a mesma compra em outro cartão é outra compra.
+  const periodById = new Map(db.invoices.filter((invoice) => walletOf(invoice) === wallet).map((invoice) => [invoice.id, invoice.period]))
   const personName = new Map(db.people.map((p) => [p.id, p.name]))
   const existing = new Map<string, number>()
   const groups = new Map<string, string>()
   for (const row of db.transactions) {
+    if (!periodById.has(row.invoice_id)) continue
     const person = row.person_id ? personName.get(row.person_id) ?? '' : ''
     const key = dedupeKey(periodById.get(row.invoice_id) ?? '', { date: row.occurred_on, description: row.description, cents: cents(row.amount), person, n: row.installment_number, c: row.installment_count })
     existing.set(key, (existing.get(key) ?? 0) + 1)
     if (row.installment_group && row.installment_count) groups.set(purchaseKey(row.description, person, row.installment_count), row.installment_group)
   }
   for (const entry of batch) {
-    const created = !db.invoices.some((invoice) => invoice.period === entry.period)
+    const created = !db.invoices.some((invoice) => invoice.period === entry.period && walletOf(invoice) === wallet)
     const invoice = ensureInvoice(db, entry.period)
     if (created && entry.label.trim()) invoice.label = entry.label.trim()
     if (created) result.invoicesCreated += 1
@@ -217,13 +222,42 @@ export class LocalSource implements DataSource {
     return this.join(db, db.memory ?? [])
   }
 
+  /** Faturas da carteira aberta agora. */
   async listInvoices() {
-    return [...(await this.read()).invoices].sort((a, b) => b.period.localeCompare(a.period))
+    const wallet = getActiveWallet()
+    return (await this.read()).invoices.filter((invoice) => walletOf(invoice) === wallet).sort((a, b) => b.period.localeCompare(a.period))
   }
 
+  /** Lançamentos da carteira aberta agora. */
   async listAllTransactions() {
     const db = await this.read()
-    return this.join(db, [...db.transactions].sort((a, b) => b.occurred_on.localeCompare(a.occurred_on)))
+    const wallet = getActiveWallet()
+    const mine = new Set(db.invoices.filter((invoice) => walletOf(invoice) === wallet).map((invoice) => invoice.id))
+    return this.join(db, db.transactions.filter((row) => mine.has(row.invoice_id)).sort((a, b) => b.occurred_on.localeCompare(a.occurred_on)))
+  }
+
+  /** Todas as carteiras (a principal sempre aparece). */
+  async listWallets(): Promise<Wallet[]> {
+    return structuredClone(withMain((await this.read()).wallets))
+  }
+
+  saveWallet(wallet: Wallet) {
+    const name = wallet.name.trim()
+    if (!name || name.length > 40) return Promise.reject(new Error('Dê um nome para a carteira (até 40 caracteres).'))
+    return this.mutate((db) => {
+      const list = withMain(db.wallets)
+      if (list.some((item) => item.id !== wallet.id && item.name.trim().toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))) throw new Error('Já existe uma carteira com esse nome.')
+      db.wallets = [...list.filter((item) => item.id !== wallet.id), { ...wallet, name }]
+    })
+  }
+
+  /** Apaga uma carteira vazia (a principal não pode ser apagada). */
+  removeWallet(id: string) {
+    if (id === MAIN_WALLET) return Promise.reject(new Error('A carteira principal não pode ser apagada.'))
+    return this.mutate((db) => {
+      if (db.invoices.some((invoice) => walletOf(invoice) === id)) throw new Error('Essa carteira ainda tem faturas. Apague as faturas antes.')
+      db.wallets = withMain(db.wallets).filter((item) => item.id !== id)
+    })
   }
 
   async listTransactions(invoiceId: string) {
@@ -322,14 +356,16 @@ export class LocalSource implements DataSource {
     return this.mutate((db) => {
       const old = db.transactions.filter((row) => row.installment_group === group).sort((a, b) => (a.installment_number ?? 0) - (b.installment_number ?? 0))
       if (!old.length) throw new Error('Compra não encontrada.')
-      const start = db.invoices.find((invoice) => invoice.id === old[0].invoice_id)?.period ?? periodOfDate(input.occurredOn)
+      const first = db.invoices.find((invoice) => invoice.id === old[0].invoice_id)
+      const start = first?.period ?? periodOfDate(input.occurredOn)
+      const home = first ? walletOf(first) : getActiveWallet()
       const paid = new Set(old.filter((row) => row.status === 'paid').map((row) => row.installment_number))
       db.transactions = db.transactions.filter((row) => row.installment_group !== group)
       const person = ensureNamed(db.people, input.personName)
       const category = ensureNamed(db.categories, input.categoryName)
       const next = count > 1 ? group : null
       splitCents(cents(input.total), count).forEach((part, offset) => {
-        const invoice = ensureInvoice(db, addMonthsToPeriod(start, offset))
+        const invoice = ensureInvoice(db, addMonthsToPeriod(start, offset), home)
         db.transactions.push({
           id: uuid(), user_id: LOCAL_USER, invoice_id: invoice.id, occurred_on: addMonthsToDate(input.occurredOn, offset), description: input.description.trim(), amount: part / 100,
           person_id: person, category_id: category, status: paid.has(offset + 1) ? 'paid' : 'pending', installment_group: next,
@@ -415,6 +451,6 @@ export class LocalSource implements DataSource {
 
   async clearAll() {
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [], memory: [] }) })
+    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [], memory: [], wallets: [] }) })
   }
 }

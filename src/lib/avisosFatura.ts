@@ -1,7 +1,8 @@
 // Notificações do celular ligadas ao cartão: vencimento, fechamento e dia de cobrar. São locais (sem servidor, sem custo).
 import { Capacitor } from '@capacitor/core'
 import { LocalNotifications } from '@capacitor/local-notifications'
-import { closingDate, dueDate, readCard, type Card } from './card'
+import { closingDate, dueDate, readCardFor, type Card } from './card'
+import { getKnownWallets } from './wallet'
 import { addMonthsToPeriod, periodLabel } from '../services/installments'
 
 export interface AvisosFatura {
@@ -38,7 +39,8 @@ const at = (iso: string, hour: number) => { const [y, m, d] = iso.split('-').map
 const monthStart = (now: Date) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
 /** Datas e textos das próximas notificações, só do futuro. O vencimento e o fechamento dependem do cartão configurado. */
-export function planAvisos(config: AvisosFatura, card: Card | null, now: Date): PlannedNotice[] {
+export function planAvisos(config: AvisosFatura, card: Card | null, now: Date, walletName?: string, collect = true): PlannedNotice[] {
+  const of = walletName ? ` (${walletName})` : ''
   const out: Omit<PlannedNotice, 'id'>[] = []
   const first = addMonthsToPeriod(monthStart(now), -1)
   for (let i = 0; i < MONTHS + 1; i += 1) {
@@ -48,10 +50,10 @@ export function planAvisos(config: AvisosFatura, card: Card | null, now: Date): 
       const day = new Date(`${dueDate(period, card)}T00:00:00Z`)
       day.setUTCDate(day.getUTCDate() - config.due.daysBefore)
       const iso = day.toISOString().slice(0, 10)
-      out.push({ at: at(iso, config.due.hour), title: 'Fatura perto de vencer', body: `A fatura de ${label} vence ${config.due.daysBefore === 0 ? 'hoje' : config.due.daysBefore === 1 ? 'amanhã' : `em ${config.due.daysBefore} dias`}.`, go: 'invoices' })
+      out.push({ at: at(iso, config.due.hour), title: `Fatura perto de vencer${of}`, body: `A fatura de ${label} vence ${config.due.daysBefore === 0 ? 'hoje' : config.due.daysBefore === 1 ? 'amanhã' : `em ${config.due.daysBefore} dias`}.`, go: 'invoices' })
     }
-    if (card && config.closing.on) out.push({ at: at(closingDate(period, card), config.closing.hour), title: 'Hoje fecha a fatura', body: `A fatura de ${label} fecha hoje. Compras de hoje em diante já entram na de ${periodLabel(addMonthsToPeriod(period, 1))}.`, go: 'invoices' })
-    if (config.collect.on) {
+    if (card && config.closing.on) out.push({ at: at(closingDate(period, card), config.closing.hour), title: `Hoje fecha a fatura${of}`, body: `A fatura de ${label} fecha hoje. Compras de hoje em diante já entram na de ${periodLabel(addMonthsToPeriod(period, 1))}.`, go: 'invoices' })
+    if (collect && config.collect.on) {
       const [y, m] = period.split('-').map(Number)
       const iso = `${y}-${String(m).padStart(2, '0')}-${String(config.collect.day).padStart(2, '0')}`
       out.push({ at: at(iso, config.collect.hour), title: 'Hora de cobrar', body: 'Veja quem ainda não pagou e mande a cobrança.', go: 'billing' })
@@ -69,7 +71,11 @@ export async function agendarAvisos(config: AvisosFatura = readAvisos()): Promis
     let permission = await LocalNotifications.checkPermissions()
     if (permission.display !== 'granted') permission = await LocalNotifications.requestPermissions()
     if (permission.display !== 'granted') return 'negado'
-    const plan = planAvisos(config, readCard(), new Date())
+    // Vencimento e fechamento de cada carteira; o lembrete de cobrar vem uma vez só.
+    const wallets = getKnownWallets()
+    const many = wallets.length > 1
+    const plan = wallets.flatMap((wallet, i) => planAvisos(config, readCardFor(wallet.id), new Date(), many ? wallet.name : undefined, i === 0))
+      .sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, 30).map((n, i) => ({ ...n, id: BASE_ID + i }))
     if (plan.length) await LocalNotifications.schedule({ notifications: plan.map((n) => ({ id: n.id, title: n.title, body: n.body, extra: { go: n.go }, schedule: { at: n.at, allowWhileIdle: true }, smallIcon: 'ic_stat_chacun', iconColor: '#5b8cff' })) })
     return 'ok'
   } catch { return 'indisponivel' }

@@ -59,7 +59,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <EmptyState title="Vamos começar" actions={<>
         {canImport && <button className="primary-button" onClick={() => onGo('settings')}>Importar minha planilha</button>}
         <button className="secondary-button" onClick={() => onGo('invoices')}>Adicionar uma compra</button>
-      </>}>Ainda não há faturas neste banco de dados. Você pode trazer a planilha .xlsx que já usa ou cadastrar a primeira compra.</EmptyState>
+      </>}>Ainda não há faturas nesta carteira. Você pode trazer a planilha .xlsx que já usa ou cadastrar a primeira compra.</EmptyState>
     </>
   }
 

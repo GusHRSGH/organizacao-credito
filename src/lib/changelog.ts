@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 54, date: '2026-11-24', title: 'Carteiras: vários cartões',
+    items: [
+      'Agora dá para ter mais de um cartão (Nubank, Credifatto, Inter…). Toque no nome da carteira no topo para trocar, criar, renomear ou apagar uma vazia.',
+      'Cada carteira tem as suas faturas, a sua taxa de uso e os seus limites, e o seu vencimento e fechamento (em Configurações > Lançamentos > Meu cartão). Os avisos de vencimento chegam para cada cartão.',
+      'Tudo o que você já tinha está na carteira “Cartão principal”. Dá para renomear, por exemplo para Nubank.',
+    ],
+  },
+  {
     n: 53, date: '2026-11-23', title: 'Último adicionado primeiro',
     items: [
       'A lista de lançamentos agora começa pelo último que você adicionou. Para mudar, use “Ordenar” em Buscar e filtrar (data da compra, maior valor ou responsável).',

@@ -1,15 +1,21 @@
 import { addDays } from './quickEntry'
 import { addMonthsToPeriod, periodOfDate } from '../services/installments'
+import { getActiveWallet, MAIN_WALLET } from './wallet'
 
 /** Como o cartão fecha a fatura. A fatura leva o nome do mês em que vence. */
 export interface Card { dueDay: number; closingDaysBefore: number }
 
 const STORE = 'oc:cartao'
 export const DEFAULT_CARD: Card = { dueDay: 7, closingDaysBefore: 7 }
+/** Cada carteira guarda o seu vencimento e fechamento; a principal usa a chave de antes das carteiras. */
+const storeOf = (wallet: string) => (wallet === MAIN_WALLET ? STORE : `${STORE}:${wallet}`)
 
-export function readCard(): Card | null {
+/** Cartão da carteira aberta agora. */
+export function readCard(): Card | null { return readCardFor(getActiveWallet()) }
+
+export function readCardFor(wallet: string): Card | null {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORE) ?? 'null') as Partial<Card> | null
+    const raw = JSON.parse(localStorage.getItem(storeOf(wallet)) ?? 'null') as Partial<Card> | null
     if (!raw) return null
     const dueDay = Number(raw.dueDay)
     const before = Number(raw.closingDaysBefore)
@@ -17,8 +23,8 @@ export function readCard(): Card | null {
   } catch { return null }
 }
 
-export function writeCard(card: Card | null) {
-  try { if (card) localStorage.setItem(STORE, JSON.stringify(card)); else localStorage.removeItem(STORE) } catch { /* vale até recarregar */ }
+export function writeCard(card: Card | null, wallet = getActiveWallet()) {
+  try { if (card) localStorage.setItem(storeOf(wallet), JSON.stringify(card)); else localStorage.removeItem(storeOf(wallet)) } catch { /* vale até recarregar */ }
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')

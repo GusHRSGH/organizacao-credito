@@ -13,6 +13,8 @@ import { agendarLembrete, aoTocarNaNotificacao } from './lib/lembrete'
 import { agendarAvisos } from './lib/avisosFatura'
 import { settledIds, startInvoice } from './lib/settled'
 import ModeChooser from './components/ModeChooser'
+import WalletSwitcher from './components/WalletSwitcher'
+import { setActiveWallet, setKnownWallets, useActiveWallet, withMain, type Wallet } from './lib/wallet'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -37,6 +39,7 @@ const ENTRY_KEY = 'oc:entry'
 const NUDGE_KEY = 'oc:nudge-until'
 const TOUR_KEY = 'oc:tour'
 const MODE_KEY = 'oc:modo'
+const walletsFirst = (list: Wallet[]) => list[0]?.id ?? 'principal'
 const NEWS_KEY = 'oc:news-seen'
 const NUDGE_DAYS = 7
 type Page = 'dashboard' | 'invoices' | 'billing' | 'goals' | 'config' | 'settings'
@@ -57,6 +60,9 @@ export default function App() {
   // O que o robô lembra de faturas apagadas, e as taxas (para saber quais faturas estão quitadas).
   const [memory, setMemory] = useState<Transaction[]>([])
   const [fees, setFees] = useState<CardFee[]>([])
+  // Carteiras (cartões): cada uma com as suas faturas. As telas mostram a carteira escolhida no topo.
+  const [wallets, setWallets] = useState<Wallet[]>(() => withMain([]))
+  const wallet = useActiveWallet()
   const [loaded, setLoaded] = useState(false)
   const [focusId, setFocusId] = useState('')
   const [bankOpen, setBankOpen] = useState(false)
@@ -162,6 +168,8 @@ export default function App() {
   const categories = useMemo(() => [...new Set(transactions.map((row) => row.category?.name).filter((name): name is string => !!name))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [transactions])
 
   const refresh = useCallback(async () => {
+    const walletList = await source.listWallets().catch(() => withMain([]))
+    setKnownWallets(walletList); setWallets(walletList)
     const [inv, rows, remembered, feeList] = await Promise.all([source.listInvoices(), source.listAllTransactions(), source.listMemory().catch(() => []), source.listFees().catch(() => [])])
     setInvoices(inv); setTransactions(rows); setMemory(remembered); setFees(feeList)
     const has = (id: string) => inv.some((invoice) => invoice.id === id)
@@ -183,6 +191,25 @@ export default function App() {
     if (!window.confirm(`Apagar a fatura de ${invoice.label} (${count} ${count === 1 ? 'lançamento' : 'lançamentos'})? Fica uma cópia em Dados e backup para restaurar, e o robô continua lembrando de quem é cada compra.`)) return
     try { await source.removeInvoice(id); await refresh(); notify('notice', `Fatura de ${invoice.label} apagada. Dá para restaurar em Dados e backup.`) } catch (cause) { notify('error', messageOf(cause)) }
   }, [invoices, transactions, source, refresh, notify])
+  // Trocar de carteira recarrega tudo e volta para a fatura em aberto dela.
+  const walletLoaded = useRef(wallet)
+  useEffect(() => {
+    if (walletLoaded.current === wallet) return
+    walletLoaded.current = wallet
+    setInvoiceId(''); setFocusId(''); setCompareId('')
+    void refresh().then(() => { void import('./lib/avisosFatura').then((m) => m.agendarAvisos()).catch(() => undefined) })
+  }, [wallet, refresh])
+  const createWallet = useCallback(async (name: string) => {
+    const id = crypto.randomUUID()
+    try { await source.saveWallet({ id, name, kind: 'card' }); setActiveWallet(id); notify('notice', `Carteira ${name.trim()} criada. Configure o vencimento em Configurações > Lançamentos > Meu cartão.`) } catch (cause) { notify('error', messageOf(cause)) }
+  }, [source, notify])
+  const renameWallet = useCallback(async (item: Wallet, name: string) => {
+    try { await source.saveWallet({ ...item, name }); await refresh() } catch (cause) { notify('error', messageOf(cause)) }
+  }, [source, refresh, notify])
+  const removeWallet = useCallback(async (item: Wallet) => {
+    if (!window.confirm(`Apagar a carteira ${item.name}?`)) return
+    try { await source.removeWallet(item.id); setActiveWallet(walletsFirst(wallets)); await refresh(); notify('notice', `Carteira ${item.name} apagada.`) } catch (cause) { notify('error', messageOf(cause)) }
+  }, [source, refresh, notify, wallets])
   const launchSubs = useCallback(async (period: string, subs: Subscription[]) => {
     try {
       for (const sub of subs) {
@@ -253,7 +280,7 @@ export default function App() {
       </div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button><div className="breadcrumb"><b>{TITLES[page]}</b></div></div>
+      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button>{page === 'config' || page === 'settings' ? <div className="breadcrumb"><b>{TITLES[page]}</b></div> : <WalletSwitcher wallets={wallets} active={wallet} onPick={setActiveWallet} onCreate={createWallet} onRename={renameWallet} onRemove={removeWallet} />}</div>
         <div className="topbar-actions">
           <button className="theme-toggle" onClick={() => updateSettings({ hideValues: !prefs.hideValues })} aria-label={prefs.hideValues ? 'Mostrar os valores' : 'Ocultar os valores'} aria-pressed={prefs.hideValues} title={prefs.hideValues ? 'Mostrar valores (Ctrl+H)' : 'Ocultar valores (Ctrl+H)'}><Icon name="lock" size={18} /></button>
           <button className="theme-toggle mode-toggle" onClick={() => pickMode(!prefs.advanced)} aria-label={prefs.advanced ? 'Trocar para o modo minimalista' : 'Trocar para o modo detalhado'} title={prefs.advanced ? 'Modo minimalista' : 'Modo detalhado'}><Icon name={prefs.advanced ? 'check' : 'pie'} size={18} /><span>{prefs.advanced ? 'Minimalista' : 'Detalhado'}</span></button>

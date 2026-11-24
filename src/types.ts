@@ -1,9 +1,12 @@
+import type { Wallet } from './lib/wallet'
 export type InvoiceStatus = 'open' | 'closed' | 'paid'
 export type TransactionStatus = 'pending' | 'paid'
 export type SourceKind = 'local'
 
 export interface Invoice {
   id: string
+  /** Carteira (cartão) da fatura; sem valor é a carteira principal. */
+  wallet_id?: string
   user_id: string
   period: string
   label: string
@@ -43,6 +46,8 @@ export interface LocalData {
   fees?: CardFee[]
   /** Lançamentos de faturas apagadas: somem da tela, mas o robô continua aprendendo com eles. */
   memory?: TransactionRow[]
+  /** Carteiras além da principal (cartões e, depois, empréstimos). */
+  wallets?: Wallet[]
 }
 
 export interface CardFee {
@@ -119,4 +124,7 @@ export interface DataSource {
   removeInvoice(id: string): Promise<void>
   /** O que o robô lembra de faturas apagadas. */
   listMemory(): Promise<Transaction[]>
+  listWallets(): Promise<Wallet[]>
+  saveWallet(wallet: Wallet): Promise<void>
+  removeWallet(id: string): Promise<void>
 }
