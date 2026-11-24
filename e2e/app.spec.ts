@@ -487,6 +487,31 @@ test('lê o texto de uma foto da fatura', async ({ page }) => {
   await expect(page.locator('textarea')).toHaveValue(/152[,.]30/, { timeout: 90_000 })
 })
 
+test('colar fatura: print do app do banco com valor e data em cinza vira compras', async ({ page }) => {
+  test.setTimeout(150_000)
+  const outra = await page.context().newPage()
+  await outra.setContent('<canvas id="c" width="1080" height="900"></canvas>')
+  const url = await outra.evaluate(() => {
+    const canvas = document.getElementById('c') as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1080, 900)
+    const item = (y: number, name: string, value: string, date: string) => {
+      ctx.fillStyle = '#333'; ctx.font = '40px Arial, Helvetica, sans-serif'; ctx.fillText(name, 130, y)
+      ctx.fillStyle = '#9a9a9a'; ctx.font = '36px Arial, Helvetica, sans-serif'; ctx.fillText(value, 820, y + 25); ctx.fillText(date, 130, y + 60)
+    }
+    ctx.fillStyle = '#222'; ctx.font = 'bold 44px Arial'; ctx.fillText('Histórico da fatura', 50, 80)
+    item(200, 'PAGAMENTO EFETIVADO', '-R$ 712,09', '01 de novembro - 09:04')
+    item(380, 'LOJA FOTO 2/3', 'R$ 263,59', '06 de outubro - 12:06')
+    item(560, 'MERCADO FOTO', 'R$ 254,79', '06 de novembro - 10:00')
+    return canvas.toDataURL('image/png')
+  })
+  await outra.close()
+  await abrirColar(page)
+  await page.getByLabel('Arquivo da fatura').setInputFiles({ name: 'print.png', mimeType: 'image/png', buffer: Buffer.from(url.split(',')[1], 'base64') })
+  await expect(page.locator('textarea')).toHaveValue(/254[,.]79/, { timeout: 90_000 })
+  await expect(page.getByRole('button', { name: /^Importar 2 / })).toBeVisible()
+})
+
 test('lançar o mesmo gasto em vários meses, por frase e pelo seletor', async ({ page }) => {
   await entrar(page)
   await importarModelo(page)

@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 57, date: '2026-11-24', title: 'Leitor de prints do banco',
+    items: [
+      'O botão “Anexar PDF ou foto da fatura” não fica mais preso em “Preparando o leitor de fotos” no celular. Se o leitor não carregar, aparece um aviso em vez de travar.',
+      'O robô agora entende o print da fatura aberta no app do banco: junta o nome da compra, o valor e a data, mesmo com o texto cinza ou o tema escuro, e ignora o pagamento da fatura.',
+      'Parcelas (ex.: 3/3 de uma compra de setembro) entram na fatura do mês certo, e não na do mês da compra.',
+    ],
+  },
+  {
     n: 56, date: '2026-11-24', title: 'Cobrança de todas as carteiras',
     items: [
       'Com mais de uma carteira, a Cobrança ganha “Todas as carteiras”: quanto cada pessoa deve somando cartões e empréstimos, carteira por carteira, com o total geral.',
