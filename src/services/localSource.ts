@@ -229,6 +229,12 @@ export class LocalSource implements DataSource {
   }
 
   /** Lançamentos da carteira aberta agora. */
+  /** Todas as carteiras de uma vez, para a cobrança unificada. */
+  async listEverything() {
+    const db = await this.read()
+    return { wallets: withMain(db.wallets), invoices: structuredClone(db.invoices), transactions: this.join(db, db.transactions), fees: structuredClone(db.fees ?? []) }
+  }
+
   async listAllTransactions() {
     const db = await this.read()
     const wallet = getActiveWallet()
