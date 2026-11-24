@@ -14,6 +14,8 @@ const DATE_TEXT = /\b(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|
 export function parsePastedBill(text: string, today: string, people: string[] = [], categories: string[] = []): PasteResult {
   const statement = parseAccountStatement(text)
   if (statement) return statement
+  const app = parseAppScreen(text, today)
+  if (app) return app
   const rows: PastedRow[] = []
   const skipped: PasteResult['skipped'] = []
   text.split(/\r?\n/).forEach((raw, index) => {
@@ -107,4 +109,58 @@ export function parseAccountStatement(source: string): PasteResult | null {
     rows.push({ line: index + 1, date, description, amount: Math.round(-signed * 100) / 100 })
   })
   return { rows, skipped }
+}
+
+// Print do app do banco (Nubank e parecidos): cada compra ocupa várias linhas, e o leitor de fotos solta lixo dos ícones.
+//   MUFFATO COLOMBO 1/3
+//   Fc] / R$ 254,79
+//   06 de novembro - 10:00
+const APP_MONEY = /(-)?\s*R\$\s*(-)?\s*(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})(?!\d)/
+const APP_DATE = /^\W{0,4}([0-9ODIl]{1,2})\s+de\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?(?:\s+(?:de\s+)?(\d{4}))?(?:\s*[-–,]?\s*(?:[àa]s\s+)?\d{1,2}[:h]\d{2})?\W*$/i
+const APP_NOISE = /^(total|subtotal|pagamento|saldo|limite|vencimento|fatura|hist[óo]rico|outras faturas|estorno|cr[ée]dito|ajuste|juros|iof)\b/
+const ocrDigits = (text: string) => text.replace(/[OD]/g, '0').replace(/[Il]/g, '1')
+
+/** Lista de compras em várias linhas (descrição, valor e data separados). Devolve null quando o texto não tem esse jeito. */
+export function parseAppScreen(text: string, today: string): PasteResult | null {
+  const lines = text.split(/\r?\n/).map((raw, index) => ({ raw: raw.trim(), index })).filter((item) => item.raw)
+  const dates = lines.filter((item) => APP_DATE.test(item.raw)).length
+  if (dates < 2) return null
+  const rows: PastedRow[] = []
+  const skipped: PasteResult['skipped'] = []
+  let current: { line: number; text: string; money?: RegExpMatchArray; date?: string } | null = null
+  const flush = () => {
+    if (!current) return
+    const item = current
+    current = null
+    const description = item.text.replace(/\s*\/\s*/g, '/').replace(/\s+/g, ' ').trim()
+    if (!item.money || !item.date) { skipped.push({ line: item.line, text: item.text, reason: !item.money ? 'sem valor' : 'sem data' }); return }
+    if (APP_NOISE.test(plain(description))) { skipped.push({ line: item.line, text: item.text, reason: 'pagamento ou ajuste da fatura' }); return }
+    if (item.money[1] || item.money[2]) { skipped.push({ line: item.line, text: item.text, reason: 'crédito ou estorno' }); return }
+    const amount = Number(item.money[3].replace(/\./g, '').replace(',', '.'))
+    if (!(amount > 0)) { skipped.push({ line: item.line, text: item.text, reason: 'valor zerado' }); return }
+    rows.push({ line: item.line, date: item.date, description: description.slice(0, 160), amount })
+  }
+  for (const { raw, index } of lines) {
+    const date = raw.match(APP_DATE)
+    if (date) {
+      const parsed = dateFromDayMonth(Number(ocrDigits(date[1])), MONTHS.indexOf(date[2].toLowerCase()) + 1, date[3] ? Number(date[3]) : null, today)
+      if (current && parsed && !current.date) current.date = parsed
+      continue
+    }
+    const money = raw.match(APP_MONEY)
+    if (money) {
+      const rest = raw.replace(money[0], ' ').replace(/[^A-Za-zÀ-ú0-9/ ]/g, ' ').trim()
+      // Valor sozinho na linha (com lixo de ícone em volta) pertence à descrição de cima.
+      if (current && !current.money && !/[A-Za-zÀ-ú]{3,}/.test(rest)) { current.money = money; continue }
+      if (/[A-Za-zÀ-ú]{3,}/.test(rest)) { flush(); current = { line: index + 1, text: rest, money }; continue }
+      continue
+    }
+    // Descrição: precisa de uma palavra de verdade; lixo de ícone ("[E", "Fc]") e cabeçalhos do app ficam de fora.
+    const words = raw.replace(/[^A-Za-zÀ-ú0-9/ ]/g, ' ').replace(/\s+/g, ' ').trim()
+    if (!/[A-Za-zÀ-ú]{3,}/.test(words)) continue
+    flush()
+    current = { line: index + 1, text: words }
+  }
+  flush()
+  return rows.length >= 2 ? { rows, skipped } : null
 }

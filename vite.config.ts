@@ -8,7 +8,8 @@ const OCR_FILES: Array<[string, string]> = [
   ['node_modules/tesseract.js/dist/worker.min.js', 'worker.min.js'],
   ['node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js', 'tesseract-core-simd-lstm.wasm.js'],
   ['node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js', 'tesseract-core-lstm.wasm.js'],
-  ['node_modules/@tesseract.js-data/por/4.0.0_best_int/por.traineddata.gz', 'por.traineddata.gz'],
+  // Sem .gz no nome: o empacotamento do Android mexe nesses arquivos. O conteúdo continua compactado.
+  ['node_modules/@tesseract.js-data/por/4.0.0_best_int/por.traineddata.gz', 'por.traineddata'],
 ]
 mkdirSync('public/ocr', { recursive: true })
 for (const [from, to] of OCR_FILES) if (existsSync(from) && !existsSync(`public/ocr/${to}`)) cpSync(from, `public/ocr/${to}`)

@@ -4,7 +4,7 @@ import { formatDate, messageOf, money } from '../lib/format'
 import { parsePastedBill } from '../lib/pasteImport'
 import { parseInstallment } from '../services/importXlsx'
 import { suggestFor, type Suggestion } from '../lib/suggest'
-import { periodLabel } from '../services/installments'
+import { addMonthsToPeriod, periodLabel } from '../services/installments'
 import { invoicePeriodFor, readCard } from '../lib/card'
 import type { LocalSource } from '../services/localSource'
 import type { ImportInvoice, ImportResult, ImportRow } from '../types'
@@ -40,9 +40,11 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
     const groups = new Map<string, ImportRow[]>()
     for (const row of picked) {
       const hint = suggestFor(row.description, suggestions)
-      const period = invoicePeriodFor(row.date, readCard())
+      const parcel = parseInstallment(row.description)
+      // Parcela 3/3 de uma compra de setembro cai na fatura de setembro + 2 meses, não na de setembro.
+      const period = addMonthsToPeriod(invoicePeriodFor(row.date, readCard()), parcel ? parcel.number - 1 : 0)
       const list = groups.get(period) ?? []
-      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? (category.trim() || 'Outros'), status: 'pending', installmentNumber: parseInstallment(row.description)?.number ?? null, installmentCount: parseInstallment(row.description)?.count ?? null })
+      list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? (category.trim() || 'Outros'), status: 'pending', installmentNumber: parcel?.number ?? null, installmentCount: parcel?.count ?? null })
       groups.set(period, list)
     }
     return [...groups].map(([period, rows]) => ({ period, label: periodLabel(period), rows }))
