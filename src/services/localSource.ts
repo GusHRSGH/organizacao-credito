@@ -5,7 +5,7 @@ import type {
 import { makeBackup, validateBackup } from './backup'
 import { addMonthsToDate, addMonthsToPeriod, isValidPeriod, periodLabel, periodOfDate, splitCents } from './installments'
 import { IndexedDbPersistence, type Persistence } from './persistence'
-import { getActiveWallet, MAIN_WALLET, walletOf, withMain, type Wallet } from '../lib/wallet'
+import { getActiveWallet, loanCharge, MAIN_WALLET, walletOf, withMain, type Loan, type Wallet } from '../lib/wallet'
 
 export const LOCAL_USER = 'local'
 /** Quantos lançamentos de faturas apagadas o robô guarda para continuar sugerindo. */
@@ -248,6 +248,53 @@ export class LocalSource implements DataSource {
       const list = withMain(db.wallets)
       if (list.some((item) => item.id !== wallet.id && item.name.trim().toLocaleLowerCase('pt-BR') === name.toLocaleLowerCase('pt-BR'))) throw new Error('Já existe uma carteira com esse nome.')
       db.wallets = [...list.filter((item) => item.id !== wallet.id), { ...wallet, name }]
+    })
+  }
+
+  /** Cria um empréstimo: uma carteira própria com uma parcela por mês, já com a sua % extra, para a pessoa pagar. */
+  async createLoan(name: string, loan: Loan, id = uuid()) {
+    const problem = !loan.person.trim() ? 'Informe quem vai pagar.'
+      : !(loan.installment > 0) ? 'Informe o valor da parcela.'
+      : !Number.isInteger(loan.count) || loan.count < 1 || loan.count > 480 ? 'O número de parcelas deve estar entre 1 e 480.'
+      : !isValidPeriod(loan.start) ? 'Escolha o mês da primeira parcela.'
+      : !(loan.dueDay >= 1 && loan.dueDay <= 31) ? 'O dia do vencimento deve estar entre 1 e 31.'
+      : loan.extraPct < 0 || loan.extraPct > 100 ? 'A sua % extra deve estar entre 0 e 100.' : null
+    if (problem) throw new Error(problem)
+    await this.saveWallet({ id, name, kind: 'loan', loan })
+    const amount = loanCharge(loan)
+    const label = name.trim()
+    await this.mutate((db) => {
+      const person = ensureNamed(db.people, loan.person)
+      const category = ensureNamed(db.categories, 'Empréstimo')
+      const group = uuid()
+      for (let offset = 0; offset < loan.count; offset++) {
+        const period = addMonthsToPeriod(loan.start, offset)
+        const invoice = ensureInvoice(db, period, id)
+        const [y, m] = period.split('-').map(Number)
+        const last = new Date(Date.UTC(y, m, 0)).getUTCDate()
+        db.transactions.push({
+          id: uuid(), user_id: LOCAL_USER, invoice_id: invoice.id, occurred_on: `${period.slice(0, 7)}-${String(Math.min(loan.dueDay, last)).padStart(2, '0')}`,
+          description: `${label} - Parcela ${offset + 1}/${loan.count}`, amount, person_id: person, category_id: category, status: 'pending',
+          installment_group: group, installment_number: offset + 1, installment_count: loan.count, created_at: new Date().toISOString(),
+        })
+      }
+    })
+    return id
+  }
+
+  /** Apaga um empréstimo inteiro: as parcelas vão para a memória do robô e fica uma cópia antes. */
+  async removeLoan(id: string) {
+    const db = await this.read()
+    const wallet = withMain(db.wallets).find((item) => item.id === id)
+    if (!wallet || wallet.kind !== 'loan') throw new Error('Esse empréstimo não existe mais.')
+    await this.snapshot(db, 'antes')
+    return this.mutate((draft) => {
+      const ids = new Set(draft.invoices.filter((invoice) => walletOf(invoice) === id).map((invoice) => invoice.id))
+      draft.memory = [...(draft.memory ?? []), ...draft.transactions.filter((row) => ids.has(row.invoice_id))].slice(-MEMORY_LIMIT)
+      draft.transactions = draft.transactions.filter((row) => !ids.has(row.invoice_id))
+      draft.fees = (draft.fees ?? []).filter((fee) => !ids.has(fee.invoice_id))
+      draft.invoices = draft.invoices.filter((invoice) => !ids.has(invoice.id))
+      draft.wallets = withMain(draft.wallets).filter((item) => item.id !== id)
     })
   }
 

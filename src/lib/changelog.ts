@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 55, date: '2026-11-24', title: 'Empréstimos e financiamentos',
+    items: [
+      'Toque no nome da carteira no topo e escolha “Novo empréstimo ou financiamento”. Informe quem paga, o valor da parcela, quantas faltam e o mês da próxima: o app cria uma parcela em cada mês.',
+      'Se quiser, coloque a sua % extra: com 2%, uma parcela de R$ 520,00 vira R$ 530,40 para a pessoa.',
+      'Cada empréstimo tem o seu vencimento e os seus avisos. Marcar como pago, cobrar e o Pix funcionam igual à fatura do cartão.',
+    ],
+  },
+  {
     n: 54, date: '2026-11-24', title: 'Carteiras: vários cartões',
     items: [
       'Agora dá para ter mais de um cartão (Nubank, Credifatto, Inter…). Toque no nome da carteira no topo para trocar, criar, renomear ou apagar uma vazia.',
