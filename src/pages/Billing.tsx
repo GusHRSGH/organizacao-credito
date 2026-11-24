@@ -113,6 +113,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const [recvOpen, setRecvOpen] = useState(false)
   const [feeOpen, setFeeOpen] = useState(false)
   const [allOpen, setAllOpen] = useState(false)
+  const [othersFor, setOthersFor] = useState<string | null>(null)
+  const debtOf = (name: string) => unified?.people.find((person) => person.name.trim().toLocaleLowerCase('pt-BR') === name.trim().toLocaleLowerCase('pt-BR'))
   const [moreFor, setMoreFor] = useState<string | null>(null)
   const fold = (title: string, sub: string, isOpen: boolean, setIsOpen: (value: boolean) => void, child: ReactNode) => <details className="fold" open={isOpen} onToggle={(event) => setIsOpen((event.currentTarget as HTMLDetailsElement).open)}><summary><b>{title}</b><small>{sub}</small></summary>{child}</details>
   const pixOf = (bill: PersonBill) => pixCode(receiving, dueOf(bill), scopeLabel)
@@ -233,6 +235,30 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
               </>}
               {!advanced && <button className="text-button" aria-expanded={moreFor === bill.name} onClick={() => setMoreFor(moreFor === bill.name ? null : bill.name)}>{moreFor === bill.name ? 'Menos opções' : 'Mais opções'}</button>}
             </div>
+            {(() => {
+              const debt = debtOf(bill.name)
+              const others = debt?.parts.filter((part) => part.walletId !== activeWallet) ?? []
+              if (!debt || !others.length) return null
+              const kinds = getKnownWallets()
+              const cards = others.every((part) => kinds.find((item) => item.id === part.walletId)?.kind !== 'loan')
+              const count = new Set(others.map((part) => part.walletId)).size
+              const where = count === 1 ? (cards ? 'outro cartão' : 'outra carteira') : `${count} ${cards ? 'outros cartões' : 'outras carteiras'}`
+              const sum = others.reduce((acc, part) => acc + Math.round(part.amount * 100), 0) / 100
+              const isOpen = othersFor === bill.name
+              return <div className="other-cards">
+                <div className="other-cards-head"><span>Também deve em {where}: <b>{money(sum)}</b></span>
+                  <button className="text-button" aria-expanded={isOpen} onClick={() => setOthersFor(isOpen ? null : bill.name)}>{isOpen ? 'Ocultar' : `Ver ${cards ? 'outros cartões' : 'outras carteiras'}`}</button></div>
+                {isOpen && <>
+                  <ul aria-label={`Onde ${bill.name} deve`}>{debt.parts.map((part) => <li key={part.invoiceId} className={part.walletId === activeWallet ? 'here' : ''}><span>{part.wallet} · {part.invoice}{part.walletId === activeWallet ? ' (este)' : ''}</span><span>{money(part.amount)}</span></li>)}</ul>
+                  <div className="total"><span>Total em todos</span><span>{money(debt.total)}</span></div>
+                  <div className="button-row">
+                    <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Cobrar só este</button>
+                    <button className="secondary-button" onClick={() => void sendUnified(debt)}><Icon name="copy" size={16} />Cobrar todos</button>
+                    <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}><Icon name="wallet" size={16} />Pix do total</button>
+                  </div>
+                </>}
+              </div>
+            })()}
             {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={fee} onConfirm={(ids, feePaid) => settleSome(bill, ids, feePaid)} onCancel={() => setPaying(null)} />}
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>
               <span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="grow">{row.description}{row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}</span><span className="muted">{row.category?.name ?? ''}</span><b>{money(Number(row.amount))}</b>

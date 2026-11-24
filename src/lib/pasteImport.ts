@@ -164,3 +164,23 @@ export function parseAppScreen(text: string, today: string): PasteResult | null 
   flush()
   return rows.length >= 2 ? { rows, skipped } : null
 }
+
+const DUE_TEXT = /venc(?:imento|e|eu)?\w*\s*(?:em|dia)?\s*:?\s*(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?(?:\s+(?:de\s+)?(\d{4}))?/i
+const DUE_NUM = /venc(?:imento|e|eu)?\w*\s*(?:em|dia)?\s*:?\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i
+
+/** Vencimento escrito na fatura ou no print ("Vencimento 10 de dezembro", "Vence em 10/12"): a fatura leva o nome desse mês. */
+export function detectDueDate(text: string, today: string): { date: string; period: string; day: number } | null {
+  const named = text.match(DUE_TEXT)
+  const num = named ? null : text.match(DUE_NUM)
+  const m = named ?? num
+  if (!m) return null
+  const day = Number(m[1])
+  const month = named ? MONTHS.indexOf(named[2].toLowerCase()) + 1 : Number(m[2])
+  if (!(day >= 1 && day <= 31 && month >= 1 && month <= 12)) return null
+  let year = m[3] ? Number(m[3].length === 2 ? `20${m[3]}` : m[3]) : Number(today.slice(0, 4))
+  // Sem ano: o vencimento é o próximo (ou um que acabou de passar), nunca um de quase um ano atrás.
+  if (!m[3] && makeDate(day, month, year) && makeDate(day, month, year)! < addDays(today, -60)) year += 1
+  const date = makeDate(day, month, year)
+  if (!date) return null
+  return { date, period: `${date.slice(0, 7)}-01`, day }
+}

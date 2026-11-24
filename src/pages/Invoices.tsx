@@ -37,6 +37,8 @@ interface Props {
   drill: { filter: DrillFilter; nonce: number } | null
 }
 
+const NEW_INVOICE = '__nova'
+
 export default function Invoices({ source, invoices, transactions, history, settled = new Set(), onRemove, invoiceId, onInvoice, onChanged, notify, local, onBank, quickSignal, drill }: Props) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('')
@@ -176,7 +178,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
   return <>
     <PageHeading tour="inv-top" title="Faturas e lançamentos" subtitle="Cadastre compras, acompanhe pagamentos e filtre os lançamentos.">
       <label className="select-group"><span>Fatura</span>
-        <select value={invoiceId} onChange={(event) => onInvoice(event.target.value)} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}</select></label>
+        <select value={invoiceId} onChange={(event) => { if (event.target.value === NEW_INVOICE) setNewOpen(true); else onInvoice(event.target.value) }} aria-label="Fatura">{invoices.length ? invoiceOptions(invoices, settled) : <option value="">Nenhuma fatura</option>}<option value={NEW_INVOICE}>+ Outro mês (nova fatura)</option></select></label>
       {advanced ? <>
         {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
         {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
@@ -193,7 +195,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
     {settled.has(invoiceId) && onRemove && <SettledBar onRemove={() => onRemove(invoiceId)} />}
     {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
-    {showPaste && local && <PasteBill local={local} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
+    {showPaste && local && <PasteBill local={local} existing={invoices.map((item) => item.period)} onImported={(period) => void source.listInvoices().then((list) => { const hit = list.find((item) => item.period === period); if (hit) onInvoice(hit.id) })} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
 
     {showForm && <Panel icon="plus" title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
       <form className="entry-form" onSubmit={(event) => void saveEntry(event)}>
