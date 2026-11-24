@@ -192,7 +192,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
       <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setNewOpen(true) }}><Icon name="plus" size={16} />Criar fatura de outro mês<small>Qualquer mês, passado ou futuro</small></button>
     </div>}
 
-    {settled.has(invoiceId) && onRemove && <SettledBar onRemove={() => onRemove(invoiceId)} />}
+    {invoiceId && onRemove && (settled.has(invoiceId) || !transactions.some((row) => row.invoice_id === invoiceId)) && <SettledBar empty={!settled.has(invoiceId)} onRemove={() => onRemove(invoiceId)} />}
     {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
     {showPaste && local && <PasteBill local={local} existing={invoices.map((item) => item.period)} onImported={(period) => void source.listInvoices().then((list) => { const hit = list.find((item) => item.period === period); if (hit) onInvoice(hit.id) })} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}

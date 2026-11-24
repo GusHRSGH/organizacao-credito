@@ -193,8 +193,8 @@ export default function App() {
     const invoice = invoices.find((item) => item.id === id)
     if (!invoice) return
     const count = transactions.filter((row) => row.invoice_id === id).length
-    if (!window.confirm(`Apagar a fatura de ${invoice.label} (${count} ${count === 1 ? 'lançamento' : 'lançamentos'})? Fica uma cópia em Dados e backup para restaurar, e o robô continua lembrando de quem é cada compra.`)) return
-    try { await source.removeInvoice(id); await refresh(); notify('notice', `Fatura de ${invoice.label} apagada. Dá para restaurar em Dados e backup.`) } catch (cause) { notify('error', messageOf(cause)) }
+    if (!window.confirm(count ? `Apagar a fatura de ${invoice.label} (${count} ${count === 1 ? 'lançamento' : 'lançamentos'})? Fica uma cópia em Dados e backup para restaurar, e o robô continua lembrando de quem é cada compra.` : `Apagar a fatura vazia de ${invoice.label}?`)) return
+    try { await source.removeInvoice(id); await refresh(); notify('notice', count ? `Fatura de ${invoice.label} apagada. Dá para restaurar em Dados e backup.` : `Fatura vazia de ${invoice.label} apagada.`) } catch (cause) { notify('error', messageOf(cause)) }
   }, [invoices, transactions, source, refresh, notify])
   // Trocar de carteira recarrega tudo e volta para a fatura em aberto dela.
   const walletLoaded = useRef(wallet)
