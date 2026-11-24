@@ -1148,3 +1148,10 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .wallet-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text);font-size:15px}
 .wallet-new{justify-content:flex-start;padding:10px}
 .topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+/* O seletor de carteira encolhe (com reticências) para nunca cobrir os botões do topo. */
+.topbar{gap:8px}
+.topbar-left{flex:1 1 auto;min-width:0}
+.topbar-actions{flex:0 0 auto}
+.wallet-switch{min-width:0;flex:0 1 auto}
+.wallet-chip{max-width:100%;min-width:0}
+@media (max-width:700px){.wallet-chip{height:44px;padding:0 10px;gap:6px}.topbar-actions{gap:6px}}
