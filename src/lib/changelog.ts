@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 56, date: '2026-11-24', title: 'Cobrança de todas as carteiras',
+    items: [
+      'Com mais de uma carteira, a Cobrança ganha “Todas as carteiras”: quanto cada pessoa deve somando cartões e empréstimos, carteira por carteira, com o total geral.',
+      'Dá para mandar um Pix só com o total e os detalhes de tudo numa mensagem.',
+      'No Início, “Falta receber” soma todas as carteiras e mostra quanto é da carteira aberta.',
+      'Entra o mês em aberto de cada carteira e o que ficou para trás. Parcelas futuras de empréstimo não entram.',
+    ],
+  },
+  {
     n: 55, date: '2026-11-24', title: 'Empréstimos e financiamentos',
     items: [
       'Toque no nome da carteira no topo e escolha “Novo empréstimo ou financiamento”. Informe quem paga, o valor da parcela, quantas faltam e o mês da próxima: o app cria uma parcela em cada mês.',

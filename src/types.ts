@@ -129,4 +129,5 @@ export interface DataSource {
   removeWallet(id: string): Promise<void>
   createLoan(name: string, loan: Loan, id?: string): Promise<string>
   removeLoan(id: string): Promise<void>
+  listEverything(): Promise<{ wallets: Wallet[]; invoices: Invoice[]; transactions: Transaction[]; fees: CardFee[] }>
 }
