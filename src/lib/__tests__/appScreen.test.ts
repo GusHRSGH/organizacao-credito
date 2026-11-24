@@ -61,3 +61,13 @@ describe('preparo da imagem para o leitor', () => {
     expect([dark[0], dark[4], dark[8]]).toEqual([255, 0, 255])
   })
 })
+
+describe('vencimento da fatura no texto', () => {
+  it('acha o vencimento por extenso, em número e vira o ano quando precisa', async () => {
+    const { detectDueDate } = await import('../pasteImport')
+    expect(detectDueDate('R$ 754,30\nVencimento 10 de dezembro', '2026-11-24')).toEqual({ date: '2026-12-10', period: '2026-12-01', day: 10 })
+    expect(detectDueDate('Vence em 07/01', '2026-11-24')?.period).toBe('2027-01-01')
+    expect(detectDueDate('Vencimento: 15 NOV 2026', '2026-11-24')?.date).toBe('2026-11-15')
+    expect(detectDueDate('05/11 MERCADO 10,00', '2026-11-24')).toBeNull()
+  })
+})

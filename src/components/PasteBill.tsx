@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { formatDate, messageOf, money } from '../lib/format'
-import { parsePastedBill } from '../lib/pasteImport'
+import { detectDueDate, parsePastedBill } from '../lib/pasteImport'
 import { parseInstallment } from '../services/importXlsx'
 import { suggestFor, type Suggestion } from '../lib/suggest'
-import { addMonthsToPeriod, periodLabel } from '../services/installments'
-import { invoicePeriodFor, readCard } from '../lib/card'
+import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
+import { DEFAULT_CARD, dueDate, invoicePeriodFor, readCard, writeCard } from '../lib/card'
 import type { LocalSource } from '../services/localSource'
 import type { ImportInvoice, ImportResult, ImportRow } from '../types'
 
@@ -16,10 +16,14 @@ interface Props {
   suggestions: Map<string, Suggestion>
   onClose: () => void
   onDone: () => Promise<void>
+  /** Depois de importar tudo numa fatura só, abre essa fatura. */
+  onImported?: (period: string) => void
+  /** Meses que já têm fatura nesta carteira. */
+  existing?: string[]
   notify: (kind: 'notice' | 'error', text: string) => void
 }
 
-export default function PasteBill({ local, people, categories, suggestions, onClose, onDone, notify }: Props) {
+export default function PasteBill({ local, people, categories, suggestions, onClose, onDone, onImported, existing = [], notify }: Props) {
   const [text, setText] = useState('')
   const [person, setPerson] = useState('')
   const [category, setCategory] = useState('')
@@ -34,6 +38,20 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
 
   const parsed = useMemo(() => parsePastedBill(text, new Date().toISOString().slice(0, 10), people, categories), [text, people, categories])
   const picked = parsed.rows.filter((row) => !off.has(row.line))
+  // Fatura de destino: a do vencimento achado no texto, a que a pessoa escolher, ou pela data de cada compra.
+  const card = readCard()
+  const due = useMemo(() => detectDueDate(text, new Date().toISOString().slice(0, 10)), [text])
+  const [destChoice, setDestChoice] = useState<string | null>(null)
+  const dest = destChoice ?? due?.period ?? 'auto'
+  const [saveDue, setSaveDue] = useState(true)
+  const dueDiffers = !!due && card?.dueDay !== due.day
+  const destOptions = useMemo(() => {
+    const now = currentPeriod()
+    const list = new Set<string>([...existing, ...(due ? [due.period] : [])])
+    for (let step = -3; step <= 12; step++) list.add(addMonthsToPeriod(now, step))
+    return [...list].sort()
+  }, [existing, due])
+  const destLabel = (period: string) => `${periodLabel(period)}${card ? ` (vence ${dueDate(period, card).slice(8, 10)}/${period.slice(5, 7)})` : ''}`
   const total = picked.reduce((sum, row) => sum + Math.round(row.amount * 100), 0) / 100
 
   const batch = (): ImportInvoice[] => {
@@ -42,7 +60,7 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       const hint = suggestFor(row.description, suggestions)
       const parcel = parseInstallment(row.description)
       // Parcela 3/3 de uma compra de setembro cai na fatura de setembro + 2 meses, não na de setembro.
-      const period = addMonthsToPeriod(invoicePeriodFor(row.date, readCard()), parcel ? parcel.number - 1 : 0)
+      const period = dest !== 'auto' ? dest : addMonthsToPeriod(invoicePeriodFor(row.date, readCard()), parcel ? parcel.number - 1 : 0)
       const list = groups.get(period) ?? []
       list.push({ date: row.date, description: row.description, amount: row.amount, person: row.person ?? hint?.person ?? person.trim(), category: hint?.category ?? (category.trim() || 'Outros'), status: 'pending', installmentNumber: parcel?.number ?? null, installmentCount: parcel?.count ?? null })
       groups.set(period, list)
@@ -85,7 +103,9 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
     setBusy(true)
     try {
       const result = await local.importInvoices(batch())
+      if (due && dueDiffers && saveDue && dest === due.period) writeCard({ ...(card ?? DEFAULT_CARD), dueDay: due.day })
       await onDone()
+      if (dest !== 'auto') onImported?.(dest)
       notify('notice', `${result.added} lançamentos importados${result.duplicates ? `, ${result.duplicates} já existiam e foram ignorados` : ''}.`)
       onClose()
     } catch (cause) { notify('error', messageOf(cause)) } finally { setBusy(false) }
@@ -108,6 +128,15 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
       <datalist id="paste-categories">{categories.map((name) => <option key={name} value={name} />)}</datalist>
     </div>
     {text.trim() && <>
+      <div className="paste-dest">
+        <label>Fatura de destino<select value={dest} onChange={(event) => { setDestChoice(event.target.value); reset() }} aria-label="Fatura de destino">
+          <option value="auto">Pela data de cada compra</option>
+          {destOptions.map((period) => <option key={period} value={period}>{destLabel(period)}</option>)}
+        </select></label>
+        {due && dest === due.period && <p className="paste-due"><Icon name="check" size={15} />Achei o vencimento <b>{formatDate(due.date)}</b> no texto: tudo vai para a fatura de {periodLabel(due.period)}.</p>}
+        {due && dueDiffers && dest === due.period && <label className="check-line"><input type="checkbox" checked={saveDue} onChange={(event) => setSaveDue(event.target.checked)} />Usar dia {due.day} como vencimento deste cartão{card ? ` (hoje está dia ${card.dueDay})` : ''}</label>}
+        {dest === 'auto' && <p className="hint">Cada compra vai para a fatura do mês em que cai pela data e pelo vencimento do cartão; parcelas vão para o mês da parcela.</p>}
+      </div>
       <div className="paste-list" role="list">
         {parsed.rows.map((row) => {
           const hint = suggestFor(row.description, suggestions)

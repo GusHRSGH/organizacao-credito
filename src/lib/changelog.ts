@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 58, date: '2026-11-24', title: 'Fatura de destino e outros cartões',
+    items: [
+      'Ao colar ou anexar uma fatura, escolha a fatura de destino. Se o texto ou o print tiver o vencimento (“Vencimento 10 de dezembro”), o app já escolhe a fatura certa e oferece salvar esse dia como vencimento do cartão.',
+      'No seletor de fatura, “+ Outro mês” cria a fatura de qualquer mês.',
+      'Na Cobrança, quem também deve em outro cartão mostra “Também deve em outro cartão”. Dá para ver os outros cartões, cobrar só este, cobrar todos de uma vez ou mandar o Pix do total.',
+    ],
+  },
+  {
     n: 57, date: '2026-11-24', title: 'Leitor de prints do banco',
     items: [
       'O botão “Anexar PDF ou foto da fatura” não fica mais preso em “Preparando o leitor de fotos” no celular. Se o leitor não carregar, aparece um aviso em vez de travar.',
