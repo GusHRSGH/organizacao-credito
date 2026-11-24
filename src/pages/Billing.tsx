@@ -13,6 +13,7 @@ import { billsByPerson, buildGroupMessage, buildMessage, type FeeCharge, type Pe
 import { hasReceiving, pixCode, readReceiving } from '../lib/receiving'
 import { useSettings } from '../lib/settings'
 import { shareText } from '../lib/share'
+import { getKnownWallets, useActiveWallet } from '../lib/wallet'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { CardFee, DataSource, Invoice, Transaction } from '../types'
 
@@ -40,6 +41,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const labels = useMemo(() => new Map(invoices.map((item) => [item.id, item.label])), [invoices])
 
   // Taxa de uso do cartão: uma por fatura, calculada sobre o gasto total (pago e pendente) de cada um.
+  const activeWallet = useActiveWallet()
+  const isLoan = getKnownWallets().find((item) => item.id === activeWallet)?.kind === 'loan'
   const feeBlocks: FeeBlock[] = useMemo(() => {
     const block = (id: string): FeeBlock => ({ invoiceId: id, label: labels.get(id) ?? 'Fatura', split: feeSplitFor(id, invoices, fees, transactions), spend: spendByPerson(transactions.filter((row) => row.invoice_id === id)) })
     if (!all) return invoiceId ? [block(invoiceId)] : []
@@ -163,7 +166,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     {fold('Como você recebe', hasReceiving(receiving) ? (receiving.key ? `Pix: ${receiving.key}` : 'Só o recado') : 'Ainda sem chave Pix', recvOpen, setRecvOpen,
       <ReceivingPanel value={receiving} onChange={setReceiving} openSignal={askKey} preview={bills[0] ? buildMessage(bills[0], scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bills[0].name) }).split('\n\n').slice(-1)[0] : ''} />)}
     {!all && settled.has(invoiceId) && <p className="settled-line"><span className="settled-badge">✓ Quitada</span> Todo mundo pagou esta fatura. <button className="text-button" onClick={() => setShown({ id: invoiceId, celebrate: false })}>Ver resumo</button></p>}
-    {feeBlocks.length > 0 && fold('Taxa de uso do cartão', feeBlocks[0]?.split ? `${feeBlocks[0].split.fee.name} · ${money(feeBlocks[0].split.total)}` : 'Nenhuma taxa nesta fatura', feeOpen, setFeeOpen,
+    {!isLoan && feeBlocks.length > 0 && fold('Taxa de uso do cartão', feeBlocks[0]?.split ? `${feeBlocks[0].split.fee.name} · ${money(feeBlocks[0].split.total)}` : 'Nenhuma taxa nesta fatura', feeOpen, setFeeOpen,
       <FeePanel blocks={feeBlocks} editable={!all} onSave={saveFee} />)}
     {!bills.length ? <EmptyState title="Nada por aqui ainda">Esta fatura não tem lançamentos. Cadastre compras em Faturas e elas aparecem divididas por responsável.</EmptyState> : <>
       <section className="metric-grid three">

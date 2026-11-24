@@ -1,4 +1,4 @@
-import type { Wallet } from './lib/wallet'
+import type { Loan, Wallet } from './lib/wallet'
 export type InvoiceStatus = 'open' | 'closed' | 'paid'
 export type TransactionStatus = 'pending' | 'paid'
 export type SourceKind = 'local'
@@ -127,4 +127,6 @@ export interface DataSource {
   listWallets(): Promise<Wallet[]>
   saveWallet(wallet: Wallet): Promise<void>
   removeWallet(id: string): Promise<void>
+  createLoan(name: string, loan: Loan, id?: string): Promise<string>
+  removeLoan(id: string): Promise<void>
 }

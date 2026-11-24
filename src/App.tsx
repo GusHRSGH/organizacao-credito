@@ -14,7 +14,8 @@ import { agendarAvisos } from './lib/avisosFatura'
 import { settledIds, startInvoice } from './lib/settled'
 import ModeChooser from './components/ModeChooser'
 import WalletSwitcher from './components/WalletSwitcher'
-import { setActiveWallet, setKnownWallets, useActiveWallet, withMain, type Wallet } from './lib/wallet'
+import { writeCard } from './lib/card'
+import { setActiveWallet, setKnownWallets, useActiveWallet, withMain, type Loan, type Wallet } from './lib/wallet'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
 import UpdateBanner from './components/UpdateBanner'
@@ -203,12 +204,16 @@ export default function App() {
     const id = crypto.randomUUID()
     try { await source.saveWallet({ id, name, kind: 'card' }); setActiveWallet(id); notify('notice', `Carteira ${name.trim()} criada. Configure o vencimento em Configurações > Lançamentos > Meu cartão.`) } catch (cause) { notify('error', messageOf(cause)) }
   }, [source, notify])
+  const createLoan = useCallback(async (name: string, loan: Loan) => {
+    try { const id = await source.createLoan(name, loan); writeCard({ dueDay: loan.dueDay, closingDaysBefore: 0 }, id); setActiveWallet(id); notify('notice', `Empréstimo ${name.trim()} criado com ${loan.count} ${loan.count === 1 ? 'parcela' : 'parcelas'}.`); return true } catch (cause) { notify('error', messageOf(cause)); return false }
+  }, [source, notify])
   const renameWallet = useCallback(async (item: Wallet, name: string) => {
     try { await source.saveWallet({ ...item, name }); await refresh() } catch (cause) { notify('error', messageOf(cause)) }
   }, [source, refresh, notify])
   const removeWallet = useCallback(async (item: Wallet) => {
-    if (!window.confirm(`Apagar a carteira ${item.name}?`)) return
-    try { await source.removeWallet(item.id); setActiveWallet(walletsFirst(wallets)); await refresh(); notify('notice', `Carteira ${item.name} apagada.`) } catch (cause) { notify('error', messageOf(cause)) }
+    const loan = item.kind === 'loan'
+    if (!window.confirm(loan ? `Apagar o empréstimo ${item.name} com todas as parcelas? Fica uma cópia de segurança em Configurações, caso precise voltar.` : `Apagar a carteira ${item.name}?`)) return
+    try { await (loan ? source.removeLoan(item.id) : source.removeWallet(item.id)); setActiveWallet(walletsFirst(wallets)); await refresh(); notify('notice', `Carteira ${item.name} apagada.`) } catch (cause) { notify('error', messageOf(cause)) }
   }, [source, refresh, notify, wallets])
   const launchSubs = useCallback(async (period: string, subs: Subscription[]) => {
     try {
@@ -280,7 +285,7 @@ export default function App() {
       </div>
     </aside>
     <main className="main">
-      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button>{page === 'config' || page === 'settings' ? <div className="breadcrumb"><b>{TITLES[page]}</b></div> : <WalletSwitcher wallets={wallets} active={wallet} onPick={setActiveWallet} onCreate={createWallet} onRename={renameWallet} onRemove={removeWallet} />}</div>
+      <header className="topbar"><div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Icon name="menu" size={22} /></button>{page === 'config' || page === 'settings' ? <div className="breadcrumb"><b>{TITLES[page]}</b></div> : <WalletSwitcher wallets={wallets} active={wallet} onPick={setActiveWallet} onCreate={createWallet} onCreateLoan={createLoan} onRename={renameWallet} onRemove={removeWallet} />}</div>
         <div className="topbar-actions">
           <button className="theme-toggle" onClick={() => updateSettings({ hideValues: !prefs.hideValues })} aria-label={prefs.hideValues ? 'Mostrar os valores' : 'Ocultar os valores'} aria-pressed={prefs.hideValues} title={prefs.hideValues ? 'Mostrar valores (Ctrl+H)' : 'Ocultar valores (Ctrl+H)'}><Icon name="lock" size={18} /></button>
           <button className="theme-toggle mode-toggle" onClick={() => pickMode(!prefs.advanced)} aria-label={prefs.advanced ? 'Trocar para o modo minimalista' : 'Trocar para o modo detalhado'} title={prefs.advanced ? 'Modo minimalista' : 'Modo detalhado'}><Icon name={prefs.advanced ? 'check' : 'pie'} size={18} /><span>{prefs.advanced ? 'Minimalista' : 'Detalhado'}</span></button>

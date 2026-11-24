@@ -1,7 +1,25 @@
 import { useSyncExternalStore } from 'react'
 
 /** Carteira: um cartão (Nubank, Credifatto…) ou, mais adiante, um empréstimo. Cada uma tem as suas faturas. */
-export interface Wallet { id: string; name: string; kind: 'card' | 'loan' }
+export interface Wallet { id: string; name: string; kind: 'card' | 'loan'; loan?: Loan }
+
+/** Empréstimo ou financiamento: uma pessoa paga parcelas fixas, com a sua % extra por cima de cada uma. */
+export interface Loan {
+  person: string
+  /** Valor da parcela cobrada pelo banco (ou combinada, se o dinheiro foi seu). */
+  installment: number
+  /** Quantas parcelas faltam a partir do mês de início. */
+  count: number
+  /** Mês da primeira parcela (AAAA-MM-01). */
+  start: string
+  /** Dia do mês em que a parcela vence. */
+  dueDay: number
+  /** Sua % extra sobre cada parcela (0 = sem extra). */
+  extraPct: number
+}
+
+/** Valor que a pessoa paga por parcela: a parcela mais a sua %, arredondado no centavo. */
+export const loanCharge = (loan: Pick<Loan, 'installment' | 'extraPct'>) => Math.round(loan.installment * (100 + (loan.extraPct || 0))) / 100
 
 /** A carteira que já existia antes das carteiras: tudo o que não tem carteira marcada é dela. */
 export const MAIN_WALLET = 'principal'
