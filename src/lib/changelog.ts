@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 60, date: '2026-11-24', title: 'Cobrar todos pelo mês de vencimento',
+    items: [
+      'O “Cobrar todos” e o Pix do total somam o que vence no mesmo mês em todos os cartões (o mês da fatura aberta na Cobrança). Antes, uma fatura vazia podia esconder a fatura certa de outro cartão.',
+      'Empréstimos entram com a parcela do mês e as atrasadas, e a mensagem mostra quanto ainda falta, só como informação.',
+      'Ao tocar em “Cobrar todos”, escolha entre o total por carteira ou cada compra. Em “Compartilhar Pix”, quem deve em outro cartão escolhe entre o Pix só deste cartão ou de todos somados.',
+    ],
+  },
+  {
     n: 59, date: '2026-11-24', title: 'Apagar fatura vazia',
     items: ['Fatura sem nenhum lançamento agora mostra “Vazia” com o botão “Apagar fatura”, igual à fatura quitada.'],
   },

@@ -1178,3 +1178,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .other-cards li.here{color:var(--text)}
 .other-cards .total{display:flex;justify-content:space-between;font-weight:700}
 .settled-badge.empty{color:var(--faint);background:color-mix(in srgb,var(--faint) 14%,transparent)}
+.choice-box{margin-top:10px;padding:12px;border:1px solid var(--primary);border-radius:12px;display:grid;gap:8px}
+.choice-box b{font-size:14px}
+.choice-box .text-button{justify-self:start}
+.unified-note{margin:0 0 10px;font-size:13px}

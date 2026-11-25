@@ -15,7 +15,7 @@ import { settledIds, startInvoice } from './lib/settled'
 import ModeChooser from './components/ModeChooser'
 import WalletSwitcher from './components/WalletSwitcher'
 import { writeCard } from './lib/card'
-import { unifiedDebts, type Everything } from './lib/unified'
+import type { Everything } from './lib/unified'
 import { setActiveWallet, setKnownWallets, useActiveWallet, withMain, type Loan, type Wallet } from './lib/wallet'
 import { buildSuggestions } from './lib/suggest'
 import QuickSheet from './components/QuickSheet'
@@ -65,7 +65,6 @@ export default function App() {
   // Carteiras (cartões): cada uma com as suas faturas. As telas mostram a carteira escolhida no topo.
   const [wallets, setWallets] = useState<Wallet[]>(() => withMain([]))
   const [everything, setEverything] = useState<Everything | null>(null)
-  const unified = useMemo(() => (everything ? unifiedDebts(everything, currentPeriod()) : null), [everything])
   const wallet = useActiveWallet()
   const [loaded, setLoaded] = useState(false)
   const [focusId, setFocusId] = useState('')
@@ -301,9 +300,9 @@ export default function App() {
       {offer && page !== 'settings' && <div className="restore-offer" role="status"><span>Encontramos um backup de <b>{new Date(offer.modifiedTime).toLocaleDateString('pt-BR')}</b> no seu Google Drive. Quer restaurar?</span><div className="button-row"><button className="primary-button" onClick={() => void restoreOffer()}>Restaurar backup</button><button className="text-button" onClick={() => setOffer(null)}>Agora não</button></div></div>}
       {loaded && page === 'dashboard' && <Reminders invoices={invoices} transactions={transactions} onGo={(next) => { setPage(next); window.scrollTo({ top: 0 }) }} />}
       {!loaded && page !== 'settings' ? <p className="empty">Carregando…</p> : <Suspense fallback={<p className="empty">Carregando…</p>}>
-        {page === 'dashboard' && <Dashboard unified={unified} advanced={prefs.advanced} settled={settled} onRemove={(id) => void removeSettled(id)} fees={fees} invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
+        {page === 'dashboard' && <Dashboard everything={everything} advanced={prefs.advanced} settled={settled} onRemove={(id) => void removeSettled(id)} fees={fees} invoices={invoices} transactions={transactions} focusId={focusId} compareId={compareId} onFocus={setFocusId} onCompare={setCompareId} onGo={setPage} onDrill={goDrill} canImport={!!local} onLaunchSubs={launchSubs} />}
         {page === 'invoices' && <Invoices source={source} invoices={invoices} transactions={transactions} history={learned} settled={settled} onRemove={(id) => void removeSettled(id)} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} local={local} onBank={() => setBankOpen(true)} quickSignal={quickSignal} drill={drill} />}
-        {page === 'billing' && <Billing unified={unified} source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
+        {page === 'billing' && <Billing everything={everything} source={source} invoices={invoices} transactions={transactions} invoiceId={invoiceId} onInvoice={setInvoiceId} onChanged={refresh} notify={notify} onDrill={goDrill} />}
         {page === 'goals' && <Goals invoices={invoices} transactions={transactions} invoiceId={invoiceId || focusId} onInvoice={setInvoiceId} notify={notify} onDrill={goDrill} />}
         {page === 'config' && <Config people={people} categories={categories} notify={notify} />}
         {page === 'settings' && <Settings onCheckUpdate={() => setUpdateSignal((n) => n + 1)} google={googleUi} cloud={cloud} local={local} invoices={invoices} transactions={transactions} history={learned} onChanged={refresh} notify={notify} onLegal={() => setLegalOpen(true)} onTour={() => setTourOpen(true)} onNews={() => setNews(ENTRIES)} onBank={() => setBankOpen(true)} />}
