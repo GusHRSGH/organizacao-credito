@@ -14,10 +14,10 @@ import { hasReceiving, pixCode, readReceiving } from '../lib/receiving'
 import { useSettings } from '../lib/settings'
 import { shareText } from '../lib/share'
 import { getKnownWallets, useActiveWallet } from '../lib/wallet'
-import { findDebt, unifiedDebts, unifiedMessage, type Everything, type PersonDebt, type UnifiedMode } from '../lib/unified'
+import { creditBalance, findDebt, settleTargets, unifiedDebts, unifiedMessage, type Everything, type PersonDebt, type UnifiedMode } from '../lib/unified'
 import { currentPeriod, periodLabel } from '../services/installments'
 import { formatDate, messageOf, money } from '../lib/format'
-import type { CardFee, DataSource, Invoice, Transaction } from '../types'
+import type { CardFee, CreditEntry, DataSource, Invoice, Transaction } from '../types'
 
 interface Props {
   source: DataSource
@@ -67,6 +67,15 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     return list
   }, [transactions, invoiceId, all, feeDue])
   const dueOf = (bill: PersonBill) => (Math.round(bill.pending * 100) + Math.round((feeDue.get(bill.name) ?? 0) * 100)) / 100
+  // Crédito de quem pagou a mais antes: desconta no Pix e na mensagem, e é usado ao marcar como pago.
+  const [credits, setCredits] = useState<CreditEntry[]>([])
+  useEffect(() => { void source.listCredits().then(setCredits).catch(() => setCredits([])) }, [source, transactions])
+  const balanceOf = (name: string) => creditBalance(credits, name)
+  const netDue = (bill: PersonBill) => Math.max(0, Math.round((dueOf(bill) - balanceOf(bill.name)) * 100) / 100)
+  async function spendCredit(name: string, owed: number, label: string) {
+    const used = Math.min(balanceOf(name), owed)
+    if (used > 0.004) await source.addCredit(name, -used, `Usado em ${label}`)
+  }
   async function saveFee(fee: CardFee) {
     try { await source.saveFee(fee); await loadFees(); await onChanged() } catch (cause) { notify('error', messageOf(cause)) }
   }
@@ -124,12 +133,12 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const [choice, setChoice] = useState<{ name: string; kind: 'pix' | 'msg'; where: 'card' | 'fold' } | null>(null)
   const [moreFor, setMoreFor] = useState<string | null>(null)
   const fold = (title: string, sub: string, isOpen: boolean, setIsOpen: (value: boolean) => void, child: ReactNode) => <details className="fold" open={isOpen} onToggle={(event) => setIsOpen((event.currentTarget as HTMLDetailsElement).open)}><summary><b>{title}</b><small>{sub}</small></summary>{child}</details>
-  const pixOf = (bill: PersonBill) => pixCode(receiving, dueOf(bill), scopeLabel)
+  const pixOf = (bill: PersonBill) => pixCode(receiving, netDue(bill), scopeLabel)
 
   /** Detalhes das compras e o total, sem a chave: o Pix vai no outro botão. */
   async function sendDetails(bill: PersonBill) {
     try {
-      const text = buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name), pixSeparate: !!pixOf(bill) })
+      const text = buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name), pixSeparate: !!pixOf(bill), credit: balanceOf(bill.name) })
       const done = await shareText(text, `Cobrança de ${bill.name}`)
       if (done === 'copied') notify('notice', `Detalhes de ${bill.name} copiados. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
@@ -145,7 +154,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     }
     try {
       const done = await shareText(code, `Pix de ${bill.name}`)
-      if (done === 'copied') notify('notice', `Pix de ${bill.name} (${money(dueOf(bill))}) copiado. É só colar no WhatsApp.`)
+      if (done === 'copied') notify('notice', `Pix de ${bill.name} (${money(netDue(bill))}) copiado. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
   }
 
@@ -156,7 +165,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   /** Pix com o total de todas as carteiras. */
   async function shareUnifiedPix(debt: PersonDebt) {
     setChoice(null)
-    const code = pixCode(receiving, debt.total, 'Total')
+    const net = Math.max(0, Math.round((debt.total - balanceOf(debt.name)) * 100) / 100)
+    const code = pixCode(receiving, net, 'Total')
     if (!code) {
       setAskKey((n) => n + 1); setRecvOpen(true)
       notify('notice', 'Cadastre sua chave Pix e o nome de quem recebe para gerar o Pix copia e cola.')
@@ -164,16 +174,29 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     }
     try {
       const done = await shareText(code, `Pix de ${debt.name}`)
-      if (done === 'copied') notify('notice', `Pix de ${debt.name} com o total (${money(debt.total)}) copiado. É só colar no WhatsApp.`)
+      if (done === 'copied') notify('notice', `Pix de ${debt.name} com o total (${money(net)}) copiado. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
   }
 
   async function sendUnified(debt: PersonDebt, mode: UnifiedMode) {
     setChoice(null)
     try {
-      const done = await shareText(unifiedMessage(debt, { mode, period: refPeriod, pixSeparate: !!pixCode(receiving, debt.total, 'Total') }), `Cobrança de ${debt.name}`)
+      const done = await shareText(unifiedMessage(debt, { mode, period: refPeriod, pixSeparate: !!pixCode(receiving, debt.total, 'Total'), credit: balanceOf(debt.name) }), `Cobrança de ${debt.name}`)
       if (done === 'copied') notify('notice', `Total de ${debt.name} copiado. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
+  }
+
+  /** A pessoa mandou o total: marca como pago tudo dela no mês, em todas as carteiras, e usa o crédito. */
+  async function payAll(debt: PersonDebt) {
+    const wallets = new Set(debt.parts.map((part) => part.walletId)).size
+    const { rowIds, fees: feeMarks } = settleTargets(debt)
+    if (!window.confirm(`${debt.name} pagou tudo de ${periodLabel(refPeriod)}? Marca como pago ${rowIds.length} ${rowIds.length === 1 ? 'lançamento' : 'lançamentos'}${feeMarks.length ? ' e a taxa' : ''} em ${wallets} ${wallets === 1 ? 'carteira' : 'carteiras'} (${money(debt.total)}).`)) return
+    try {
+      await source.settleAcross(rowIds, feeMarks)
+      await spendCredit(debt.name, debt.total, periodLabel(refPeriod))
+      await loadFees(); await onChanged()
+      notify('notice', `${debt.name} está em dia em todas as carteiras em ${periodLabel(refPeriod)}.`)
+    } catch (cause) { notify('error', messageOf(cause)) }
   }
 
   /** Caixinha de escolha que abre no lugar do botão tocado. */
@@ -196,16 +219,17 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     const ids = bill.rows.filter((row) => row.status !== 'paid').map((row) => row.id)
     const fee = feeDue.get(bill.name) ?? 0
     if ((!ids.length && !fee) || !window.confirm(`Marcar ${ids.length} lançamentos de ${bill.name}${fee ? ' e a taxa' : ''} (${money(dueOf(bill))}) como pagos?`)) return
-    try { if (ids.length) await source.setStatusMany(ids, 'paid'); if (fee) await payFees(bill.name); await onChanged(); notify('notice', `${bill.name} está em dia nesta fatura.`) } catch (cause) { notify('error', messageOf(cause)) }
+    try { if (ids.length) await source.setStatusMany(ids, 'paid'); if (fee) await payFees(bill.name); await spendCredit(bill.name, dueOf(bill), scopeLabel); await onChanged(); notify('notice', `${bill.name} está em dia nesta fatura.`) } catch (cause) { notify('error', messageOf(cause)) }
   }
 
-  async function settleSome(bill: PersonBill, ids: string[], feePaid = false) {
+  async function settleSome(bill: PersonBill, ids: string[], feePaid = false, credit = 0) {
     try {
       if (ids.length) await source.setStatusMany(ids, 'paid')
       if (feePaid) await payFees(bill.name)
+      if (credit > 0.004) await source.addCredit(bill.name, credit, `Pagou a mais em ${scopeLabel}`)
       setPaying(null)
       await onChanged()
-      notify('notice', `${ids.length} ${ids.length === 1 ? 'lançamento marcado' : 'lançamentos marcados'} como ${ids.length === 1 ? 'pago' : 'pagos'} para ${bill.name}.`)
+      notify('notice', `${ids.length} ${ids.length === 1 ? 'lançamento marcado' : 'lançamentos marcados'} como ${ids.length === 1 ? 'pago' : 'pagos'} para ${bill.name}.${credit > 0.004 ? ` ${money(credit)} ficaram de crédito para a próxima.` : ''}`)
     } catch (cause) { notify('error', messageOf(cause)) }
   }
 
@@ -226,6 +250,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
           <div className="button-row">
             <button className="secondary-button" onClick={() => void shareUnifiedPix(debt)}><Icon name="wallet" size={16} />Pix do total</button>
             <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'msg', where: 'fold' })}><Icon name="copy" size={16} />Cobrar todos</button>
+            <button className="secondary-button" onClick={() => void payAll(debt)}><Icon name="check" size={16} />Pagou tudo</button>
           </div>
           {choiceBox(debt, null, 'fold')}
         </li>)}</ul> : <p className="muted">Ninguém deve nada em {periodLabel(refPeriod)} em nenhuma carteira.</p>}
@@ -249,8 +274,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
           return <article key={bill.name} data-tour={position === 0 ? 'bill-card' : undefined} className="bill-card">
             <div className="bill-head">
               <span className="avatar">{bill.name[0].toUpperCase()}</span>
-              <div className="bill-name"><b>{bill.name}</b><small>{bill.rows.length} {bill.rows.length === 1 ? 'lançamento' : 'lançamentos'} · total {money(bill.total)}</small>{fee > 0 && <small className="bill-fee">+ taxa {money(fee)}</small>}</div>
-              <div className="bill-due"><span>{due > 0 ? 'Deve' : 'Em dia'}</span><b className={due > 0 ? 'warn' : 'ok'}>{money(due)}</b></div>
+              <div className="bill-name"><b>{bill.name}</b><small>{bill.rows.length} {bill.rows.length === 1 ? 'lançamento' : 'lançamentos'} · total {money(bill.total)}</small>{fee > 0 && <small className="bill-fee">+ taxa {money(fee)}</small>}{balanceOf(bill.name) > 0 && <small className="bill-credit">crédito {money(balanceOf(bill.name))}{due > 0 ? ' (já descontado)' : ''}</small>}</div>
+              <div className="bill-due"><span>{due > 0 ? 'Deve' : 'Em dia'}</span><b className={due > 0 ? 'warn' : 'ok'}>{money(due > 0 ? netDue(bill) : 0)}</b></div>
             </div>
             <div className="bill-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
             <div className="bill-actions">
@@ -285,11 +310,12 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
                     <button className="secondary-button" onClick={() => void sendDetails(bill)}><Icon name="copy" size={16} />Cobrar só este</button>
                     <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'msg', where: 'card' })}><Icon name="copy" size={16} />Cobrar todos</button>
                     <button className="secondary-button" onClick={() => setChoice({ name: debt.name, kind: 'pix', where: 'card' })}><Icon name="wallet" size={16} />Pix</button>
+                    <button className="secondary-button" onClick={() => void payAll(debt)}><Icon name="check" size={16} />Pagou tudo · {money(debt.total)}</button>
                   </div>
                 </>}
               </div>
             })()}
-            {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={fee} onConfirm={(ids, feePaid) => settleSome(bill, ids, feePaid)} onCancel={() => setPaying(null)} />}
+            {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={fee} onConfirm={(ids, feePaid, credit) => settleSome(bill, ids, feePaid, credit)} onCancel={() => setPaying(null)} />}
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>
               <span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="grow">{row.description}{row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}</span><span className="muted">{row.category?.name ?? ''}</span><b>{money(Number(row.amount))}</b>
             </li>)}</ul>}

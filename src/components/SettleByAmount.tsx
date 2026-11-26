@@ -9,7 +9,8 @@ interface Props {
   rows: Transaction[]
   /** Taxa de uso do cartão ainda não paga: as compras são quitadas primeiro, a taxa por último. */
   fee?: number
-  onConfirm: (paidIds: string[], feePaid: boolean) => Promise<void> | void
+  /** `credit`: o que a pessoa mandou a mais, que vira crédito para a próxima. */
+  onConfirm: (paidIds: string[], feePaid: boolean, credit: number) => Promise<void> | void
   onCancel: () => void
 }
 
@@ -40,9 +41,9 @@ export default function SettleByAmount({ name, rows, fee = 0, onConfirm, onCance
     {coversRows && <>
       <p>Cobre as compras: {open.length} {open.length === 1 ? 'lançamento vira pago' : 'lançamentos viram pagos'}.
         {fee > 0 ? feePaid ? ' A taxa também fica paga.' : ` A taxa (${moneyFull(fee)}) continua pendente${extra > 0 ? `: os ${moneyFull(extra)} que sobram não cobrem ela toda` : ''}.` : ''}
-        {credit > 0.004 && (feePaid || !fee) ? ` Sobram ${moneyFull(credit)} de crédito.` : ''}</p>
+        {credit > 0.004 && (feePaid || !fee) ? ` Sobram ${moneyFull(credit)}, que ficam de crédito e descontam na próxima cobrança.` : ''}</p>
       <div className="button-row">
-        <button className="primary-button" onClick={() => void onConfirm(open.map((row) => row.id), feePaid)}>Marcar como pago</button>
+        <button className="primary-button" onClick={() => void onConfirm(open.map((row) => row.id), feePaid, credit > 0.004 && (feePaid || !fee) ? credit : 0)}>Marcar como pago</button>
         <button className="text-button" onClick={onCancel}>Cancelar</button>
       </div>
     </>}
@@ -62,7 +63,7 @@ export default function SettleByAmount({ name, rows, fee = 0, onConfirm, onCance
           {picked.diff !== 0 && <p className="settle-diff" role="alert">A conta não fecha: os lançamentos pagos somam {moneyFull(picked.paidTotal)} e {name.split(/\s+/)[0]} mandou {moneyFull(value)}. Diferença de {moneyFull(Math.abs(picked.diff))} {picked.diff > 0 ? 'a mais marcada como paga' : 'a menos, que fica como crédito'}. Confirma assim mesmo?</p>}
         </>}
       <div className="button-row">
-        <button className="primary-button" onClick={() => void onConfirm(picked.paidIds, false)}>{picked.diff !== 0 ? 'Confirmar com a diferença' : `Marcar ${picked.paidIds.length} como ${picked.paidIds.length === 1 ? 'pago' : 'pagos'}`}</button>
+        <button className="primary-button" onClick={() => void onConfirm(picked.paidIds, false, picked.diff < 0 ? Math.round(-picked.diff * 100) / 100 : 0)}>{picked.diff !== 0 ? 'Confirmar com a diferença' : `Marcar ${picked.paidIds.length} como ${picked.paidIds.length === 1 ? 'pago' : 'pagos'}`}</button>
         <button className="text-button" onClick={onCancel}>Cancelar</button>
       </div>
     </>}

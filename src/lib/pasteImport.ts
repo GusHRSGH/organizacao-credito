@@ -12,6 +12,7 @@ const DATE_TEXT = /\b(\d{1,2})\s*(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|
 
 /** Lê texto colado da fatura do banco (uma compra por linha) e separa o que é lançamento do que é ruído. */
 export function parsePastedBill(text: string, today: string, people: string[] = [], categories: string[] = []): PasteResult {
+  if (text.includes(IMAGE_BREAK)) return parseManyImages(text, today, people, categories)
   const statement = parseAccountStatement(text)
   if (statement) return statement
   const app = parseAppScreen(text, today)
@@ -183,4 +184,32 @@ export function detectDueDate(text: string, today: string): { date: string; peri
   const date = makeDate(day, month, year)
   if (!date) return null
   return { date, period: `${date.slice(0, 7)}-01`, day }
+}
+
+/** Separa o texto de cada imagem quando a pessoa manda vários prints de uma vez. */
+export const IMAGE_BREAK = '--- próxima imagem ---'
+
+/**
+ * Vários prints da mesma fatura (a tela rola e um print repete o fim do outro):
+ * lê cada um e descarta a compra que já apareceu num print anterior (mesma data, descrição e valor).
+ */
+function parseManyImages(text: string, today: string, people: string[], categories: string[]): PasteResult {
+  const rows: PastedRow[] = []
+  const skipped: PasteResult['skipped'] = []
+  const seen = new Set<string>()
+  let offset = 0
+  for (const chunk of text.split(IMAGE_BREAK)) {
+    const result = parsePastedBill(chunk, today, people, categories)
+    const mine = new Set<string>()
+    for (const row of result.rows) {
+      const id = `${row.date}|${plain(row.description)}|${row.amount}`
+      if (seen.has(id)) { skipped.push({ line: row.line + offset, text: row.description, reason: 'repetida em outro print' }); continue }
+      mine.add(id)
+      rows.push({ ...row, line: row.line + offset })
+    }
+    for (const id of mine) seen.add(id)
+    skipped.push(...result.skipped.map((item) => ({ ...item, line: item.line + offset })))
+    offset += chunk.split(/\r?\n/).length - 1
+  }
+  return { rows, skipped }
 }

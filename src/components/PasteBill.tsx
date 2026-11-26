@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { formatDate, messageOf, money } from '../lib/format'
-import { detectDueDate, parsePastedBill } from '../lib/pasteImport'
+import { detectDueDate, IMAGE_BREAK, parsePastedBill } from '../lib/pasteImport'
 import { parseInstallment } from '../services/importXlsx'
 import { suggestFor, type Suggestion } from '../lib/suggest'
 import { addMonthsToPeriod, currentPeriod, periodLabel } from '../services/installments'
@@ -73,25 +73,31 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
   const unknown = picked.filter((row) => !(row.person ?? suggestFor(row.description, suggestions)?.person ?? person.trim())).length
   const reset = () => { setPreview(null) }
 
-  async function readFile(file: File | undefined) {
-    if (!file) return
+  /** Lê um ou vários arquivos (PDF ou prints). Vários prints são juntados e as compras repetidas entre eles somem. */
+  async function readFiles(list: FileList | null | undefined) {
+    const files = [...(list ?? [])]
+    if (!files.length) return
     setReading('Abrindo o arquivo…')
     try {
-      let result: string
-      if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
-        const { readPdfText } = await import('../services/pdfText')
-        usedOcr.current = true
-        result = await readPdfText(file, (info) => setReading(info.mode === 'texto' ? `Lendo a página ${info.page} de ${info.pages}…` : `Página ${info.page} de ${info.pages} é imagem, reconhecendo o texto (pode levar um pouco)…`),
-          (info) => setReading(`Reconhecendo o texto… ${Math.round(info.progress * 100)}%`))
-      } else {
-        const { readImageText } = await import('../services/ocr')
-        usedOcr.current = true
-        setReading('Preparando o leitor de fotos…')
-        result = await readImageText(file, (info) => setReading(info.status === 'recognizing text' ? `Reconhecendo o texto… ${Math.round(info.progress * 100)}%` : 'Preparando o leitor de fotos…'))
+      const texts: string[] = []
+      for (const [index, file] of files.entries()) {
+        const which = files.length > 1 ? ` (${index + 1} de ${files.length})` : ''
+        if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+          const { readPdfText } = await import('../services/pdfText')
+          usedOcr.current = true
+          texts.push(await readPdfText(file, (info) => setReading(info.mode === 'texto' ? `Lendo a página ${info.page} de ${info.pages}${which}…` : `Página ${info.page} de ${info.pages} é imagem, reconhecendo o texto${which} (pode levar um pouco)…`),
+            (info) => setReading(`Reconhecendo o texto${which}… ${Math.round(info.progress * 100)}%`)))
+        } else {
+          const { readImageText } = await import('../services/ocr')
+          usedOcr.current = true
+          setReading(`Preparando o leitor de fotos${which}…`)
+          texts.push(await readImageText(file, (info) => setReading(info.status === 'recognizing text' ? `Reconhecendo o texto${which}… ${Math.round(info.progress * 100)}%` : `Preparando o leitor de fotos${which}…`)))
+        }
       }
+      const result = texts.filter((item) => item.trim()).join(`\n${IMAGE_BREAK}\n`)
       if (!result.trim()) throw new Error('Não consegui ler texto nesse arquivo. Tente uma foto mais nítida, de frente e com boa luz.')
       setText(result); setOff(new Set()); reset()
-      notify('notice', 'Li o arquivo. Confira as linhas abaixo antes de importar.')
+      notify('notice', files.length > 1 ? `Li ${files.length} arquivos e juntei as compras, sem repetir. Confira antes de importar.` : 'Li o arquivo. Confira as linhas abaixo antes de importar.')
     } catch (cause) { notify('error', messageOf(cause)) } finally { setReading(''); if (fileRef.current) fileRef.current.value = ''; if (cameraRef.current) cameraRef.current.value = '' }
   }
 
@@ -114,10 +120,10 @@ export default function PasteBill({ local, people, categories, suggestions, onCl
   return <section className="panel paste-panel">
     <div className="panel-heading"><div><h2>Colar do banco ou da conversa</h2><p className="panel-sub">Cole linhas da fatura, notificações do banco ou mensagens do WhatsApp (“gastei 50 no mercado”). O robô separa os gastos e você confere.</p></div><button className="text-button" onClick={onClose}>Fechar</button></div>
     <div className="button-row paste-files">
-      <button className="secondary-button" disabled={!!reading} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Anexar PDF ou foto da fatura</button>
+      <button className="secondary-button" disabled={!!reading} onClick={() => fileRef.current?.click()}><Icon name="upload" size={16} />Anexar PDF ou prints da fatura</button>
       <button className="secondary-button" disabled={!!reading} onClick={() => cameraRef.current?.click()}><Icon name="receipt" size={16} />Tirar foto</button>
-      <input ref={fileRef} type="file" accept=".pdf,application/pdf,image/*" hidden aria-label="Arquivo da fatura" onChange={(event) => void readFile(event.target.files?.[0])} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(event) => void readFile(event.target.files?.[0])} />
+      <input ref={fileRef} type="file" accept=".pdf,application/pdf,image/*" multiple hidden aria-label="Arquivo da fatura" onChange={(event) => void readFiles(event.target.files)} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(event) => void readFiles(event.target.files)} />
       {reading && <span className="muted" role="status">{reading}</span>}
     </div>
     <textarea value={text} onChange={(event) => { setText(event.target.value); setOff(new Set()); reset() }} rows={6} placeholder={'05/11 SUPERMERCADO XYZ 152,30\nCompra aprovada de R$ 23,40 em UBER hoje\n[08/11/2026 14:32] Ana: gastei 50 no mercado'} aria-label="Texto da fatura" />

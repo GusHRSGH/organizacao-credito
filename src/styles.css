@@ -1182,3 +1182,4 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .choice-box b{font-size:14px}
 .choice-box .text-button{justify-self:start}
 .unified-note{margin:0 0 10px;font-size:13px}
+.bill-credit{display:block;color:var(--good);font-weight:600}
