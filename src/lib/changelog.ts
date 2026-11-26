@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 61, date: '2026-11-26', title: 'Pagou tudo, crédito e vários prints',
+    items: [
+      '“Pagou tudo”: quando a pessoa manda o Pix do total, um toque marca como pago tudo dela no mês em todos os cartões e empréstimos, com a taxa.',
+      'Crédito: se a pessoa pagar a mais em “Pagou um valor”, a sobra fica de crédito e já sai descontada no próximo Pix e na próxima mensagem.',
+      'Dá para anexar vários prints de uma vez (quando a fatura não cabe numa tela). O app junta tudo e tira as compras que aparecem em dois prints.',
+    ],
+  },
+  {
     n: 60, date: '2026-11-24', title: 'Cobrar todos pelo mês de vencimento',
     items: [
       'O “Cobrar todos” e o Pix do total somam o que vence no mesmo mês em todos os cartões (o mês da fatura aberta na Cobrança). Antes, uma fatura vazia podia esconder a fatura certa de outro cartão.',

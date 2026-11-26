@@ -23,7 +23,7 @@ export function billsByPerson(rows: Transaction[]): PersonBill[] {
 
 /** Mensagem simples para enviar no WhatsApp com o que ainda está pendente. */
 export interface FeeCharge { text: string; amount: number }
-export interface MessageOptions { receiving?: Receiving; /** O Pix vai numa mensagem separada: aqui não entra a chave, só o recado e o aviso. */ pixSeparate?: boolean; /** Taxa de uso do cartão ainda não paga: entra no detalhe e no total. */ fees?: FeeCharge[]; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string> }
+export interface MessageOptions { receiving?: Receiving; /** O Pix vai numa mensagem separada: aqui não entra a chave, só o recado e o aviso. */ pixSeparate?: boolean; /** Taxa de uso do cartão ainda não paga: entra no detalhe e no total. */ fees?: FeeCharge[]; /** Quando a cobrança junta várias faturas, agrupa as linhas pelo nome da fatura. */ invoiceLabels?: Map<string, string>; /** Crédito de quem pagou a mais antes: desconta do total. */ credit?: number }
 
 export function buildMessage(bill: PersonBill, invoiceLabel: string, options: MessageOptions = {}) {
   const open = bill.rows.filter((row) => row.status !== 'paid')
@@ -31,7 +31,9 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
   const first = word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1)
   const fees = options.fees ?? []
   const feeCents = fees.reduce((sum, fee) => sum + Math.round(fee.amount * 100), 0)
-  const due = (Math.round(bill.pending * 100) + feeCents) / 100
+  const gross = Math.round(bill.pending * 100) + feeCents
+  const creditCents = Math.min(Math.round((options.credit ?? 0) * 100), gross)
+  const due = (gross - creditCents) / 100
   if (!open.length && !feeCents) return `Oi ${first}! Tudo certo com a fatura de ${invoiceLabel}, nada pendente.`
   const line = (row: Transaction) => `• ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(Number(row.amount))}`
   const labels = options.invoiceLabels
@@ -43,6 +45,7 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
     detail = [...byInvoice].map(([id, list]) => `${labels.get(id) ?? 'Fatura'} (${moneyFull(list.reduce((sum, row) => sum + Math.round(Number(row.amount) * 100), 0) / 100)}):\n${list.map(line).join('\n')}`).join('\n\n')
   } else detail = open.map(line).join('\n')
   if (fees.length) detail = [detail, fees.map((fee) => `• ${fee.text}: ${moneyFull(fee.amount)}`).join('\n')].filter(Boolean).join(open.length ? '\n\n' : '')
+  if (creditCents > 0) detail = `${detail}\n• Crédito (pagou a mais antes): -${moneyFull(creditCents / 100)}`
   const paidNote = bill.paid > 0 ? `\n(Já pago: ${moneyFull(bill.paid)})` : ''
   const pay = options.pixSeparate
     ? [options.receiving?.include && options.receiving.note.trim() ? options.receiving.note.trim() : '', 'É só copiar o Pix que te mandei.'].filter(Boolean).join('\n')

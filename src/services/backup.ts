@@ -47,5 +47,7 @@ export function validateBackup(input: unknown): LocalData {
   if (clean.fees) clean.fees = clean.fees.filter((fee) => invoiceIds.has(fee.invoice_id))
   // Memória do robô (faturas apagadas): só o que tem o formato certo; o resto é descartado em silêncio.
   if (clean.memory !== undefined) clean.memory = Array.isArray(clean.memory) ? clean.memory.filter((row) => isObject(row) && isString(row.id) && isString(row.description) && typeof row.amount === 'number') : []
+  if (clean.credits !== undefined) clean.credits = Array.isArray(clean.credits) ? clean.credits.filter((c) => isObject(c) && isString(c.person) && typeof c.amount === 'number' && Number.isFinite(c.amount)) : []
+  if (clean.recurring !== undefined) clean.recurring = Array.isArray(clean.recurring) ? clean.recurring.filter((r) => isObject(r) && isString(r.id) && isString(r.description) && typeof r.amount === 'number' && r.amount > 0) : []
   return clean
 }

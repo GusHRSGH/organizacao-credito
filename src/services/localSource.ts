@@ -1,5 +1,5 @@
 import type {
-  CardFee, Category, DataSource, EntryInput, ImportInvoice, ImportResult, Invoice, LocalData, Person,
+  CardFee, Category, CreditEntry, DataSource, Recurring, EntryInput, ImportInvoice, ImportResult, Invoice, LocalData, Person,
   Transaction, TransactionRow, TransactionStatus,
 } from '../types'
 import { makeBackup, validateBackup } from './backup'
@@ -186,6 +186,78 @@ export class LocalSource implements DataSource {
       person: row.person_id ? { name: people.get(row.person_id) ?? '' } : null,
       category: row.category_id ? { name: categories.get(row.category_id) ?? '' } : null,
     }))
+  }
+
+  async listCredits(): Promise<CreditEntry[]> {
+    return structuredClone((await this.read()).credits ?? [])
+  }
+
+  /** Crédito da pessoa: positivo quando pagou a mais, negativo quando o crédito foi usado. */
+  addCredit(person: string, amount: number, note: string) {
+    const name = person.trim()
+    const value = Math.round(amount * 100) / 100
+    if (!name || !Number.isFinite(value) || value === 0) return Promise.reject(new Error('Crédito inválido.'))
+    return this.mutate((db) => { db.credits = [...(db.credits ?? []), { id: uuid(), person: name, amount: value, created_at: new Date().toISOString(), note: note.slice(0, 120) }] })
+  }
+
+  settleAcross(rowIds: string[], fees: Array<{ invoice_id: string; name: string }>) {
+    const wanted = new Set(rowIds)
+    const now = new Date().toISOString()
+    return this.mutate((db) => {
+      for (const row of db.transactions) if (wanted.has(row.id) && row.status !== 'paid') { row.status = 'paid'; row.paid_at = now }
+      for (const mark of fees) {
+        const fee = (db.fees ?? []).find((item) => item.invoice_id === mark.invoice_id)
+        if (fee && !fee.paid.includes(mark.name)) fee.paid = [...fee.paid, mark.name]
+      }
+    })
+  }
+
+  async listRecurring(): Promise<Recurring[]> {
+    return structuredClone((await this.read()).recurring ?? [])
+  }
+
+  saveRecurring(item: Recurring) {
+    const problem = !item.description.trim() ? 'Informe o nome da despesa.'
+      : !(item.amount > 0) ? 'Informe o valor.'
+      : !item.person.trim() ? 'Informe quem paga.'
+      : !(item.day >= 1 && item.day <= 31) ? 'O dia deve estar entre 1 e 31.'
+      : !isValidPeriod(item.start) ? 'Escolha o mês de início.' : null
+    if (problem) return Promise.reject(new Error(problem))
+    return this.mutate((db) => {
+      const clean = { ...item, description: item.description.trim().slice(0, 160), person: item.person.trim(), category: item.category.trim() || 'Fixas', amount: Math.round(item.amount * 100) / 100 }
+      const list = db.recurring ?? []
+      db.recurring = list.some((entry) => entry.id === item.id) ? list.map((entry) => (entry.id === item.id ? clean : entry)) : [...list, clean]
+    })
+  }
+
+  removeRecurring(id: string) {
+    return this.mutate((db) => { db.recurring = (db.recurring ?? []).filter((entry) => entry.id !== id) })
+  }
+
+  async launchRecurring(upTo: string) {
+    const db = await this.read()
+    if (!(db.recurring ?? []).some((item) => item.active)) return 0
+    let count = 0
+    await this.mutate((draft) => {
+      for (const item of draft.recurring ?? []) {
+        if (!item.active) continue
+        const wallet = withMain(draft.wallets).some((entry) => entry.id === item.wallet) ? item.wallet : MAIN_WALLET
+        let period = item.last ? addMonthsToPeriod(item.last, 1) : item.start
+        for (let guard = 0; period <= upTo && guard < 24; guard++, period = addMonthsToPeriod(period, 1)) {
+          const invoice = ensureInvoice(draft, period, wallet)
+          const [y, m] = period.split('-').map(Number)
+          const last = new Date(Date.UTC(y, m, 0)).getUTCDate()
+          draft.transactions.push({
+            id: uuid(), user_id: LOCAL_USER, invoice_id: invoice.id, occurred_on: `${period.slice(0, 7)}-${String(Math.min(item.day, last)).padStart(2, '0')}`,
+            description: item.description, amount: item.amount, person_id: ensureNamed(draft.people, item.person), category_id: ensureNamed(draft.categories, item.category),
+            status: 'pending', installment_group: null, installment_number: null, installment_count: null, created_at: new Date().toISOString(),
+          })
+          item.last = period
+          count++
+        }
+      }
+    })
+    return count
   }
 
   /** Taxas de uso do cartão configuradas (uma por fatura). */
@@ -378,7 +450,15 @@ export class LocalSource implements DataSource {
 
   setStatusMany(ids: string[], status: TransactionStatus) {
     const wanted = new Set(ids)
-    return this.mutate((db) => { for (const row of db.transactions) if (wanted.has(row.id)) row.status = status })
+    const now = new Date().toISOString()
+    return this.mutate((db) => {
+      for (const row of db.transactions) {
+        if (!wanted.has(row.id)) continue
+        if (status === 'paid' && row.status !== 'paid') row.paid_at = now
+        if (status !== 'paid') delete row.paid_at
+        row.status = status
+      }
+    })
   }
 
   removeTransaction(id: string) {
@@ -504,6 +584,6 @@ export class LocalSource implements DataSource {
 
   async clearAll() {
     await this.snapshot(await this.read(), 'antes')
-    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [], memory: [], wallets: [] }) })
+    return this.mutate((db) => { Object.assign(db, { ...emptyData(), fees: [], memory: [], wallets: [], credits: [], recurring: [] }) })
   }
 }

@@ -28,6 +28,8 @@ export interface Transaction {
   installment_number: number | null
   installment_count: number | null
   created_at: string
+  /** Quando foi marcado como pago (para o histórico de quem paga em dia). */
+  paid_at?: string
   person?: { name: string } | null
   category?: { name: string } | null
 }
@@ -48,6 +50,28 @@ export interface LocalData {
   memory?: TransactionRow[]
   /** Carteiras além da principal (cartões e, depois, empréstimos). */
   wallets?: Wallet[]
+  /** Crédito de quem pagou a mais: entradas positivas (sobrou) e negativas (usado). */
+  credits?: CreditEntry[]
+  /** Despesas fixas que o app lança sozinho todo mês. */
+  recurring?: Recurring[]
+}
+
+export interface CreditEntry { id: string; person: string; amount: number; created_at: string; note: string }
+
+export interface Recurring {
+  id: string
+  description: string
+  amount: number
+  person: string
+  category: string
+  /** Carteira onde lança. */
+  wallet: string
+  /** Dia do mês da compra. */
+  day: number
+  active: boolean
+  /** Primeiro mês (AAAA-MM-01) em que lança e o último já lançado. */
+  start: string
+  last?: string
 }
 
 export interface CardFee {
@@ -120,6 +144,15 @@ export interface DataSource {
   removeTransaction(id: string): Promise<void>
   listFees(): Promise<CardFee[]>
   saveFee(fee: CardFee): Promise<void>
+  listCredits(): Promise<CreditEntry[]>
+  addCredit(person: string, amount: number, note: string): Promise<void>
+  /** Marca como pago lançamentos e partes da taxa de qualquer carteira, de uma vez. */
+  settleAcross(rowIds: string[], fees: Array<{ invoice_id: string; name: string }>): Promise<void>
+  listRecurring(): Promise<Recurring[]>
+  saveRecurring(item: Recurring): Promise<void>
+  removeRecurring(id: string): Promise<void>
+  /** Lança as despesas fixas que ainda não foram lançadas até o mês `upTo`. Devolve quantas lançou. */
+  launchRecurring(upTo: string): Promise<number>
   /** Apaga a fatura e os lançamentos dela (com cópia automática antes). */
   removeInvoice(id: string): Promise<void>
   /** O que o robô lembra de faturas apagadas. */

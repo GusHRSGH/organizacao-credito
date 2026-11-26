@@ -1221,3 +1221,65 @@ test('fatura vazia: aparece o botão de apagar', async ({ page }) => {
   await page.getByRole('button', { name: 'Apagar fatura' }).click()
   await expect(page.getByLabel('Fatura', { exact: true }).locator('option:checked')).toHaveText('Nenhuma fatura')
 })
+
+test('cobrança: pagou tudo em todas as carteiras e sobra vira crédito', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: /^Carteira: / }).click()
+  await page.getByRole('button', { name: /Nova carteira/ }).click()
+  await page.getByLabel('Nome da nova carteira').fill('Cartão C')
+  await page.getByLabel('Nome da nova carteira').press('Enter')
+  await expect(page.getByRole('button', { name: 'Carteira: Cartão C. Trocar de carteira' })).toBeVisible()
+  await page.locator('input[placeholder*="mercado 150,90"]:visible, .fab:visible').first().waitFor()
+  if (!(await page.locator('input[placeholder*="mercado 150,90"]:visible').first().isVisible())) await page.locator('[data-tour="fab"]').click()
+  const campo = page.locator('input[placeholder*="mercado 150,90"]:visible').first()
+  await campo.fill('farmacia cartao c 42 @ana #saude em janeiro')
+  await page.keyboard.press('Enter')
+  await expect(campo).toHaveValue('', { timeout: 10_000 })
+  await page.keyboard.press('Escape')
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: /^Carteira: / }).click()
+  await page.getByRole('menuitemradio', { name: /Cartão principal/ }).click()
+  await irPara(page, 'billing')
+  const card = (nome: RegExp) => page.locator('.bill-card', { has: page.locator('.bill-name b', { hasText: nome }) }).first()
+  await card(/^Ana/).getByRole('button', { name: 'Ver outros cartões' }).click()
+  page.once('dialog', (d) => void d.accept())
+  await card(/^Ana/).getByRole('button', { name: /^Pagou tudo/ }).click()
+  await expect(card(/^Ana/).locator('.bill-due')).toContainText('Em dia')
+  await expect(card(/^Ana/).getByText(/Também deve em outro cartão/)).toHaveCount(0)
+  // Outra pessoa manda mais do que deve: a sobra vira crédito.
+  const outro = page.locator('.bill-card', { has: page.locator('.bill-due', { hasText: 'Deve' }) }).first()
+  await outro.getByRole('button', { name: 'Pagou um valor' }).click()
+  await outro.getByLabel('Valor pago').fill('99999')
+  await expect(outro.getByText(/ficam de crédito/)).toBeVisible()
+  await outro.getByRole('button', { name: 'Marcar como pago' }).click()
+  await expect(page.locator('.bill-credit').first()).toContainText('crédito')
+})
+
+test('colar fatura: dois prints de uma vez viram uma lista só, sem repetir', async ({ page }) => {
+  test.setTimeout(180_000)
+  const outra = await page.context().newPage()
+  await outra.setContent('<canvas id="c" width="1080" height="560"></canvas>')
+  const desenhar = (itens: Array<[string, string, string]>) => outra.evaluate((lista) => {
+    const canvas = document.getElementById('c') as HTMLCanvasElement
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1080, 560)
+    lista.forEach(([name, value, date], i) => {
+      const y = 100 + i * 220
+      ctx.fillStyle = '#333'; ctx.font = '40px Arial'; ctx.fillText(name, 130, y)
+      ctx.fillStyle = '#9a9a9a'; ctx.font = '36px Arial'; ctx.fillText(value, 820, y + 25); ctx.fillText(date, 130, y + 60)
+    })
+    return canvas.toDataURL('image/png').split(',')[1]
+  }, itens)
+  const um = await desenhar([['LOJA PRIMEIRA', 'R$ 11,00', '01 de novembro - 10:00'], ['LOJA SEGUNDA', 'R$ 22,00', '02 de novembro - 10:00']])
+  const dois = await desenhar([['LOJA SEGUNDA', 'R$ 22,00', '02 de novembro - 10:00'], ['LOJA TERCEIRA', 'R$ 33,00', '03 de novembro - 10:00']])
+  await outra.close()
+  await abrirColar(page)
+  await page.getByLabel('Arquivo da fatura').setInputFiles([
+    { name: 'print1.png', mimeType: 'image/png', buffer: Buffer.from(um, 'base64') },
+    { name: 'print2.png', mimeType: 'image/png', buffer: Buffer.from(dois, 'base64') },
+  ])
+  await expect(page.locator('textarea')).toHaveValue(/próxima imagem[\s\S]*33[,.]00/, { timeout: 150_000 })
+  await expect(page.getByRole('button', { name: /^Importar 3 / })).toBeVisible()
+})

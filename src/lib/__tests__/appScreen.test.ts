@@ -71,3 +71,21 @@ describe('vencimento da fatura no texto', () => {
     expect(detectDueDate('05/11 MERCADO 10,00', '2026-11-24')).toBeNull()
   })
 })
+
+describe('vários prints', () => {
+  it('junta os prints e tira a compra que aparece nos dois', async () => {
+    const { parsePastedBill, IMAGE_BREAK } = await import('../pasteImport')
+    const um = 'LOJA UM\nR$ 10,00\n01 de novembro - 10:00\nLOJA DOIS\nR$ 20,00\n02 de novembro - 10:00'
+    const dois = 'LOJA DOIS\nR$ 20,00\n02 de novembro - 10:00\nLOJA TRES\nR$ 30,00\n03 de novembro - 10:00'
+    const { rows, skipped } = parsePastedBill(`${um}\n${IMAGE_BREAK}\n${dois}`, '2026-11-24')
+    expect(rows.map((r) => r.description)).toEqual(['LOJA UM', 'LOJA DOIS', 'LOJA TRES'])
+    expect(skipped.some((s) => s.reason === 'repetida em outro print')).toBe(true)
+    expect(new Set(rows.map((r) => r.line)).size).toBe(3)
+  })
+
+  it('duas compras iguais no mesmo print continuam as duas', async () => {
+    const { parsePastedBill } = await import('../pasteImport')
+    const { rows } = parsePastedBill('UBER\nR$ 10,00\n01 de novembro - 10:00\nUBER\nR$ 10,00\n01 de novembro - 18:00', '2026-11-24')
+    expect(rows).toHaveLength(2)
+  })
+})
