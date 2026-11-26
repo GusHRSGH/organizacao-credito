@@ -1194,3 +1194,11 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .recurring-form input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:15px;min-width:0}
 .recurring-form .button-row{grid-column:1/-1}
 @media (max-width:700px){.recurring-form{grid-template-columns:1fr}}
+.punctual-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.punctual-list>li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.punctual-list small{color:var(--faint);font-size:13px}
+.punctual-list .warn{color:var(--bad, #e5534b);font-weight:600}
+.punctual-dots{display:flex;gap:6px}
+.punctual-dots i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.punctual-dots i.ok{background:var(--good, #3fb950)}
+.punctual-dots i.late{background:var(--warn, #d29922)}
