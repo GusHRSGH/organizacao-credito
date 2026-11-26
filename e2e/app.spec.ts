@@ -1283,3 +1283,18 @@ test('colar fatura: dois prints de uma vez viram uma lista só, sem repetir', as
   await expect(page.locator('textarea')).toHaveValue(/próxima imagem[\s\S]*33[,.]00/, { timeout: 150_000 })
   await expect(page.getByRole('button', { name: /^Importar 3 / })).toBeVisible()
 })
+
+test('despesas fixas: cadastrar lança no mês e aparece na lista', async ({ page }) => {
+  await entrar(page, 'simples')
+  await irPara(page, 'invoices')
+  await page.getByRole('button', { name: 'Mais formas de lançar' }).click()
+  await page.getByRole('menuitem', { name: /Despesas fixas/ }).click()
+  const painel = page.getByRole('region', { name: 'Despesas fixas' })
+  await painel.getByLabel('Descrição').fill('Streaming Fixo')
+  await painel.getByLabel('Valor por mês (R$)').fill('55,90')
+  await painel.getByLabel('Quem paga').fill('Ana')
+  await painel.getByRole('button', { name: 'Lançar todo mês' }).click()
+  await expect(painel.locator('.recurring-list')).toContainText('Streaming Fixo')
+  await expect(page.getByText(/Já lancei a deste mês/)).toBeVisible()
+  await expect(page.locator('text=Streaming Fixo >> visible=true').nth(1)).toBeVisible()
+})

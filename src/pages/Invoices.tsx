@@ -7,6 +7,7 @@ import { addFilter, isActive, readFilters, removeFilter, suggestName, writeFilte
 import EditDialog from '../components/EditDialog'
 import { invoiceOptions } from '../components/InvoiceOptions'
 import SettledBar from '../components/SettledBar'
+import RecurringPanel from '../components/RecurringPanel'
 import { buildSuggestions, knownDescriptions, suggestFor } from '../lib/suggest'
 import type { LocalSource } from '../services/localSource'
 import { NO_CATEGORY, NO_PERSON, type DrillFilter } from '../lib/drill'
@@ -49,6 +50,7 @@ export default function Invoices({ source, invoices, transactions, history, sett
   const [showForm, setShowForm] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
   const [showPaste, setShowPaste] = useState(false)
+  const [showRecurring, setShowRecurring] = useState(false)
   // Modo simples: as outras formas de lançar ficam num menu e os filtros atrás de um botão.
   const [{ advanced }] = useSettings()
   const [moreOpen, setMoreOpen] = useState(false)
@@ -183,18 +185,21 @@ export default function Invoices({ source, invoices, transactions, history, sett
         {local && <button className="primary-button" onClick={onBank}><Icon name="upload" size={16} />Importar fatura do banco</button>}
         {local && <button className="secondary-button" onClick={() => setShowPaste(!showPaste)}><Icon name="upload" size={16} />Colar fatura</button>}
         <button className="secondary-button" onClick={() => setShowForm(!showForm)}><Icon name="plus" size={16} />Formulário completo</button>
+        <button className="secondary-button" onClick={() => setShowRecurring(!showRecurring)}><Icon name="repeat" size={16} />Despesas fixas</button>
       </> : <button className="secondary-button" aria-expanded={moreOpen} onClick={() => setMoreOpen(!moreOpen)}><Icon name="plus" size={16} />Mais formas de lançar</button>}
     </PageHeading>
     {!advanced && moreOpen && <div className="more-menu" role="menu" aria-label="Mais formas de lançar">
       {local && <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); onBank() }}><Icon name="upload" size={16} />Importar fatura do banco<small>CSV ou PDF exportado do app do banco</small></button>}
       {local && <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setShowPaste(true) }}><Icon name="upload" size={16} />Colar fatura<small>Texto, notificação, conversa ou foto</small></button>}
       <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setShowForm(true) }}><Icon name="plus" size={16} />Formulário completo<small>Campo por campo</small></button>
+      <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setShowRecurring(true) }}><Icon name="repeat" size={16} />Despesas fixas<small>Netflix, academia: o app lança sozinho todo mês</small></button>
       <button role="menuitem" className="secondary-button" onClick={() => { setMoreOpen(false); setNewOpen(true) }}><Icon name="plus" size={16} />Criar fatura de outro mês<small>Qualquer mês, passado ou futuro</small></button>
     </div>}
 
     {invoiceId && onRemove && (settled.has(invoiceId) || !transactions.some((row) => row.invoice_id === invoiceId)) && <SettledBar empty={!settled.has(invoiceId)} onRemove={() => onRemove(invoiceId)} />}
     {newOpen && <NewInvoiceDialog existing={invoices.map((item) => item.period)} busy={false} onCreate={(period) => void addInvoice(period)} onClose={() => setNewOpen(false)} />}
     <QuickAdd source={source} invoice={invoices.find((invoice) => invoice.id === invoiceId)} invoices={invoices} transactions={transactions} people={people} categories={categories} suggestions={suggestions} signal={quickSignal} onSaved={onChanged} notify={notify} />
+    {showRecurring && <RecurringPanel source={source} invoices={invoices} transactions={transactions} people={people} categories={categories} onClose={() => setShowRecurring(false)} onChanged={onChanged} notify={notify} />}
     {showPaste && local && <PasteBill local={local} existing={invoices.map((item) => item.period)} onImported={(period) => void source.listInvoices().then((list) => { const hit = list.find((item) => item.period === period); if (hit) onInvoice(hit.id) })} people={people} categories={categories} suggestions={suggestions} onClose={() => setShowPaste(false)} onDone={onChanged} notify={notify} />}
 
     {showForm && <Panel icon="plus" title="Nova compra (o formulário continua aberto para o próximo lançamento)" action={<button className="text-button" onClick={() => setShowForm(false)}>Fechar</button>}>
