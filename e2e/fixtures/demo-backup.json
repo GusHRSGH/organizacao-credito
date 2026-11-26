@@ -1,0 +1,873 @@
+{
+ "app": "organizacao-credito",
+ "version": 1,
+ "exportedAt": "2026-11-26T19:51:04.124Z",
+ "data": {
+  "invoices": [
+   {
+    "id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "user_id": "local",
+    "period": "2026-10-01",
+    "label": "Outubro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.106Z"
+   },
+   {
+    "id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "user_id": "local",
+    "period": "2026-11-01",
+    "label": "Novembro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.107Z"
+   },
+   {
+    "id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "user_id": "local",
+    "period": "2026-12-01",
+    "label": "Dezembro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "6f21ba0b-846b-43c0-a014-a45b54d40288",
+    "user_id": "local",
+    "period": "2027-01-01",
+    "label": "Janeiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "c2949e34-958c-44a9-a5d4-e4bf4eb250c7",
+    "user_id": "local",
+    "period": "2027-02-01",
+    "label": "Fevereiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "f2d691fa-f4ac-484e-a599-43ce6b78e2f3",
+    "user_id": "local",
+    "period": "2027-03-01",
+    "label": "Março 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "d0daedcd-2448-44fa-b925-08ca92d64089",
+    "user_id": "local",
+    "period": "2027-04-01",
+    "label": "Abril 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "84823b5c-60cb-4a83-b1b3-18400d946734",
+    "user_id": "local",
+    "period": "2027-05-01",
+    "label": "Maio 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "7109cb4f-ed93-44c8-ac68-7f1dd3b2d2b2",
+    "user_id": "local",
+    "period": "2026-12-01",
+    "label": "Dezembro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.121Z",
+    "wallet_id": "inter"
+   },
+   {
+    "id": "eb5ee618-9421-4613-9dc3-98b6bc92d243",
+    "user_id": "local",
+    "period": "2027-01-01",
+    "label": "Janeiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.121Z",
+    "wallet_id": "inter"
+   },
+   {
+    "id": "5cf4cfac-af6e-4b55-9295-3450f17b5baa",
+    "user_id": "local",
+    "period": "2027-02-01",
+    "label": "Fevereiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.121Z",
+    "wallet_id": "inter"
+   },
+   {
+    "id": "741eaaff-db8c-4f37-ad15-3fb244b85db0",
+    "user_id": "local",
+    "period": "2026-11-01",
+    "label": "Novembro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.122Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "38e73923-ac06-43a8-999f-8767a1894cb1",
+    "user_id": "local",
+    "period": "2026-12-01",
+    "label": "Dezembro 2026",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "2b879559-7b77-41ca-bdd3-fe35143c84cd",
+    "user_id": "local",
+    "period": "2027-01-01",
+    "label": "Janeiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "066e6d6d-ba50-4ca2-addf-c0f679ad6b70",
+    "user_id": "local",
+    "period": "2027-02-01",
+    "label": "Fevereiro 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "0b521a1c-32ad-478d-bb8b-2e984f2495da",
+    "user_id": "local",
+    "period": "2027-03-01",
+    "label": "Março 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "92dba13e-def8-472f-ac90-e23a80d1f808",
+    "user_id": "local",
+    "period": "2027-04-01",
+    "label": "Abril 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "4671bdd4-1cad-4d17-9788-2666c2c8e3f5",
+    "user_id": "local",
+    "period": "2027-05-01",
+    "label": "Maio 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "632cac28-bffb-4afa-961b-2c258f255da0",
+    "user_id": "local",
+    "period": "2027-06-01",
+    "label": "Junho 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "c0f4a3a4-23ea-4782-8b39-4052cb0b5175",
+    "user_id": "local",
+    "period": "2027-07-01",
+    "label": "Julho 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   },
+   {
+    "id": "b96cc06f-cca7-47e4-883a-ede4560ff346",
+    "user_id": "local",
+    "period": "2027-08-01",
+    "label": "Agosto 2027",
+    "status": "open",
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "wallet_id": "moto"
+   }
+  ],
+  "transactions": [
+   {
+    "id": "cd9be012-a82d-4efc-834e-318494ef0ec9",
+    "user_id": "local",
+    "invoice_id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "occurred_on": "2026-09-08",
+    "description": "Supermercado Bom Preço",
+    "amount": 412.35,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "30bd4062-5329-4010-892e-496c357c89c5",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.106Z",
+    "paid_at": "2026-10-08T15:00:00.000Z"
+   },
+   {
+    "id": "6840d01d-d5fc-4563-9df9-8a7771fa40fd",
+    "user_id": "local",
+    "invoice_id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "occurred_on": "2026-09-12",
+    "description": "Posto Avenida",
+    "amount": 180,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "d3e53722-81f5-4fea-a7df-a1da5ac939a8",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-10-16T15:00:00.000Z"
+   },
+   {
+    "id": "933e43c4-8b65-4589-8ec8-df06b2317bf7",
+    "user_id": "local",
+    "invoice_id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "occurred_on": "2026-09-15",
+    "description": "Farmácia Central",
+    "amount": 64.9,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "fd9583b9-69b2-4320-8133-316918ac8752",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-10-09T15:00:00.000Z"
+   },
+   {
+    "id": "1c54c3d4-820f-413a-844f-ec4f9b4da9e1",
+    "user_id": "local",
+    "invoice_id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "occurred_on": "2026-09-20",
+    "description": "Netflix",
+    "amount": 55.9,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "e55e8892-4e78-4e3c-9fa8-5d0ecee6be31",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-10-10T15:00:00.000Z"
+   },
+   {
+    "id": "3e49dc72-5db8-49ec-b0d5-0745ccecb203",
+    "user_id": "local",
+    "invoice_id": "61020f7b-c58f-49b7-bdb6-45cdb4d7c9e8",
+    "occurred_on": "2026-09-25",
+    "description": "Restaurante Sabor",
+    "amount": 96.4,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "18cc7690-89f8-42b1-8ce1-0750f2be617d",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-10-08T15:00:00.000Z"
+   },
+   {
+    "id": "b4152858-bd8b-478b-a620-3394143da70a",
+    "user_id": "local",
+    "invoice_id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "occurred_on": "2026-10-07",
+    "description": "Supermercado Bom Preço",
+    "amount": 389.7,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "30bd4062-5329-4010-892e-496c357c89c5",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-11-09T15:00:00.000Z"
+   },
+   {
+    "id": "78075ad7-51ae-4007-95c8-3da61427d913",
+    "user_id": "local",
+    "invoice_id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "occurred_on": "2026-10-11",
+    "description": "Posto Avenida",
+    "amount": 200,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "d3e53722-81f5-4fea-a7df-a1da5ac939a8",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.107Z",
+    "paid_at": "2026-11-13T15:00:00.000Z"
+   },
+   {
+    "id": "a91b3e06-b6d3-4ef4-8089-f98290ad707e",
+    "user_id": "local",
+    "invoice_id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "occurred_on": "2026-10-20",
+    "description": "Netflix",
+    "amount": 55.9,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "e55e8892-4e78-4e3c-9fa8-5d0ecee6be31",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.108Z",
+    "paid_at": "2026-11-10T15:00:00.000Z"
+   },
+   {
+    "id": "4bd3950c-c873-4561-9428-a74cf551880a",
+    "user_id": "local",
+    "invoice_id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "occurred_on": "2026-10-22",
+    "description": "Loja de Roupas Estilo",
+    "amount": 239.8,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "eeeff1f9-93c2-4716-a1ed-e9de4d1002e0",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.108Z",
+    "paid_at": "2026-11-10T15:00:00.000Z"
+   },
+   {
+    "id": "ef8a8d56-a85d-4347-9245-727e24eeacae",
+    "user_id": "local",
+    "invoice_id": "72208def-563d-4c03-ad92-15000e4f0d7e",
+    "occurred_on": "2026-10-25",
+    "description": "Academia Forma",
+    "amount": 99.9,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "fd9583b9-69b2-4320-8133-316918ac8752",
+    "status": "paid",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.108Z",
+    "paid_at": "2026-11-13T15:00:00.000Z"
+   },
+   {
+    "id": "34f3b105-cf1f-4e2a-a876-c927b251c4b0",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-06",
+    "description": "Supermercado Bom Preço",
+    "amount": 455.12,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "30bd4062-5329-4010-892e-496c357c89c5",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "be1c942e-b1de-4f58-9767-d523b7f35795",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 1,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "f6a6f6ce-0e4c-4cdb-a098-8885774eb89a",
+    "user_id": "local",
+    "invoice_id": "6f21ba0b-846b-43c0-a014-a45b54d40288",
+    "occurred_on": "2026-12-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 2,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "3fcd1a88-b2ff-4db5-95b0-6bd48f4e548d",
+    "user_id": "local",
+    "invoice_id": "c2949e34-958c-44a9-a5d4-e4bf4eb250c7",
+    "occurred_on": "2027-01-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 3,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "1dd7af82-8a3b-4090-9477-201c2f5c4de6",
+    "user_id": "local",
+    "invoice_id": "f2d691fa-f4ac-484e-a599-43ce6b78e2f3",
+    "occurred_on": "2027-02-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 4,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "926e4a82-b7a3-4ffd-9603-a6565f8c1d20",
+    "user_id": "local",
+    "invoice_id": "d0daedcd-2448-44fa-b925-08ca92d64089",
+    "occurred_on": "2027-03-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 5,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "86f111cf-5bd6-48f4-a96d-e5b41b104dd2",
+    "user_id": "local",
+    "invoice_id": "84823b5c-60cb-4a83-b1b3-18400d946734",
+    "occurred_on": "2027-04-08",
+    "description": "Notebook Loja Tech",
+    "amount": 600,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "status": "pending",
+    "installment_group": "4a108fe2-14ac-43e9-9b30-10bcc98fd9a2",
+    "installment_number": 6,
+    "installment_count": 6,
+    "created_at": "2026-11-26T19:51:04.108Z"
+   },
+   {
+    "id": "df932344-af3b-4b65-a2a1-9524adc1b017",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-10",
+    "description": "Posto Avenida",
+    "amount": 190,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "d3e53722-81f5-4fea-a7df-a1da5ac939a8",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.109Z"
+   },
+   {
+    "id": "b5db4c24-1da9-40de-b01a-40a9022cd20d",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-14",
+    "description": "Farmácia Central",
+    "amount": 48.5,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "fd9583b9-69b2-4320-8133-316918ac8752",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.109Z"
+   },
+   {
+    "id": "b819b5b8-c87f-4d67-82a4-99330968f165",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-20",
+    "description": "Netflix",
+    "amount": 55.9,
+    "person_id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "category_id": "e55e8892-4e78-4e3c-9fa8-5d0ecee6be31",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.109Z"
+   },
+   {
+    "id": "162cb334-7261-4bbc-ac53-1e3274d3aba2",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-21",
+    "description": "Cinema Shopping",
+    "amount": 72,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "18cc7690-89f8-42b1-8ce1-0750f2be617d",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.109Z"
+   },
+   {
+    "id": "ced61755-45e2-4b06-b2ff-aac1342256ec",
+    "user_id": "local",
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "occurred_on": "2026-11-23",
+    "description": "Padaria Trigo",
+    "amount": 38.6,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "30bd4062-5329-4010-892e-496c357c89c5",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.109Z"
+   },
+   {
+    "id": "f48c9bca-3996-40ea-8037-579f2727de84",
+    "user_id": "local",
+    "invoice_id": "7109cb4f-ed93-44c8-ac68-7f1dd3b2d2b2",
+    "occurred_on": "2026-11-09",
+    "description": "Mercado Livre",
+    "amount": 63.3,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "dd6ed0a9-5430-480a-be4c-a1449e0dd1a4",
+    "status": "pending",
+    "installment_group": "1b7b35d2-810d-4613-8aea-1c34f936ce0b",
+    "installment_number": 1,
+    "installment_count": 3,
+    "created_at": "2026-11-26T19:51:04.121Z"
+   },
+   {
+    "id": "0ace3519-80b9-4b1e-8690-c67f71e79b43",
+    "user_id": "local",
+    "invoice_id": "eb5ee618-9421-4613-9dc3-98b6bc92d243",
+    "occurred_on": "2026-12-09",
+    "description": "Mercado Livre",
+    "amount": 63.3,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "dd6ed0a9-5430-480a-be4c-a1449e0dd1a4",
+    "status": "pending",
+    "installment_group": "1b7b35d2-810d-4613-8aea-1c34f936ce0b",
+    "installment_number": 2,
+    "installment_count": 3,
+    "created_at": "2026-11-26T19:51:04.121Z"
+   },
+   {
+    "id": "cd3f6d2a-67c3-4565-8c6a-0a79c28580b4",
+    "user_id": "local",
+    "invoice_id": "5cf4cfac-af6e-4b55-9295-3450f17b5baa",
+    "occurred_on": "2027-01-09",
+    "description": "Mercado Livre",
+    "amount": 63.3,
+    "person_id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "category_id": "dd6ed0a9-5430-480a-be4c-a1449e0dd1a4",
+    "status": "pending",
+    "installment_group": "1b7b35d2-810d-4613-8aea-1c34f936ce0b",
+    "installment_number": 3,
+    "installment_count": 3,
+    "created_at": "2026-11-26T19:51:04.121Z"
+   },
+   {
+    "id": "1a6fb0e1-8763-4f53-910e-c1bd896c44a4",
+    "user_id": "local",
+    "invoice_id": "7109cb4f-ed93-44c8-ac68-7f1dd3b2d2b2",
+    "occurred_on": "2026-11-17",
+    "description": "Uber",
+    "amount": 34.7,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "d3e53722-81f5-4fea-a7df-a1da5ac939a8",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.121Z"
+   },
+   {
+    "id": "3d5dd3d1-eee0-459d-ad0e-2011b93602f0",
+    "user_id": "local",
+    "invoice_id": "7109cb4f-ed93-44c8-ac68-7f1dd3b2d2b2",
+    "occurred_on": "2026-11-19",
+    "description": "iFood",
+    "amount": 58.3,
+    "person_id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "category_id": "18cc7690-89f8-42b1-8ce1-0750f2be617d",
+    "status": "pending",
+    "installment_group": null,
+    "installment_number": null,
+    "installment_count": null,
+    "created_at": "2026-11-26T19:51:04.121Z"
+   },
+   {
+    "id": "74d8b571-0dd8-4f40-9a97-5a4e077e6b60",
+    "user_id": "local",
+    "invoice_id": "741eaaff-db8c-4f37-ad15-3fb244b85db0",
+    "occurred_on": "2026-11-15",
+    "description": "Moto do Bruno - Parcela 1/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "paid",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 1,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z",
+    "paid_at": "2026-11-13T15:00:00.000Z"
+   },
+   {
+    "id": "dd29f035-8d06-4f4b-bda1-6738905137f4",
+    "user_id": "local",
+    "invoice_id": "38e73923-ac06-43a8-999f-8767a1894cb1",
+    "occurred_on": "2026-12-15",
+    "description": "Moto do Bruno - Parcela 2/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 2,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "1fa3f750-d241-4d6b-9c3f-4c70f352f945",
+    "user_id": "local",
+    "invoice_id": "2b879559-7b77-41ca-bdd3-fe35143c84cd",
+    "occurred_on": "2027-01-15",
+    "description": "Moto do Bruno - Parcela 3/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 3,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "37be26e8-d00d-48a8-84b9-a9799428a774",
+    "user_id": "local",
+    "invoice_id": "066e6d6d-ba50-4ca2-addf-c0f679ad6b70",
+    "occurred_on": "2027-02-15",
+    "description": "Moto do Bruno - Parcela 4/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 4,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "f138c29b-7bd5-421b-b331-303ba2e4c90e",
+    "user_id": "local",
+    "invoice_id": "0b521a1c-32ad-478d-bb8b-2e984f2495da",
+    "occurred_on": "2027-03-15",
+    "description": "Moto do Bruno - Parcela 5/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 5,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "e2a3cee1-a510-4615-89cb-d45001f9f11f",
+    "user_id": "local",
+    "invoice_id": "92dba13e-def8-472f-ac90-e23a80d1f808",
+    "occurred_on": "2027-04-15",
+    "description": "Moto do Bruno - Parcela 6/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 6,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "e1cf3c2f-7c9d-49ff-9069-282664c54a6f",
+    "user_id": "local",
+    "invoice_id": "4671bdd4-1cad-4d17-9788-2666c2c8e3f5",
+    "occurred_on": "2027-05-15",
+    "description": "Moto do Bruno - Parcela 7/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 7,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "e251caa6-0c5c-45fd-965f-b6fc2de2a03b",
+    "user_id": "local",
+    "invoice_id": "632cac28-bffb-4afa-961b-2c258f255da0",
+    "occurred_on": "2027-06-15",
+    "description": "Moto do Bruno - Parcela 8/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 8,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "77591974-0d4c-4f77-9b3b-f53eb9fe1cc5",
+    "user_id": "local",
+    "invoice_id": "c0f4a3a4-23ea-4782-8b39-4052cb0b5175",
+    "occurred_on": "2027-07-15",
+    "description": "Moto do Bruno - Parcela 9/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 9,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   },
+   {
+    "id": "21b17f77-5393-434d-999e-08dc73015f12",
+    "user_id": "local",
+    "invoice_id": "b96cc06f-cca7-47e4-883a-ede4560ff346",
+    "occurred_on": "2027-08-15",
+    "description": "Moto do Bruno - Parcela 10/10",
+    "amount": 459,
+    "person_id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "category_id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "status": "pending",
+    "installment_group": "43125e1a-3b68-4969-a890-57d700165fbd",
+    "installment_number": 10,
+    "installment_count": 10,
+    "created_at": "2026-11-26T19:51:04.123Z"
+   }
+  ],
+  "people": [
+   {
+    "id": "d09312a3-3e75-466e-b8dd-9f80913b599b",
+    "name": "Ana"
+   },
+   {
+    "id": "365987c6-c660-45fd-bb05-b4916ff73d98",
+    "name": "Bruno"
+   },
+   {
+    "id": "a8cf4818-5805-492f-9466-5f5e179060de",
+    "name": "Carla"
+   },
+   {
+    "id": "36114378-9a83-4c87-8a32-3c568e86b6ec",
+    "name": "Diego"
+   }
+  ],
+  "categories": [
+   {
+    "id": "30bd4062-5329-4010-892e-496c357c89c5",
+    "name": "Mercado"
+   },
+   {
+    "id": "d3e53722-81f5-4fea-a7df-a1da5ac939a8",
+    "name": "Transporte"
+   },
+   {
+    "id": "fd9583b9-69b2-4320-8133-316918ac8752",
+    "name": "Saúde"
+   },
+   {
+    "id": "e55e8892-4e78-4e3c-9fa8-5d0ecee6be31",
+    "name": "Assinaturas"
+   },
+   {
+    "id": "18cc7690-89f8-42b1-8ce1-0750f2be617d",
+    "name": "Lazer"
+   },
+   {
+    "id": "eeeff1f9-93c2-4716-a1ed-e9de4d1002e0",
+    "name": "Vestuário"
+   },
+   {
+    "id": "09c9cefb-31c0-46e3-b1cd-1a97e3e2044e",
+    "name": "Eletrônicos"
+   },
+   {
+    "id": "dd6ed0a9-5430-480a-be4c-a1449e0dd1a4",
+    "name": "Casa"
+   },
+   {
+    "id": "1cdf241c-0349-4baf-a9bf-c96cdff6dde9",
+    "name": "Empréstimo"
+   }
+  ],
+  "wallets": [
+   {
+    "id": "principal",
+    "name": "Nubank",
+    "kind": "card"
+   },
+   {
+    "id": "inter",
+    "name": "Inter",
+    "kind": "card"
+   },
+   {
+    "id": "moto",
+    "name": "Moto do Bruno",
+    "kind": "loan",
+    "loan": {
+     "person": "Bruno",
+     "installment": 450,
+     "count": 10,
+     "start": "2026-11-01",
+     "dueDay": 15,
+     "extraPct": 2
+    }
+   }
+  ],
+  "fees": [
+   {
+    "invoice_id": "666d323b-1bd0-43ba-aa83-516a667cf5b2",
+    "name": "Anuidade",
+    "mode": "fixed",
+    "value": 32,
+    "excluded": [],
+    "overrides": {},
+    "paid": []
+   }
+  ],
+  "recurring": [
+   {
+    "id": "netflix",
+    "description": "Netflix",
+    "amount": 55.9,
+    "person": "Diego",
+    "category": "Assinaturas",
+    "wallet": "principal",
+    "day": 20,
+    "active": true,
+    "start": "2027-01-01",
+    "last": "2026-12-01"
+   }
+  ],
+  "credits": [
+   {
+    "id": "9623b292-9a2c-49f8-9e98-5cee41c159ae",
+    "person": "Carla",
+    "amount": 15,
+    "created_at": "2026-11-26T19:51:04.124Z",
+    "note": "Pagou a mais em Novembro 2026"
+   }
+  ]
+ }
+}
