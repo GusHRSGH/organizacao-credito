@@ -3,6 +3,10 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 63, date: '2026-11-26', title: 'Ajuste no “Já pago”',
+    items: ['O “Já pago” da Cobrança não mostra mais “-R$ 0,00” quando ninguém pagou ainda.'],
+  },
+  {
     n: 62, date: '2026-11-26', title: 'Despesas fixas, robô mais esperto, pontualidade e limite',
     items: [
       'Despesas fixas: em Faturas > Mais formas de lançar > Despesas fixas, cadastre Netflix, academia etc. uma vez e o app lança sozinho todo mês para quem paga. O robô também sugere as assinaturas que ele viu se repetindo.',

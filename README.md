@@ -1,116 +1,106 @@
 <div align="center">
 
-<img src="public/icon.svg" width="96" alt="Ícone do Chacun" />
+<img src="public/icon.svg" width="88" alt="Ícone do Chacun" />
 
 # Chacun
 
-**Cada um na sua parte.** Lance, confira e cobre cada fatura, compare meses e guarde um backup seguro.
+**Cada um na sua parte.**
+Divida a fatura do cartão com a família ou os amigos, saiba quem deve quanto e cobre com um Pix pronto.
 
-Aplicativo para Windows, gratuito, com dados guardados no próprio computador.
+[**Usar no navegador**](https://gushrsgh.github.io/organizacao-credito/) · [**Baixar para Android**](https://github.com/GusHRSGH/organizacao-credito/releases/latest) · [Windows](#onde-usar)
 
-[Português](#português) · [English](#english)
+<br />
 
-<img src="docs/screenshots/dashboard-light.png" width="860" alt="Visão geral no tema claro" />
+<img src="docs/screenshots/celular-inicio.png" width="23%" alt="Início: quanto falta pagar e receber" />
+<img src="docs/screenshots/celular-cobranca.png" width="23%" alt="Cobrança: quanto cada um deve, em todos os cartões" />
+<img src="docs/screenshots/celular-colar.png" width="23%" alt="Importar um print da fatura do app do banco" />
+<img src="docs/screenshots/celular-carteiras.png" width="23%" alt="Vários cartões e empréstimos" />
+
+<sub>Prints com pessoas e valores de exemplo.</sub>
 
 </div>
 
 ---
 
-## Português
+## Pra que serve
 
-### O que faz
+Você empresta o cartão para a família ou divide as contas com alguém, e todo mês é a mesma coisa: abrir a fatura, separar o que é de quem, somar, mandar mensagem e lembrar quem já pagou. O Chacun faz isso por você.
 
-- **Visão geral** com o total da fatura, quanto já foi pago, comparação com outro mês e gráficos por responsável e por categoria.
-- **Lançamento rápido**: digite uma linha como `mercado 150,90 3x @ana #casa ontem` e dê Enter (atalho Ctrl+N). O app sugere responsável e categoria pelo seu histórico e lembra os últimos usados.
-- **Editar e corrigir**: edite qualquer campo de um lançamento, refaça uma compra parcelada inteira (as parcelas são recalculadas e as já pagas continuam pagas), exclua com botão Desfazer e aja em vários lançamentos de uma vez (pagar, trocar responsável ou categoria, excluir).
-- **Quem deve quanto**: total, pago e pendente por responsável, com mensagem de cobrança pronta para o WhatsApp e botão para marcar tudo da pessoa como pago.
-- **Colar da fatura do banco**: cole as linhas copiadas do app ou site do banco, confira a prévia e importe de uma vez, sem duplicar.
-- **Faturas e lançamentos**: cadastro de compras à vista e parceladas (o total é dividido em parcelas mensais iguais e os centavos que sobram vão para a última), filtros e controle de pago ou pendente.
-- **Importação da planilha .xlsx** com prévia antes de gravar. Reimportar é seguro, pois lançamentos idênticos são ignorados.
-- **Exportação** em CSV (abre no Excel) e **backup** completo em JSON.
-- **Login com Google** opcional, com backup automático em uma pasta oculta e exclusiva do app no seu Drive. O app também funciona sem login.
-- **Tema claro e escuro**, ícones animados e interface que se adapta a telas menores.
-- Dados no **banco local** do computador, sem servidor e sem internet.
+## Como funciona
+
+1. **Lance as compras.** Digite uma frase (`mercado 150,90 3x @ana`), cole as linhas da fatura, mande um print do app do banco ou importe o CSV/PDF. O app reconhece valor, data, parcelas e quem costuma comprar em cada loja.
+2. **Veja quem deve quanto.** Cada pessoa tem a parte dela da fatura, com a taxa do cartão dividida de forma justa e o que ela ainda deve em outros cartões.
+3. **Cobre e marque como pago.** Um toque manda o Pix copia e cola com o valor certo ou a mensagem com cada compra pelo WhatsApp. Quando a pessoa paga, um toque marca tudo.
+
+## O que tem
+
+**Lançar**
+- Frase rápida, formulário, colar texto ou notificação do banco, prints (vários de uma vez), PDF, CSV do banco e planilha .xlsx. Nada é duplicado.
+- O app descobre a fatura pelo vencimento e manda cada parcela para o mês certo.
+- Despesas fixas (Netflix, academia) que entram sozinhas todo mês.
+
+**Cobrar**
+- Pix copia e cola com o valor de cada pessoa e mensagem pronta para o WhatsApp.
+- Vários cartões e empréstimos: cobre só um cartão ou tudo que vence no mês, somado.
+- "Pagou um valor": o app acha quais compras foram pagas. Se a pessoa pagar a mais, a sobra vira crédito para a próxima.
+- Taxa do cartão (anuidade, por exemplo) dividida conforme o gasto de cada um.
+
+**Acompanhar**
+- Visão geral do mês, comparação entre meses e gráficos por pessoa e categoria.
+- Limite do cartão: quanto está usado e por quem, com aviso perto de estourar.
+- Quem paga em dia e quem costuma atrasar (só você vê).
+- Avisos de vencimento e metas de gasto.
+
+**Seus dados**
+- Ficam no seu aparelho. Conta na nuvem (com e-mail) é opcional, para usar em mais de um aparelho.
+- Backup em arquivo, cópias automáticas para desfazer e bloqueio do app.
+- Modo minimalista ou detalhado, tema claro e escuro.
 
 <p align="center">
-  <img src="docs/screenshots/dashboard-dark.png" width="48%" alt="Visão geral no tema escuro" />
-  <img src="docs/screenshots/faturas-dark.png" width="48%" alt="Lista de lançamentos no tema escuro" />
+  <img src="docs/screenshots/computador-visao-geral.png" width="49%" alt="Visão geral no computador" />
+  <img src="docs/screenshots/computador-cobranca.png" width="49%" alt="Cobrança no computador" />
 </p>
 
-### Instalar
+## Onde usar
 
-1. Abra a aba **Actions** do repositório, entre na execução mais recente de **Build Windows installer** e baixe o artefato `organizacao-credito-windows` (fica disponível por 14 dias).
-2. Extraia o zip e execute o `Setup`. O Windows pode avisar sobre editor desconhecido, porque o instalador não tem assinatura paga: clique em **Mais informações** e depois em **Executar assim mesmo**.
+| | Como |
+|---|---|
+| **Navegador** (celular ou computador) | Abra [gushrsgh.github.io/organizacao-credito](https://gushrsgh.github.io/organizacao-credito/). Não precisa instalar. |
+| **Android** | Baixe o `.apk` da [última versão](https://github.com/GusHRSGH/organizacao-credito/releases/latest) e instale. As próximas versões instalam por cima, sem perder nada. |
+| **Windows** | Na aba **Actions**, abra a execução mais recente de **Build Windows installer** e baixe `organizacao-credito-windows`. Se o Windows avisar sobre editor desconhecido, clique em **Mais informações** e **Executar assim mesmo**. |
 
-### Login com Google e backup
+Gratuito e sem anúncios.
 
-O login usa o fluxo OAuth para apps de computador, com PKCE, no navegador do sistema. Os tokens ficam no processo principal do Electron, criptografados com o armazenamento seguro do Windows, e nunca chegam à interface. O único acesso pedido é o escopo `drive.appdata`: uma pasta oculta do próprio app, sem acesso aos outros arquivos do Drive.
+<details>
+<summary><b>Para desenvolvedores</b></summary>
 
-Para gerar o próprio build com o login de um clique, crie um cliente OAuth do tipo **App para computador** no Google Cloud (gratuito) e salve o ID e a chave em `electron/google-client.json` (modelo em `electron/google-client.example.json`). Esse arquivo é ignorado pelo git e nunca deve ser publicado. No GitHub Actions, use os secrets `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`. Sem o arquivo, o app mostra um guia para cadastrar a chave pela própria tela.
+<br />
 
-### Desenvolvimento
-
-Requer Node.js 22+ e npm.
+React 19, TypeScript e Vite, com Capacitor (Android), Electron (Windows) e IndexedDB. A nuvem opcional usa o Supabase. Os gráficos são SVG feito à mão e a leitura de prints (Tesseract) roda no próprio aparelho.
 
 ```sh
 npm install
-npm run dev            # versão web, no navegador
-npm run desktop:dev    # janela Electron com recarga automática
-npm test               # testes de domínio (parcelas, comparações, backup)
+npm run dev            # versão web
+npm test               # testes unitários (Vitest)
+npx playwright test    # testes de tela, no celular e no computador
 npm run lint && npm run build
-npm run desktop:dist   # instalador NSIS em release/ (no Windows)
 ```
 
-**Tecnologias:** React 19, TypeScript, Vite, Electron, IndexedDB, Vitest. Gráficos feitos à mão em SVG, sem biblioteca de gráficos.
+Os prints deste README são gerados com dados fictícios:
 
-**Estrutura:** a interface conversa apenas com a interface `DataSource` (`src/types.ts`). Hoje existem o banco local e uma fonte Supabase opcional, ainda não validada. Isso deixa espaço para outras fontes, como o Google Sheets, que está nos planos.
+```sh
+npx vite-node scripts/demo-backup.ts                 # gera e2e/fixtures/demo-backup.json
+README_SHOTS=1 npx playwright test e2e/readme.spec.ts  # tira os prints em docs/screenshots
+```
 
-**Custo:** o projeto precisa custar R$ 0. Veja [STACK.md](STACK.md) e [PROJECT_STATUS.md](PROJECT_STATUS.md) para decisões, estado e pendências.
+A interface só conversa com a interface `DataSource` (`src/types.ts`). Decisões e estado do projeto ficam em [STACK.md](STACK.md), [PROJECT_STATUS.md](PROJECT_STATUS.md) e [docs/REGRAS-DO-PROJETO.md](docs/REGRAS-DO-PROJETO.md).
+
+</details>
 
 ---
 
 ## English
 
-### What it does
+**Chacun** ("each one" in French) splits a shared credit card bill. Add purchases by typing a short phrase, pasting bank lines or a screenshot of your bank app, or importing CSV/PDF. Chacun shows what each person owes across all cards and loans and sends a ready-to-pay Pix code or a WhatsApp message. Data stays on your device, with optional cloud sync.
 
-- **Overview** with the invoice total, how much is already paid, a comparison against another month, and charts by person and by category.
-- **Quick entry**: type a line like `mercado 150,90 3x @ana #casa ontem` and press Enter (shortcut Ctrl+N). The app suggests person and category from your history and remembers the last ones used.
-- **Paste from your bank statement**: paste the lines copied from your bank's app or site, review the preview, and import in one go without duplicates.
-- **Edit and fix**: edit any field of a transaction, redo a whole installment purchase (installments are recalculated and paid ones stay paid), delete with an Undo button, and act on many transactions at once (mark paid, change person or category, delete).
-- **Who owes what**: total, paid and pending per person, with a ready-to-send WhatsApp message and a button to mark everything from that person as paid.
-- **Invoices and transactions**: one-off and installment purchases (the total is split into equal monthly installments, with leftover cents going to the last one), filters, and paid or pending tracking.
-- **Spreadsheet import (.xlsx)** with a preview before anything is saved. Re-importing is safe, since identical transactions are skipped.
-- **Export** to CSV (opens in Excel) and a full **JSON backup**.
-- Optional **Google sign-in** with automatic backup to a hidden, app-only folder in your Drive. The app also works without signing in.
-- **Light and dark themes**, animated icons, and a layout that adapts to smaller screens.
-- Data lives in the computer's **local database**: no server and no internet needed.
-
-### Install
-
-1. Open the repository's **Actions** tab, pick the latest **Build Windows installer** run, and download the `organizacao-credito-windows` artifact (kept for 14 days).
-2. Unzip it and run the `Setup`. Windows may warn about an unknown publisher because the installer is not signed with a paid certificate: click **More info**, then **Run anyway**.
-
-### Google sign-in and backup
-
-Sign-in uses the OAuth flow for desktop apps with PKCE, in the system browser. Tokens stay in Electron's main process, encrypted with Windows secure storage, and never reach the UI. The only access requested is the `drive.appdata` scope: a hidden folder owned by the app, with no access to your other Drive files.
-
-To build your own copy with one-click sign-in, create an OAuth client of type **Desktop app** in Google Cloud (free) and save its ID and secret to `electron/google-client.json` (template in `electron/google-client.example.json`). That file is git-ignored and must never be published. In GitHub Actions, use the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` secrets. Without the file, the app shows an in-app guide to enter the key.
-
-### Development
-
-Requires Node.js 22+ and npm.
-
-```sh
-npm install
-npm run dev            # web version, in the browser
-npm run desktop:dev    # Electron window with live reload
-npm test               # domain tests (installments, comparisons, backup)
-npm run lint && npm run build
-npm run desktop:dist   # NSIS installer in release/ (on Windows)
-```
-
-**Stack:** React 19, TypeScript, Vite, Electron, IndexedDB, Vitest. Charts are hand-built SVG, with no charting library.
-
-**Architecture:** the UI only talks to the `DataSource` interface (`src/types.ts`). Today there is the local database and an optional Supabase source that has not been validated yet. This leaves room for other sources, such as Google Sheets, which is planned.
-
-**Cost:** the project must cost R$ 0. See [STACK.md](STACK.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md) for decisions, status, and pending work.
+[Open in the browser](https://gushrsgh.github.io/organizacao-credito/) · [Android APK](https://github.com/GusHRSGH/organizacao-credito/releases/latest)
