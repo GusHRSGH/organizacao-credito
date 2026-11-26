@@ -1298,3 +1298,27 @@ test('despesas fixas: cadastrar lança no mês e aparece na lista', async ({ pag
   await expect(page.getByText(/Já lancei a deste mês/)).toBeVisible()
   await expect(page.locator('text=Streaming Fixo >> visible=true').nth(1)).toBeVisible()
 })
+
+test('limite do cartão: aparece na visão geral com o uso por pessoa', async ({ page }) => {
+  await entrar(page)
+  await importarModelo(page)
+  await abaConfig(page, 'Lançamentos')
+  await page.getByLabel('Dia do vencimento').fill('7')
+  await page.getByLabel('Limite do cartão').fill('100')
+  await page.getByRole('button', { name: 'Salvar' }).first().click()
+  await irPara(page, 'dashboard')
+  const box = page.getByRole('region', { name: 'Limite do cartão' })
+  await expect(box).toContainText('de R$')
+  await expect(box.locator('.limit-alert')).toContainText('Quase estourando')
+})
+
+test('quem paga em dia: marcar como pago entra no histórico', async ({ page }) => {
+  await entrar(page, 'simples')
+  await importarModelo(page)
+  await irPara(page, 'billing')
+  const card = page.locator('.bill-card', { has: page.locator('.bill-due', { hasText: 'Deve' }) }).first()
+  page.once('dialog', (d) => void d.accept())
+  await card.getByRole('button', { name: 'Marcar tudo como pago' }).click()
+  await abrirDobra(page, 'Quem paga em dia')
+  await expect(page.locator('.punctual-list')).toContainText('em dia')
+})

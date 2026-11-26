@@ -3,7 +3,7 @@ import { addMonthsToPeriod, periodOfDate } from '../services/installments'
 import { getActiveWallet, MAIN_WALLET } from './wallet'
 
 /** Como o cartão fecha a fatura. A fatura leva o nome do mês em que vence. */
-export interface Card { dueDay: number; closingDaysBefore: number }
+export interface Card { dueDay: number; closingDaysBefore: number; /** Limite do cartão em reais (opcional). */ limit?: number }
 
 const STORE = 'oc:cartao'
 export const DEFAULT_CARD: Card = { dueDay: 7, closingDaysBefore: 7 }
@@ -19,7 +19,9 @@ export function readCardFor(wallet: string): Card | null {
     if (!raw) return null
     const dueDay = Number(raw.dueDay)
     const before = Number(raw.closingDaysBefore)
-    return dueDay >= 1 && dueDay <= 31 && before >= 0 && before <= 20 ? { dueDay, closingDaysBefore: before } : null
+    const limit = Number(raw.limit)
+    if (!(dueDay >= 1 && dueDay <= 31 && before >= 0 && before <= 20)) return null
+    return limit > 0 ? { dueDay, closingDaysBefore: before, limit } : { dueDay, closingDaysBefore: before }
   } catch { return null }
 }
 

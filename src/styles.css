@@ -1202,3 +1202,13 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .punctual-dots i{width:12px;height:12px;border-radius:50%;display:inline-block}
 .punctual-dots i.ok{background:var(--good, #3fb950)}
 .punctual-dots i.late{background:var(--warn, #d29922)}
+.limit-box{margin:0 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);display:grid;gap:8px}
+.limit-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}
+.limit-bar{height:8px;border-radius:999px;background:color-mix(in srgb,var(--faint) 20%,transparent);overflow:hidden}
+.limit-bar i{display:block;height:100%;background:var(--good, #3fb950);border-radius:999px}
+.limit-box.warn .limit-bar i{background:var(--warn, #d29922)}
+.limit-box.danger .limit-bar i{background:var(--bad, #e5534b)}
+.limit-alert{margin:0;font-weight:600;font-size:14px}
+.limit-box.warn .limit-alert{color:var(--warn, #d29922)}
+.limit-box.danger .limit-alert{color:var(--bad, #e5534b)}
+.limit-box small{color:var(--faint);font-size:12px}
