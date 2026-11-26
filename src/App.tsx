@@ -187,6 +187,14 @@ export default function App() {
     setCompareId((current) => (has(current) ? current : defaultCompare))
     setInvoiceId((current) => (has(current) ? current : defaultFocus))
   }, [source])
+  // Despesas fixas: ao abrir o app, lança as do mês que ainda não foram lançadas.
+  useEffect(() => {
+    void source.launchRecurring(currentPeriod()).then((count) => {
+      if (!count) return
+      void refresh()
+      notify('notice', count === 1 ? '1 despesa fixa lançada neste mês.' : `${count} despesas fixas lançadas.`)
+    }).catch(() => undefined)
+  }, [source, refresh, notify])
   // Apagar fatura quitada (Visão geral e Faturas): confirma, guarda cópia e o robô continua lembrando.
   const removeSettled = useCallback(async (id: string) => {
     const invoice = invoices.find((item) => item.id === id)

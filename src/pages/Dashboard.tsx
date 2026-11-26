@@ -19,6 +19,8 @@ import { updateSettings } from '../lib/settings'
 import { invoiceOptions } from '../components/InvoiceOptions'
 import SettledBar from '../components/SettledBar'
 import { unifiedDebts, type Everything } from '../lib/unified'
+import { limitUse } from '../lib/limit'
+import { readCard } from '../lib/card'
 
 interface Props {
   invoices: Invoice[]
@@ -49,6 +51,14 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
   const focus = invoices.find((invoice) => invoice.id === focusId)
   // Com mais de uma carteira: o que cada um deve no mesmo mês de vencimento da fatura em foco, em todas.
   const unified = useMemo(() => (everything && focus ? unifiedDebts(everything, focus.period) : null), [everything, focus])
+  // Limite do cartão desta carteira: quanto está tomado e por quem.
+  const limit = useMemo(() => limitUse(readCard(), invoices, transactions, new Date().toISOString().slice(0, 10)), [invoices, transactions])
+  const limitBox = limit && <section className={`limit-box ${limit.level}`} aria-label="Limite do cartão">
+    <div className="limit-head"><b>Limite do cartão</b><span>{money(limit.used)} de {money(limit.limit)} · {Math.round(limit.share * 100)}%</span></div>
+    <div className="limit-bar" role="img" aria-label={`${Math.round(limit.share * 100)}% do limite usado`}><i style={{ width: `${Math.min(100, limit.share * 100)}%` }} /></div>
+    {limit.level !== 'ok' && <p className="limit-alert">{limit.level === 'danger' ? 'Quase estourando: ' : 'Perto do limite: '}sobram {money(Math.max(0, limit.limit - limit.used))}.</p>}
+    <small>{limit.people.slice(0, 4).map((p) => `${p.name} ${money(p.used)}`).join(' · ')}</small>
+  </section>
   const other = invoices.find((invoice) => invoice.id === compareId)
   const data = useMemo(() => {
     const rowsA = transactions.filter((row) => row.invoice_id === focusId)
@@ -87,6 +97,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
           ? <Metric icon="clock" label={`Falta receber em ${focus ? shortPeriodLabel(focus.period) : ''} (todas as carteiras)`} value={money(unified.total)} tone={unified.total > 0 ? 'bad' : 'good'} foot={unified.total > 0 ? `${money(toReceive)} nesta carteira · ${unified.people.length} ${unified.people.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />
           : <Metric icon="clock" label="Falta receber" value={money(toReceive)} tone={toReceive > 0 ? 'bad' : 'good'} foot={debtors.length ? `${debtors.length} ${debtors.length === 1 ? 'pessoa deve' : 'pessoas devem'}` : 'Todo mundo em dia'} />}
       </section>
+      {limitBox}
       <Panel tour="dash-people" icon="users" title="Quem deve" subtitle={focus?.label}>
         {debtors.length ? <ul className="debtor-list">{debtors.map((row) => <li key={row.name}>
           <span className="avatar">{row.name[0]?.toUpperCase()}</span><b className="grow">{row.name}</b><span className="neg">{money(row.value)}</span>
@@ -123,6 +134,7 @@ export default function Dashboard({ invoices, transactions, focusId, compareId, 
       <Metric icon="receipt" label={other ? `Total · ${labelB}` : 'Comparação'} value={other ? money(data.b.total) : '—'} foot={other ? `${data.b.count} lançamentos` : 'Escolha um mês para comparar'} />
       <Metric icon={change !== null && change < 0 ? 'trend-down' : 'trend-up'} label="Diferença entre os meses" value={other ? signedMoney(data.a.total - data.b.total) : '—'} tone={changeTone} foot={change === null ? undefined : `${change > 0 ? '+' : ''}${pct(change)} em relação a ${shortPeriodLabel(other!.period)}`} />
     </section>
+    {limitBox}
     {unified && unified.total > 0 && <p className="unified-strip"><Icon name="wallet" size={16} /><span>Falta receber em {focus ? shortPeriodLabel(focus.period) : ''}, todas as carteiras: <b>{money(unified.total)}</b> de {unified.people.length} {unified.people.length === 1 ? 'pessoa' : 'pessoas'}</span><button className="text-button" onClick={() => onGo('billing')}>Ver cobrança</button></p>}
     {showInsight && <p className="insight" data-tour="dash-insight"><Icon name="sparkle" size={16} /><span>{insight}</span><button className="insight-x" aria-label="Ocultar o resumo" title="Ocultar (volta em Dados > Aparência)" onClick={() => setShowInsight(false)}>×</button></p>}
 

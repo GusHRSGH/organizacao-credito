@@ -4,19 +4,58 @@ import type { Transaction } from '../types'
 
 export interface Suggestion { person: string | null; category: string | null }
 
-/** Remove sufixos como "(2/5)" ou "02/05" para que as parcelas de uma compra contem como a mesma descrição. */
-export const historyKey = (description: string) => plain(description).replace(/\(?\b\d{1,2}\/\d{1,2}\b\)?/g, '').replace(/\s+/g, ' ').trim()
+/** Prefixos de maquininha ("PG *", "IFD*", "MP *") que escondem o nome da loja. */
+const ACQUIRER = /^(pg|ifd|mp|ec|pag|pagseguro|mercadopago|sumup|stone|ton)\s*\*\s*/
 
-/** Para cada descrição já usada, guarda o responsável e a categoria do lançamento mais recente. */
+/** Remove parcela ("(2/5)", "02/05"), prefixo de maquininha e códigos numéricos, para a mesma loja contar como a mesma descrição. */
+export const historyKey = (description: string) => plain(description).replace(/\(?\b\d{1,2}\/\d{1,2}\b\)?/g, '').replace(ACQUIRER, '').replace(/\b\d{3,}\b/g, '').replace(/[*#]+/g, ' ').replace(/\s+/g, ' ').trim()
+
+/** Palavras que não identificam a loja sozinhas: nelas a marca é a palavra seguinte. */
+const GENERIC = new Set(['compra', 'pagamento', 'pag', 'loja', 'lojas', 'supermercado', 'mercado', 'farmacia', 'drogaria', 'restaurante', 'lanchonete', 'padaria', 'posto', 'auto', 'de', 'do', 'da', 'dos', 'das', 'the', 'casa', 'comercial', 'comercio'])
+
+/** A marca da loja: "MUFFATO COLOMBO" e "MUFFATO JOAO PAULINO" são o mesmo Muffato. */
+export function brandOf(key: string) {
+  const words = key.split(' ').filter((word) => word.length >= 2)
+  const picked: string[] = []
+  for (const word of words) {
+    picked.push(word)
+    if (!GENERIC.has(word)) break
+  }
+  const brand = picked.join(' ')
+  return brand.replace(/\s/g, '').length >= 4 && !GENERIC.has(brand) ? `~marca:${brand}` : null
+}
+
+/**
+ * Para cada descrição já usada, guarda o responsável e a categoria do lançamento mais recente.
+ * Também aprende por marca (chave "~marca:..."): quem mais compra naquela loja, se for a maioria clara.
+ */
 export function buildSuggestions(transactions: Transaction[]) {
   const latest = new Map<string, { on: string; value: Suggestion }>()
+  const brands = new Map<string, { people: Map<string, number>; categories: Map<string, number> }>()
   for (const row of transactions) {
     const key = historyKey(row.description)
     if (!key) continue
     const known = latest.get(key)
     if (!known || row.occurred_on >= known.on) latest.set(key, { on: row.occurred_on, value: { person: row.person?.name ?? null, category: row.category?.name ?? null } })
+    const brand = brandOf(key)
+    if (!brand) continue
+    const stats = brands.get(brand) ?? { people: new Map(), categories: new Map() }
+    if (row.person?.name) stats.people.set(row.person.name, (stats.people.get(row.person.name) ?? 0) + 1)
+    if (row.category?.name) stats.categories.set(row.category.name, (stats.categories.get(row.category.name) ?? 0) + 1)
+    brands.set(brand, stats)
   }
-  return new Map([...latest].map(([key, entry]) => [key, entry.value]))
+  const result = new Map([...latest].map(([key, entry]) => [key, entry.value]))
+  // Maioria clara (60% ou mais): numa loja que todo mundo usa, o robô não chuta.
+  const winner = (counts: Map<string, number>) => {
+    const total = [...counts.values()].reduce((sum, n) => sum + n, 0)
+    const [name, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? [null, 0]
+    return name && n / total >= 0.6 ? name : null
+  }
+  for (const [brand, stats] of brands) {
+    const value = { person: winner(stats.people), category: winner(stats.categories) }
+    if (value.person || value.category) result.set(brand, value)
+  }
+  return result
 }
 
 /** Acha pelo texto igual ou, na falta, por uma descrição conhecida que comece com ele (mínimo de 3 letras). */
@@ -26,8 +65,9 @@ export function byHistory(text: string, suggestions: Map<string, Suggestion>): S
   const exact = suggestions.get(key)
   if (exact) return exact
   if (key.length < 3) return null
-  for (const [known, value] of suggestions) if (known.startsWith(key)) return value
-  return null
+  for (const [known, value] of suggestions) if (!known.startsWith('~') && known.startsWith(key)) return value
+  const brand = brandOf(key)
+  return (brand && suggestions.get(brand)) || null
 }
 
 /** Primeiro o histórico da pessoa; se não achar, tenta adivinhar a categoria por palavras comuns. */

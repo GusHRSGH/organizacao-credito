@@ -1183,3 +1183,32 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .choice-box .text-button{justify-self:start}
 .unified-note{margin:0 0 10px;font-size:13px}
 .bill-credit{display:block;color:var(--good);font-weight:600}
+.recurring-list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.recurring-list li{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.recurring-list li.off{opacity:.6}
+.recurring-list small{display:block;color:var(--faint);font-size:12px}
+.recurring-suggest{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.recurring-suggest .hint{width:100%;margin:0}
+.recurring-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.recurring-form label{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--faint)}
+.recurring-form input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:15px;min-width:0}
+.recurring-form .button-row{grid-column:1/-1}
+@media (max-width:700px){.recurring-form{grid-template-columns:1fr}}
+.punctual-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.punctual-list>li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.punctual-list small{color:var(--faint);font-size:13px}
+.punctual-list .warn{color:var(--bad, #e5534b);font-weight:600}
+.punctual-dots{display:flex;gap:6px}
+.punctual-dots i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.punctual-dots i.ok{background:var(--good, #3fb950)}
+.punctual-dots i.late{background:var(--warn, #d29922)}
+.limit-box{margin:0 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);display:grid;gap:8px}
+.limit-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}
+.limit-bar{height:8px;border-radius:999px;background:color-mix(in srgb,var(--faint) 20%,transparent);overflow:hidden}
+.limit-bar i{display:block;height:100%;background:var(--good, #3fb950);border-radius:999px}
+.limit-box.warn .limit-bar i{background:var(--warn, #d29922)}
+.limit-box.danger .limit-bar i{background:var(--bad, #e5534b)}
+.limit-alert{margin:0;font-weight:600;font-size:14px}
+.limit-box.warn .limit-alert{color:var(--warn, #d29922)}
+.limit-box.danger .limit-alert{color:var(--bad, #e5534b)}
+.limit-box small{color:var(--faint);font-size:12px}

@@ -3,6 +3,15 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 62, date: '2026-11-26', title: 'Despesas fixas, robô mais esperto, pontualidade e limite',
+    items: [
+      'Despesas fixas: em Faturas > Mais formas de lançar > Despesas fixas, cadastre Netflix, academia etc. uma vez e o app lança sozinho todo mês para quem paga. O robô também sugere as assinaturas que ele viu se repetindo.',
+      'O robô aprende pela marca da loja: se a Rosana sempre compra no Muffato, outra filial do Muffato já vem com ela. Ele também ignora “PG *”, “IFD*” e códigos na descrição.',
+      'Quem paga em dia: na Cobrança, veja quantas faturas cada um pagou em dia, o atraso médio e o que está vencido. Conta a partir de agora, quando você marca como pago. Só você vê.',
+      'Limite do cartão: informe o limite em Configurações > Lançamentos > Meu cartão e a Visão geral mostra quanto está usado, por quem, e avisa perto de estourar.',
+    ],
+  },
+  {
     n: 61, date: '2026-11-26', title: 'Pagou tudo, crédito e vários prints',
     items: [
       '“Pagou tudo”: quando a pessoa manda o Pix do total, um toque marca como pago tudo dela no mês em todos os cartões e empréstimos, com a taxa.',

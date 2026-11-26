@@ -16,6 +16,7 @@ import { shareText } from '../lib/share'
 import { getKnownWallets, useActiveWallet } from '../lib/wallet'
 import { creditBalance, findDebt, settleTargets, unifiedDebts, unifiedMessage, type Everything, type PersonDebt, type UnifiedMode } from '../lib/unified'
 import { currentPeriod, periodLabel } from '../services/installments'
+import { punctuality } from '../lib/punctuality'
 import { formatDate, messageOf, money } from '../lib/format'
 import type { CardFee, CreditEntry, DataSource, Invoice, Transaction } from '../types'
 
@@ -124,6 +125,8 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   const [feeOpen, setFeeOpen] = useState(false)
   const [allOpen, setAllOpen] = useState(false)
   const [othersFor, setOthersFor] = useState<string | null>(null)
+  const [punctualOpen, setPunctualOpen] = useState(false)
+  const punctual = useMemo(() => punctuality(everything ?? { wallets: getKnownWallets(), invoices, transactions, fees }, new Date().toISOString().slice(0, 10)), [everything, invoices, transactions, fees])
   // Todas as carteiras, no mesmo mês de vencimento da fatura aberta aqui.
   const refPeriod = invoice?.period ?? currentPeriod()
   const unified = useMemo(() => (everything ? unifiedDebts(everything, refPeriod) : null), [everything, refPeriod])
@@ -254,6 +257,15 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
           </div>
           {choiceBox(debt, null, 'fold')}
         </li>)}</ul> : <p className="muted">Ninguém deve nada em {periodLabel(refPeriod)} em nenhuma carteira.</p>}
+      </>)}
+    {punctual.length > 0 && fold('Quem paga em dia', punctual.some((p) => p.overdue > 0) ? `${punctual.filter((p) => p.overdue > 0).length} com conta vencida` : 'Só você vê isso', punctualOpen, setPunctualOpen,
+      <>
+        <p className="muted unified-note">Conta a data em que você marcou como pago, comparada com o vencimento de cada cartão. Só você vê isso.</p>
+        <ul className="punctual-list">{punctual.map((p) => <li key={p.name}>
+          <div className="unified-head"><b>{p.name}</b>{p.paid > 0 && <span>{p.onTime} de {p.paid} em dia</span>}</div>
+          <small>{p.overdue > 0 ? <span className="warn">Vencido há {p.overdueDays} {p.overdueDays === 1 ? 'dia' : 'dias'}: {money(p.overdue)}. </span> : null}{p.paid - p.onTime > 0 ? `Quando atrasa, leva em média ${p.avgLate} ${p.avgLate === 1 ? 'dia' : 'dias'}.` : p.paid ? 'Nunca atrasou.' : ''}</small>
+          {p.recent.length > 0 && <div className="punctual-dots" aria-label={`Últimas faturas de ${p.name}`}>{p.recent.map((item, i) => <i key={i} className={item.late ? 'late' : 'ok'} title={`${item.label}: ${item.late ? `${item.late} dias de atraso` : 'em dia'}`} />)}</div>}
+        </li>)}</ul>
       </>)}
     {!all && settled.has(invoiceId) && <p className="settled-line"><span className="settled-badge">✓ Quitada</span> Todo mundo pagou esta fatura. <button className="text-button" onClick={() => setShown({ id: invoiceId, celebrate: false })}>Ver resumo</button></p>}
     {!isLoan && feeBlocks.length > 0 && fold('Taxa de uso do cartão', feeBlocks[0]?.split ? `${feeBlocks[0].split.fee.name} · ${money(feeBlocks[0].split.total)}` : 'Nenhuma taxa nesta fatura', feeOpen, setFeeOpen,
