@@ -8,7 +8,7 @@ import FeePanel, { type FeeBlock } from '../components/FeePanel'
 import SettledModal from '../components/SettledModal'
 import { invoiceOptions } from '../components/InvoiceOptions'
 import { settledIds, settledMessage, settledSummary } from '../lib/settled'
-import { feeLine, feeSplitFor, spendByPerson } from '../lib/fee'
+import { chargeCents, displayOf, feeLine, feeSplitFor, spendByPerson } from '../lib/fee'
 import { billsByPerson, buildGroupMessage, buildMessage, type FeeCharge, type PersonBill } from '../lib/billing'
 import { hasReceiving, pixCode, readReceiving } from '../lib/receiving'
 import { useSettings } from '../lib/settings'
@@ -67,7 +67,9 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
     for (const name of feeDue.keys()) if (!list.some((bill) => bill.name === name)) list.push({ name, rows: [], total: 0, paid: 0, pending: 0 })
     return list
   }, [transactions, invoiceId, all, feeDue])
-  const dueOf = (bill: PersonBill) => (Math.round(bill.pending * 100) + Math.round((feeDue.get(bill.name) ?? 0) * 100)) / 100
+  // Taxa discreta da pessoa (embutida ou arredondada), pela taxa da fatura em que ela aparece.
+  const displayFor = (name: string) => { for (const block of feeBlocks) if (block.split?.shares.some((share) => share.name === name)) return displayOf(block.split.fee, name); return null }
+  const dueOf = (bill: PersonBill) => chargeCents(Math.round(bill.pending * 100), Math.round((feeDue.get(bill.name) ?? 0) * 100), displayFor(bill.name)) / 100
   // Crédito de quem pagou a mais antes: desconta no Pix e na mensagem, e é usado ao marcar como pago.
   const [credits, setCredits] = useState<CreditEntry[]>([])
   useEffect(() => { void source.listCredits().then(setCredits).catch(() => setCredits([])) }, [source, transactions])
@@ -141,7 +143,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   /** Detalhes das compras e o total, sem a chave: o Pix vai no outro botão. */
   async function sendDetails(bill: PersonBill) {
     try {
-      const text = buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name), pixSeparate: !!pixOf(bill), credit: balanceOf(bill.name) })
+      const text = buildMessage(bill, scopeLabel, { receiving, invoiceLabels: all ? labels : undefined, fees: feesOf(bill.name), pixSeparate: !!pixOf(bill), credit: balanceOf(bill.name), display: displayFor(bill.name) })
       const done = await shareText(text, `Cobrança de ${bill.name}`)
       if (done === 'copied') notify('notice', `Detalhes de ${bill.name} copiados. É só colar no WhatsApp.`)
     } catch { notify('error', 'Não consegui compartilhar nem copiar. Tente de novo.') }
@@ -162,7 +164,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
   }
 
   async function copyGroup() {
-    try { await navigator.clipboard.writeText(buildGroupMessage(bills, scopeLabel, receiving, feeDue)); notify('notice', 'Acerto do grupo copiado. É só colar na conversa.') } catch { notify('error', 'Não consegui copiar. Libere o acesso à área de transferência e tente de novo.') }
+    try { await navigator.clipboard.writeText(buildGroupMessage(bills, scopeLabel, receiving, feeDue, new Map(bills.map((bill) => [bill.name, displayFor(bill.name)])))); notify('notice', 'Acerto do grupo copiado. É só colar na conversa.') } catch { notify('error', 'Não consegui copiar. Libere o acesso à área de transferência e tente de novo.') }
   }
 
   /** Pix com o total de todas as carteiras. */
@@ -286,7 +288,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
           return <article key={bill.name} data-tour={position === 0 ? 'bill-card' : undefined} className="bill-card">
             <div className="bill-head">
               <span className="avatar">{bill.name[0].toUpperCase()}</span>
-              <div className="bill-name"><b>{bill.name}</b><small>{bill.rows.length} {bill.rows.length === 1 ? 'lançamento' : 'lançamentos'} · total {money(bill.total)}</small>{fee > 0 && <small className="bill-fee">+ taxa {money(fee)}</small>}{balanceOf(bill.name) > 0 && <small className="bill-credit">crédito {money(balanceOf(bill.name))}{due > 0 ? ' (já descontado)' : ''}</small>}</div>
+              <div className="bill-name"><b>{bill.name}</b><small>{bill.rows.length} {bill.rows.length === 1 ? 'lançamento' : 'lançamentos'} · total {money(bill.total)}</small>{fee > 0 && <small className="bill-fee">+ taxa {money(fee)}{(() => { const d = displayFor(bill.name); return d ? (d.mode === 'rounded' ? ` · arredonda para ${money(due)}` : ' · embutida') : '' })()}</small>}{balanceOf(bill.name) > 0 && <small className="bill-credit">crédito {money(balanceOf(bill.name))}{due > 0 ? ' (já descontado)' : ''}</small>}</div>
               <div className="bill-due"><span>{due > 0 ? 'Deve' : 'Em dia'}</span><b className={due > 0 ? 'warn' : 'ok'}>{money(due > 0 ? netDue(bill) : 0)}</b></div>
             </div>
             <div className="bill-progress" role="img" aria-label={`${Math.round(share * 100)}% pago`}><i style={{ width: `${share * 100}%` }} /></div>
@@ -327,7 +329,7 @@ export default function Billing({ source, invoices, transactions, invoiceId, onI
                 </>}
               </div>
             })()}
-            {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={fee} onConfirm={(ids, feePaid, credit) => settleSome(bill, ids, feePaid, credit)} onCancel={() => setPaying(null)} />}
+            {paying === bill.name && <SettleByAmount name={bill.name} rows={bill.rows} fee={Math.max(0, Math.round((due - bill.pending) * 100) / 100)} onConfirm={(ids, feePaid, credit) => settleSome(bill, ids, feePaid, credit)} onCancel={() => setPaying(null)} />}
             {expanded && <ul className="bill-rows">{bill.rows.map((row) => <li key={row.id} className={row.status === 'paid' ? 'done' : ''}>
               <span>{formatDate(row.occurred_on).slice(0, 5)}</span><span className="grow">{row.description}{row.installment_count ? ` (${row.installment_number}/${row.installment_count})` : ''}</span><span className="muted">{row.category?.name ?? ''}</span><b>{money(Number(row.amount))}</b>
             </li>)}</ul>}

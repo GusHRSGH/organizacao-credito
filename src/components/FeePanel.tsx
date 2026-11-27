@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon } from './Icon'
-import { DEFAULT_FEE_NAME, limitLevel, splitFee, type FeeSplit } from '../lib/fee'
+import { DEFAULT_FEE_NAME, FEE_DISPLAY_OPTIONS, displayOf, displayValue, limitLevel, parseDisplay, splitFee, type FeeSplit } from '../lib/fee'
 import { parseMoney } from '../lib/quickEntry'
 import { money } from '../lib/format'
 import type { CardFee } from '../types'
@@ -66,7 +66,7 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
       {withFee.map((block) => <div key={block.invoiceId} className="fee-block">
         <b>{block.split!.fee.name} · {block.label} · {money(block.split!.total)}</b>
         <ul className="fee-people">{block.split!.shares.map((share) => <li key={share.name}>
-          <span className="grow">{share.name}</span><b>{money(share.share)}</b>
+          <span className="grow">{share.name}{displayOf(block.split!.fee, share.name) ? <small className="fee-quiet">{displayOf(block.split!.fee, share.name)!.mode === 'rounded' ? ' · arredondada' : ' · embutida'}</small> : null}</span><b>{money(share.share)}</b>
           <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...block.split!.fee, paid: share.paid ? block.split!.fee.paid.filter((n) => n !== share.name) : [...block.split!.fee.paid, share.name] })} aria-label={`Taxa de ${share.name} em ${block.label} paga`} />Pago</label>
         </li>)}</ul>
       </div>)}
@@ -114,6 +114,12 @@ export default function FeePanel({ blocks, editable, onSave }: Props) {
                 onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur() }} />
               {share.manual && <button className="text-button fee-reset" onClick={() => save({ ...draft, overrides: Object.fromEntries(Object.entries(draft.overrides).filter(([n]) => n !== person)) })}>Voltar ao calculado</button>}
               <label className="check"><input type="checkbox" checked={share.paid} onChange={() => save({ ...draft, paid: share.paid ? draft.paid.filter((n) => n !== person) : [...draft.paid, person] })} aria-label={`Taxa de ${person} paga`} />Pago</label>
+              <label className="fee-display">Como aparece na cobrança
+                <select value={displayValue(displayOf(draft, person))} aria-label={`Como a taxa aparece para ${person}`} onChange={(event) => {
+                  const next = parseDisplay(event.target.value)
+                  const rest = Object.fromEntries(Object.entries(draft.display ?? {}).filter(([n]) => n !== person))
+                  save({ ...draft, display: next ? { ...rest, [person]: next } : rest })
+                }}>{FEE_DISPLAY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
               {(limitsOpen || share.limit) && <div className="fee-limit">
                 {limitsOpen && <label>Limite<input inputMode="decimal" placeholder="sem limite" aria-label={`Limite de ${person}`} value={limitText[person] ?? (share.limit ? share.limit.toFixed(2).replace('.', ',') : '')}
                   onChange={(event) => setLimitText({ ...limitText, [person]: event.target.value })} onBlur={() => saveLimit(person)}

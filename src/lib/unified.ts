@@ -1,9 +1,9 @@
-import { feeSplitFor } from './fee'
+import { displayOf, feeSplitFor, roundUpCents, spreadCents } from './fee'
 import { formatDate, moneyFull } from './format'
 import { settledIds } from './settled'
 import { walletOf, type Wallet } from './wallet'
 import { periodLabel } from '../services/installments'
-import type { CardFee, Invoice, Transaction } from '../types'
+import type { CardFee, FeeDisplay, Invoice, Transaction } from '../types'
 
 /** Tudo de todas as carteiras, para somar a cobrança de cada pessoa. */
 export interface Everything { wallets: Wallet[]; invoices: Invoice[]; transactions: Transaction[]; fees: CardFee[] }
@@ -18,6 +18,8 @@ export interface DebtPart {
   fee: number
   /** Nome usado na taxa, para marcar a parte dela como paga. */
   feeName?: string
+  /** Taxa discreta da pessoa nesta fatura (embutida ou arredondada). */
+  display?: FeeDisplay | null
   /** Empréstimo: o que ainda vai vencer depois deste mês (só informação, não entra no total). */
   remaining?: { count: number; amount: number }
 }
@@ -47,20 +49,23 @@ export function unifiedDebts(data: Everything, period: string): UnifiedDebts {
     const future = loan ? new Set(invoices.filter((invoice) => invoice.period > period).map((invoice) => invoice.id)) : new Set<string>()
     const byPerson = new Map<string, DebtPart[]>()
     for (const invoice of due) {
-      const pending = new Map<string, { name: string; rows: Transaction[]; cents: number; fee: number; feeName?: string }>()
+      const pending = new Map<string, { name: string; rows: Transaction[]; cents: number; fee: number; feeName?: string; display?: FeeDisplay | null }>()
       const slot = (name: string) => { const k = key(name); const hit = pending.get(k) ?? { name, rows: [], cents: 0, fee: 0 }; pending.set(k, hit); return hit }
       for (const row of rows) {
         if (row.invoice_id !== invoice.id || row.status === 'paid') continue
         const hit = slot(row.person?.name || 'Sem responsável')
         hit.rows.push(row); hit.cents += cents(row.amount)
       }
-      for (const share of feeSplitFor(invoice.id, invoices, data.fees, rows)?.shares ?? []) {
-        if (!share.paid && share.share > 0) { const hit = slot(share.name); hit.fee += cents(share.share); hit.cents += cents(share.share); hit.feeName = share.name }
+      const split = feeSplitFor(invoice.id, invoices, data.fees, rows)
+      for (const share of split?.shares ?? []) {
+        if (!share.paid && share.share > 0) { const hit = slot(share.name); hit.fee += cents(share.share); hit.cents += cents(share.share); hit.feeName = share.name; hit.display = displayOf(split!.fee, share.name) }
       }
+      // Arredondado: o total da pessoa nesta fatura sobe até o próximo múltiplo de R$ 5.
+      for (const item of pending.values()) if (item.display?.mode === 'rounded' && item.fee > 0) { const up = roundUpCents(item.cents); item.fee += up - item.cents; item.cents = up }
       for (const [k, item] of pending) {
         if (item.cents <= 0) continue
         used.add(wallet.id)
-        const part: DebtPart = { walletId: wallet.id, wallet: wallet.name, kind: wallet.kind, invoiceId: invoice.id, invoice: invoice.label, period: invoice.period, amount: item.cents / 100, rows: item.rows.sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)), fee: item.fee / 100, feeName: item.feeName }
+        const part: DebtPart = { walletId: wallet.id, wallet: wallet.name, kind: wallet.kind, invoiceId: invoice.id, invoice: invoice.label, period: invoice.period, amount: item.cents / 100, rows: item.rows.sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)), fee: item.fee / 100, feeName: item.feeName, display: item.display }
         byPerson.set(k, [...(byPerson.get(k) ?? []), part])
         if (!people.has(k)) people.set(k, { name: item.name, parts: [] })
       }
@@ -111,12 +116,19 @@ export function unifiedMessage(debt: PersonDebt, options: { mode?: UnifiedMode; 
       const extra = head.kind === 'loan' ? [parts.length > 1 ? `${parts.length} parcelas` : parcelOf(last), remainingLine(last)].filter(Boolean).join('; ') : ''
       return `• ${head.wallet}: ${moneyFull(sum)}${extra ? ` (${extra})` : ''}`
     }
-    const lines = parts.flatMap((part) => [
-      ...part.rows.map((row) => `  - ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count && !row.description.includes(`${row.installment_number}/${row.installment_count}`) ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(Number(row.amount))}`),
-      ...(part.fee > 0 ? [`  - Taxa de uso do cartão: ${moneyFull(part.fee)}`] : []),
-    ])
+    const lines = parts.flatMap((part) => {
+      const hidden = part.fee > 0 ? part.display ?? null : null
+      if (hidden?.style === 'total') return []
+      // Diluída: cada compra leva a sua parte da taxa e a soma bate com a parte desta fatura.
+      const values = hidden?.style === 'spread' && part.rows.length ? spreadCents(part.rows.map((row) => cents(row.amount)), cents(part.amount)) : part.rows.map((row) => cents(row.amount))
+      return [
+        ...part.rows.map((row, i) => `  - ${formatDate(row.occurred_on).slice(0, 5)} ${row.description}${row.installment_count && !row.description.includes(`${row.installment_number}/${row.installment_count}`) ? ` (${row.installment_number}/${row.installment_count})` : ''}: ${moneyFull(values[i] / 100)}`),
+        ...(part.fee > 0 && !hidden ? [`  - Taxa de uso do cartão: ${moneyFull(part.fee)}`] : []),
+      ]
+    })
     const tail = head.kind === 'loan' && last.remaining ? [`  (${remainingLine(last)})`] : []
-    return [`*${head.wallet}*: ${moneyFull(sum)}`, ...lines, ...tail].join('\n')
+    const note = parts.some((part) => part.fee > 0 && part.display?.style === 'note') ? ' (inclui os custos do cartão)' : ''
+    return [`*${head.wallet}*: ${moneyFull(sum)}${note}`, ...lines, ...tail].join('\n')
   })
   const credit = Math.min(cents(options.credit ?? 0), cents(debt.total)) / 100
   const creditLine = credit > 0 ? `\n• Crédito (pagou a mais antes): -${moneyFull(credit)}` : ''
