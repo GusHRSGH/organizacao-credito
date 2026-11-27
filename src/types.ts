@@ -74,6 +74,12 @@ export interface Recurring {
   last?: string
 }
 
+/**
+ * Taxa discreta, por pessoa. `embedded`: entra no total sem linha de taxa. `rounded`: o total arredonda para cima
+ * (múltiplo de R$ 5) até cobrir a taxa. `style` diz como a mensagem mostra: compras com nota, valor diluído nas compras ou só o total.
+ */
+export interface FeeDisplay { mode: 'embedded' | 'rounded'; style: 'note' | 'spread' | 'total' }
+
 export interface CardFee {
   invoice_id: string
   /** Nome que aparece na cobrança, escolhido pela pessoa. */
@@ -89,6 +95,8 @@ export interface CardFee {
   paid: string[]
   /** Limite de gasto de cada pessoa na fatura (nome: valor). Sem limite = nunca paga extra. */
   limits?: Record<string, number>
+  /** Como a taxa aparece para cada pessoa (nome: jeito). Sem entrada = linha da taxa à vista. */
+  display?: Record<string, FeeDisplay>
   /** % extra sobre todo o gasto de quem passou do próprio limite (a mesma para todos). */
   extraPct?: number
 }

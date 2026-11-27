@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 64, date: '2026-11-27', title: 'Taxa discreta, por pessoa',
+    items: [
+      'Na “Taxa de uso do cartão”, escolha para cada pessoa como a taxa aparece na cobrança: à vista (como antes), embutida no total ou arredondando o total para cima (múltiplo de R$ 5) até cobrir a taxa.',
+      'Embutida ou arredondada, a mensagem pode mostrar as compras com o total já somado, diluir a taxa em cada compra ou mandar só o valor final. O Pix e o “Cobrar todos” seguem a mesma escolha.',
+      'Só você vê a taxa de verdade no app; o cartão da pessoa mostra “embutida” ou “arredonda para”.',
+    ],
+  },
+  {
     n: 63, date: '2026-11-26', title: 'Ajuste no “Já pago”',
     items: ['O “Já pago” da Cobrança não mostra mais “-R$ 0,00” quando ninguém pagou ainda.'],
   },

@@ -1,4 +1,4 @@
-import type { CardFee, Invoice, Transaction } from '../types'
+import type { FeeDisplay, CardFee, Invoice, Transaction } from '../types'
 
 export const DEFAULT_FEE_NAME = 'Taxa de evolução de crédito'
 
@@ -106,3 +106,46 @@ export function feeLine(fee: CardFee, share: FeeShare): string {
 }
 
 const brl = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+/** Jeito discreto da taxa para a pessoa (null = taxa à vista, como sempre). */
+export function displayOf(fee: CardFee | null | undefined, name: string): FeeDisplay | null {
+  const found = fee?.display?.[name] ?? Object.entries(fee?.display ?? {}).find(([key]) => key.trim().toLocaleLowerCase('pt-BR') === name.trim().toLocaleLowerCase('pt-BR'))?.[1]
+  return found && (found.mode === 'embedded' || found.mode === 'rounded') ? found : null
+}
+
+/** Arredonda para cima no próximo múltiplo de R$ 5 (em centavos). */
+export const roundUpCents = (cents: number, step = 500) => Math.ceil(cents / step) * step
+
+/** Total cobrado (em centavos) a partir das compras e da taxa: no modo arredondado, sobe até o próximo múltiplo de R$ 5. */
+export function chargeCents(purchases: number, fee: number, display: FeeDisplay | null) {
+  const total = purchases + fee
+  return display?.mode === 'rounded' && fee > 0 ? roundUpCents(total) : total
+}
+
+/** Divide `target` centavos entre os valores, proporcional a cada um, e a soma bate exato (maior resto). */
+export function spreadCents(values: number[], target: number): number[] {
+  const base = values.reduce((sum, v) => sum + v, 0)
+  if (!values.length) return []
+  if (base <= 0) return values.map((_, i) => (i === 0 ? target : 0))
+  const raw = values.map((v) => (v * target) / base)
+  const out = raw.map(Math.floor)
+  let left = target - out.reduce((sum, v) => sum + v, 0)
+  const order = raw.map((v, i) => [v - Math.floor(v), i] as const).sort((a, b) => b[0] - a[0])
+  for (let k = 0; left > 0; k = (k + 1) % order.length, left--) out[order[k][1]]++
+  return out
+}
+
+export const FEE_DISPLAY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '', label: 'Taxa à vista (linha separada)' },
+  { value: 'embedded:note', label: 'Embutida: compras + total com a taxa' },
+  { value: 'embedded:spread', label: 'Embutida: diluída nas compras' },
+  { value: 'embedded:total', label: 'Embutida: só o total' },
+  { value: 'rounded:note', label: 'Arredondar: compras + total redondo' },
+  { value: 'rounded:spread', label: 'Arredondar: diluído nas compras' },
+  { value: 'rounded:total', label: 'Arredondar: só o total' },
+]
+export const displayValue = (display: FeeDisplay | null) => (display ? `${display.mode}:${display.style}` : '')
+export function parseDisplay(value: string): FeeDisplay | null {
+  const [mode, style] = value.split(':')
+  return (mode === 'embedded' || mode === 'rounded') && (style === 'note' || style === 'spread' || style === 'total') ? { mode, style } : null
+}
