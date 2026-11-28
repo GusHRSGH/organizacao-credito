@@ -1215,3 +1215,9 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fee-display{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--faint);grid-column:1/-1;width:100%}
 .fee-display select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface);color:var(--text);font-size:14px;max-width:360px}
 .fee-quiet{color:var(--faint);font-weight:500}
+.chip.edit{cursor:pointer;border:1px solid transparent;font:inherit}
+.chip.edit:hover,.chip.edit.open{border-color:var(--primary)}
+.chip.edit.edited{border-color:color-mix(in srgb,var(--primary) 60%,transparent)}
+.chip-editor{margin-top:8px;padding:12px;border:1px solid var(--primary);border-radius:12px;display:grid;gap:8px}
+.chip-editor label{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--faint)}
+.chip-editor input{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font-size:16px;min-width:0}
