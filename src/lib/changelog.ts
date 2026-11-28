@@ -3,6 +3,14 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 66, date: '2026-11-27', title: 'Etiquetas que dá para trocar',
+    items: ['No lançamento rápido, toque em qualquer etiqueta (descrição, valor, data, responsável ou categoria) para trocar antes de salvar. A etiqueta ajustada ganha um ✎, e dá para voltar ao que o robô entendeu.'],
+  },
+  {
+    n: 65, date: '2026-11-27', title: 'Limite da pessoa conta só o não pago',
+    items: ['O limite de uma pessoa (Metas e limites) agora conta só o que ela ainda não pagou. O aviso ao lançar um gasto, a barra e o gráfico “Pessoas x limite” seguem a mesma conta. Limites do total e de categoria continuam contando tudo.'],
+  },
+  {
     n: 64, date: '2026-11-27', title: 'Taxa discreta, por pessoa',
     items: [
       'Na “Taxa de uso do cartão”, escolha para cada pessoa como a taxa aparece na cobrança: à vista (como antes), embutida no total ou arredondando o total para cima (múltiplo de R$ 5) até cobrir a taxa.',

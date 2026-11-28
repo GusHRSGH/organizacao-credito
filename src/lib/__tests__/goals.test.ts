@@ -13,6 +13,12 @@ describe('metas', () => {
     expect(spentFor({ id: '4', scope: 'person', name: 'Bia', category: 'Lazer', limit: 1 }, rows)).toBe(50.2)
     expect(spentFor({ id: '5', scope: 'person', name: 'Bia', category: 'Mercado', limit: 1 }, rows)).toBe(0)
   })
+  it('limite de pessoa conta só o que ela não pagou; total e categoria contam tudo', () => {
+    const mixed = [tx('a', 1000, 'Mercado', 'Gustavo'), { ...tx('a', 900, 'Mercado', 'Gustavo'), status: 'paid' as const }]
+    expect(spentFor({ id: 'p', scope: 'person', name: 'Gustavo', limit: 500 }, mixed)).toBe(1000)
+    expect(spentFor({ id: 't', scope: 'total', name: '', limit: 1 }, mixed)).toBe(1900)
+    expect(spentFor({ id: 'c', scope: 'category', name: 'Mercado', limit: 1 }, mixed)).toBe(1900)
+  })
   it('classifica o nível', () => {
     expect(levelOf(79, 100)).toBe('ok')
     expect(levelOf(80, 100)).toBe('warn')

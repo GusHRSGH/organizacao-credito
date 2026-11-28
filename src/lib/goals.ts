@@ -24,11 +24,15 @@ export function writeGoals(goals: Goal[]) {
   try { localStorage.setItem(STORE, JSON.stringify(goals)) } catch { /* vale até recarregar */ }
 }
 
-export const goalTitle = (goal: Goal) => goal.scope === 'total' ? 'Total da fatura' : goal.scope === 'category' ? `Categoria ${goal.name}` : goal.category ? `${goal.name} em ${goal.category}` : `Gastos de ${goal.name}`
+export const goalTitle = (goal: Goal) => goal.scope === 'total' ? 'Total da fatura' : goal.scope === 'category' ? `Categoria ${goal.name}` : goal.category ? `${goal.name} em ${goal.category}` : `Em aberto de ${goal.name}`
 
-/** Quanto já foi gasto nas linhas dadas (as de uma fatura) dentro do escopo da meta. */
+/**
+ * Quanto conta para a meta nas linhas dadas (as de uma fatura).
+ * Total e categoria: tudo o que foi gasto. Pessoa: só o que ela ainda não pagou, porque o limite dela é de quanto pode ficar devendo.
+ */
 export function spentFor(goal: Goal, rows: Transaction[]) {
   const cents = rows.reduce((sum, row) => {
+    if (goal.scope === 'person' && row.status === 'paid') return sum
     const match = goal.scope === 'total' || (goal.scope === 'category' ? row.category?.name === goal.name : row.person?.name === goal.name && (!goal.category || row.category?.name === goal.category))
     return match ? sum + Math.round(Number(row.amount) * 100) : sum
   }, 0)
