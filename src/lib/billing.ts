@@ -45,8 +45,8 @@ export function buildMessage(bill: PersonBill, invoiceLabel: string, options: Me
     ? [options.receiving?.include && options.receiving.note.trim() ? options.receiving.note.trim() : '', 'É só copiar o Pix que te mandei.'].filter(Boolean).join('\n')
     : options.receiving ? receivingText(options.receiving, due, invoiceLabel) : ''
   const head = many ? `Oi ${first}! Somando as faturas em aberto (${invoiceLabel}), sua parte é ${moneyFull(due)}.` : `Oi ${first}! Sua parte da fatura de ${invoiceLabel}: ${moneyFull(due)}.`
-  // Taxa discreta, "só o total" (ou sem compras para diluir): uma frase com o valor.
-  if (display && (display.style === 'total' || !open.length)) {
+  // Só a taxa em aberto (as compras já foram pagas): uma frase com o valor.
+  if (display && !open.length) {
     const credit = creditCents > 0 ? `\n(Já descontado o crédito de ${moneyFull(creditCents / 100)}.)` : ''
     return `${head}${credit}${pay ? `\n\n${pay}` : ''}`
   }

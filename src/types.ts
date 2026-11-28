@@ -76,7 +76,8 @@ export interface Recurring {
 
 /**
  * Taxa discreta, por pessoa. `embedded`: entra no total sem linha de taxa. `rounded`: o total arredonda para cima
- * (múltiplo de R$ 5) até cobrir a taxa. `style` diz como a mensagem mostra: compras com nota, valor diluído nas compras ou só o total.
+ * (múltiplo de R$ 5) até cobrir a taxa. `style` diz como a mensagem mostra: compras com aviso de custos, taxa diluída nas compras ou compras sem mencionar a taxa.
+ * As compras sempre aparecem (o botão é "Enviar detalhes").
  */
 export interface FeeDisplay { mode: 'embedded' | 'rounded'; style: 'note' | 'spread' | 'total' }
 

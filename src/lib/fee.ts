@@ -137,12 +137,12 @@ export function spreadCents(values: number[], target: number): number[] {
 
 export const FEE_DISPLAY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: '', label: 'Taxa à vista (linha separada)' },
-  { value: 'embedded:note', label: 'Embutida: compras + total com a taxa' },
+  { value: 'embedded:note', label: 'Embutida: compras + total, com aviso de custos' },
   { value: 'embedded:spread', label: 'Embutida: diluída nas compras' },
-  { value: 'embedded:total', label: 'Embutida: só o total' },
-  { value: 'rounded:note', label: 'Arredondar: compras + total redondo' },
+  { value: 'embedded:total', label: 'Embutida: compras + total, sem mencionar' },
+  { value: 'rounded:note', label: 'Arredondar: compras + total redondo, com aviso' },
   { value: 'rounded:spread', label: 'Arredondar: diluído nas compras' },
-  { value: 'rounded:total', label: 'Arredondar: só o total' },
+  { value: 'rounded:total', label: 'Arredondar: compras + total redondo, sem mencionar' },
 ]
 export const displayValue = (display: FeeDisplay | null) => (display ? `${display.mode}:${display.style}` : '')
 export function parseDisplay(value: string): FeeDisplay | null {
