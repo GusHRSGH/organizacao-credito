@@ -75,7 +75,7 @@ export default function Goals({ invoices, transactions, invoiceId, onInvoice, no
       })}</ul> : <p className="empty">Nenhuma meta ainda. Crie a primeira abaixo.</p>}
     </Panel>
 
-    {personGoals.length > 0 && <Panel tour="goals-chart" icon="users" title="Pessoas x limite" subtitle={`${invoice?.label ?? ''}: quanto cada pessoa gastou e onde está o limite dela`}>
+    {personGoals.length > 0 && <Panel tour="goals-chart" icon="users" title="Pessoas x limite" subtitle={`${invoice?.label ?? ''}: quanto cada pessoa ainda não pagou e onde está o limite dela`}>
       <HBarChart rows={personGoals.map((g) => ({ label: chartLabel(g), values: [spentFor(g, rows)] }))} onPick={(label) => { const g = personGoals.find((item) => chartLabel(item) === label); if (g && invoice) onDrill({ invoiceId: invoice.id, person: personToken(g.name), ...(g.category ? { category: categoryToken(g.category) } : {}) }) }} series={[withName(TEAL, invoice?.label ?? 'Gasto')]} limits={Object.fromEntries(personGoals.map((g) => [chartLabel(g), g.limit]))} />
     </Panel>}
 
