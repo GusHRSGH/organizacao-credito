@@ -3,6 +3,10 @@ export interface ChangelogEntry { n: number; date: string; title: string; items:
 
 export const ENTRIES: ChangelogEntry[] = [
   {
+    n: 67, date: '2026-11-27', title: '“Enviar detalhes” sempre com as compras',
+    items: ['Com a taxa discreta, o “Enviar detalhes” mandava só o total. Agora ele sempre lista as compras. A opção “só o total” virou “compras + total, sem mencionar”: a pessoa vê as compras e o total, sem nenhuma palavra sobre taxa.'],
+  },
+  {
     n: 66, date: '2026-11-27', title: 'Etiquetas que dá para trocar',
     items: ['No lançamento rápido, toque em qualquer etiqueta (descrição, valor, data, responsável ou categoria) para trocar antes de salvar. A etiqueta ajustada ganha um ✎, e dá para voltar ao que o robô entendeu.'],
   },

@@ -118,7 +118,6 @@ export function unifiedMessage(debt: PersonDebt, options: { mode?: UnifiedMode; 
     }
     const lines = parts.flatMap((part) => {
       const hidden = part.fee > 0 ? part.display ?? null : null
-      if (hidden?.style === 'total') return []
       // Diluída: cada compra leva a sua parte da taxa e a soma bate com a parte desta fatura.
       const values = hidden?.style === 'spread' && part.rows.length ? spreadCents(part.rows.map((row) => cents(row.amount)), cents(part.amount)) : part.rows.map((row) => cents(row.amount))
       return [

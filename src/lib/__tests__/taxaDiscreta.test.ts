@@ -35,9 +35,11 @@ describe('taxa discreta', () => {
     expect(text).toMatch(/Mercado: R\$\s409,7\d/)
   })
 
-  it('só o total: uma frase, e o acerto do grupo não fala da taxa', () => {
-    const text = buildMessage(ana, 'Dezembro 2026', { fees, display: { mode: 'rounded', style: 'total' } })
-    expect(text).toMatch(/^Oi Ana! Sua parte da fatura de Dezembro 2026: R\$\s540,00\.$/)
+  it('sem mencionar: lista as compras com o valor real e o total redondo, sem falar de taxa', () => {
+    const text = buildMessage(ana, 'Dezembro 2026', { fees, display: { mode: 'rounded', style: 'total' }, pixSeparate: true, receiving: { key: 'x@y.com', holder: 'X', city: 'SP', note: 'Nubank', include: true } })
+    expect(text).toMatch(/• 06\/11 Mercado: R\$\s400,00/)
+    expect(text).toMatch(/Total: R\$\s540,00\n/)
+    expect(text).not.toMatch(/taxa|custos/i)
     const group = buildGroupMessage([ana], 'Dezembro 2026', undefined, new Map([['Ana', 11.56]]), new Map([['Ana', { mode: 'rounded', style: 'total' }]]))
     expect(group).toMatch(/• Ana: R\$\s540,00\n/)
     expect(group).not.toContain('taxa')
